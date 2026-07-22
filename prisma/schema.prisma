@@ -1,0 +1,286 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  REGISTRAR
+  PRINCIPAL
+  TEACHER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum StudentStatus {
+  UNENROLLED
+  ENROLLED
+  GRADUATED
+  TRANSFERRED
+  DROPPED
+}
+
+enum Shift {
+  MORNING
+  AFTERNOON
+}
+
+enum Semester {
+  FIRST
+  SECOND
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+  TRANSFERRED
+}
+
+model User {
+  id String @id @default(cuid())
+
+  employeeNumber String? @unique
+
+  username     String @unique
+  email        String @unique
+  passwordHash String
+
+  firstName  String
+  middleName String?
+  lastName   String
+
+  gender Gender
+
+  role   UserRole
+  status UserStatus @default(ACTIVE)
+
+  isFirstLogin Boolean   @default(true)
+  lastLoginAt  DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  teacher            Teacher?
+  createdStudents    Student[]
+  createdSections    Section[]
+  createdSubjects    Subject[]
+  createdEnrollments Enrollment[]
+  createdGrades      Grade[]
+  auditLogs          AuditLog[]
+}
+
+model Student {
+  id String @id @default(cuid())
+
+  lrn String @unique
+
+  firstName  String
+  middleName String?
+  lastName   String
+
+  gender      Gender
+  dateOfBirth DateTime?
+
+  fatherName    String?
+  fatherContact String?
+
+  motherName    String?
+  motherContact String?
+
+  guardianName    String?
+  guardianContact String?
+
+  purok        String?
+  barangay     String
+  municipality String
+  province     String
+  zipCode      String?
+
+  status StudentStatus @default(UNENROLLED)
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  enrollments Enrollment[]
+}
+
+model Teacher {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  degree    String?
+  major     String?
+  isAdviser Boolean @default(false)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  advisedSections    Section[]           @relation("SectionAdviser")
+  subjectAssignments SubjectAssignment[]
+}
+
+model Section {
+  id String @id @default(cuid())
+
+  gradeLevel  String
+  trackStrand String?
+  sectionName String
+
+  adviserId String?
+  adviser   Teacher? @relation("SectionAdviser", fields: [adviserId], references: [id])
+
+  room  String?
+  shift Shift?
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  subjectAssignments SubjectAssignment[]
+  enrollments        Enrollment[]
+}
+
+model Subject {
+  id String @id @default(cuid())
+
+  code        String
+  description String
+
+  gradeLevel  String
+  trackStrand String?
+
+  semester Semester?
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  assignments SubjectAssignment[]
+  grades      Grade[]
+
+  @@unique([code, gradeLevel, trackStrand])
+}
+
+model SubjectAssignment {
+  id String @id @default(cuid())
+
+  subjectId String
+  subject   Subject @relation(fields: [subjectId], references: [id])
+
+  teacherId String
+  teacher   Teacher @relation(fields: [teacherId], references: [id])
+
+  sectionId String
+  section   Section @relation(fields: [sectionId], references: [id])
+
+  schedule     String?
+  room         String?
+  shift        Shift?
+  academicYear String
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([subjectId, teacherId, sectionId, academicYear])
+  @@index([academicYear])
+}
+
+model Enrollment {
+  id String @id @default(cuid())
+
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id])
+
+  sectionId String
+  section   Section @relation(fields: [sectionId], references: [id])
+
+  academicYear String
+
+  semester Semester?
+
+  status EnrollmentStatus @default(ACTIVE)
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  grades Grade[]
+
+  @@unique([studentId, academicYear])
+  @@index([academicYear])
+}
+
+model Grade {
+  id String @id @default(cuid())
+
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id])
+
+  subjectId String
+  subject   Subject @relation(fields: [subjectId], references: [id])
+
+  firstQuarter  Float?
+  secondQuarter Float?
+  thirdQuarter  Float?
+  fourthQuarter Float?
+
+  finalGrade Float?
+
+  remarks String?
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([enrollmentId, subjectId])
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  action String
+  module String
+
+  description String
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+}
