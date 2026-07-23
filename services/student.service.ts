@@ -10,6 +10,8 @@ import {
 
 import { CreateStudentSchema } from "@/schemas";
 
+import { createAuditLog } from "@/services/audit.service";
+
 import { z } from "zod";
 
 export async function getStudents() {
@@ -31,7 +33,7 @@ export async function createStudentService(
     throw new Error("LRN already exists.");
   }
 
-  return await createStudent({
+  const student = await createStudent({
     ...values,
 
     status: "UNENROLLED",
@@ -42,6 +44,16 @@ export async function createStudentService(
       },
     },
   });
+
+  await createAuditLog({
+    action: "CREATE",
+    module: "Student",
+    recordId: student.id,
+    recordName: `${student.lastName}, ${student.firstName}`,
+    description: "Created student profile",
+  });
+
+  return student;
 }
 
 export async function updateStudentService(
@@ -54,9 +66,19 @@ export async function updateStudentService(
     throw new Error("Unauthorized.");
   }
 
-  return await updateStudent(id, {
+  const student = await updateStudent(id, {
     ...values,
   });
+
+  await createAuditLog({
+    action: "UPDATE",
+    module: "Student",
+    recordId: student.id,
+    recordName: `${student.lastName}, ${student.firstName}`,
+    description: "Updated student profile",
+  });
+
+  return student;
 }
 
 export async function deleteStudentService(id: string) {
@@ -66,5 +88,15 @@ export async function deleteStudentService(id: string) {
     throw new Error("Unauthorized.");
   }
 
-  return await softDeleteStudent(id);
+  const student = await softDeleteStudent(id);
+
+  await createAuditLog({
+    action: "DELETE",
+    module: "Student",
+    recordId: student.id,
+    recordName: `${student.lastName}, ${student.firstName}`,
+    description: "Soft deleted student profile",
+  });
+
+  return student;
 }

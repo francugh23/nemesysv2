@@ -278,6 +278,9 @@ model AuditLog {
   action String
   module String
 
+  recordId String?
+  recordName String?
+
   description String
 
   metadata Json?

@@ -7,12 +7,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge, GenderBadge } from "@/components/common/badges";
 
 import { StudentInfoSection } from "./student-info-section";
 import { StudentInfoItem } from "./student-info-item";
 
 import type { Student } from "@/app/generated/prisma/client";
+
+import { formatDate, formatFullName } from "@/lib/format";
 
 interface StudentViewDialogProps {
   student: Student;
@@ -27,26 +29,33 @@ export function StudentViewDialog({
 }: StudentViewDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-6xl! max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-5xl! max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Student Profile</DialogTitle>
         </DialogHeader>
 
         {/* Student Header */}
         <div className="rounded-lg border bg-muted/30 p-5">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
               <h2 className="text-xl font-bold">
-                {student.firstName} {student.middleName ?? ""}{" "}
-                {student.lastName}
+                {formatFullName(
+                  student.firstName,
+                  student.middleName,
+                  student.lastName,
+                )}
               </h2>
 
-              <p className="text-sm text-muted-foreground">
-                LRN: {student.lrn}
-              </p>
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Learner Reference Number
+                </p>
+
+                <p className="font-mono text-sm font-medium">{student.lrn}</p>
+              </div>
             </div>
 
-            <Badge>{student.status}</Badge>
+            <StatusBadge status={student.status} />
           </div>
         </div>
 
@@ -59,15 +68,19 @@ export function StudentViewDialog({
 
             <StudentInfoItem label="Last Name" value={student.lastName} />
 
-            <StudentInfoItem label="Gender" value={student.gender} />
+            <div className="space-y-1">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Gender
+                </p>
+
+                <GenderBadge gender={student.gender} />
+              </div>
+            </div>
 
             <StudentInfoItem
               label="Birth Date"
-              value={
-                student.dateOfBirth
-                  ? student.dateOfBirth.toLocaleDateString()
-                  : null
-              }
+              value={formatDate(student.dateOfBirth)}
             />
           </StudentInfoSection>
 
@@ -115,13 +128,10 @@ export function StudentViewDialog({
           <StudentInfoSection title="System Information">
             <StudentInfoItem
               label="Created At"
-              value={student.createdAt.toLocaleString()}
+              value={formatDate(student.createdAt)}
             />
 
-            <StudentInfoItem
-              label="Updated At"
-              value={student.updatedAt.toLocaleString()}
-            />
+            <StudentInfoItem label="Updated At" value={formatDate(student.updatedAt)} />
           </StudentInfoSection>
         </div>
       </DialogContent>

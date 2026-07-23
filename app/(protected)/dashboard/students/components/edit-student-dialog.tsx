@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { FormDialog } from "@/components/common/dialogs/form-dialog";
 
 import type { Student } from "@/app/generated/prisma/client";
 
@@ -23,14 +18,8 @@ export function StudentEditDialog({
   onOpenChange,
 }: StudentEditDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-4xl! max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Student</DialogTitle>
-        </DialogHeader>
-
-        <StudentForm student={student} onSuccess={() => onOpenChange(false)} />
-      </DialogContent>
-    </Dialog>
+    <FormDialog open={open} onOpenChange={onOpenChange} title="Edit Student">
+      <StudentForm student={student} onSuccess={() => onOpenChange(false)} />
+    </FormDialog>
   );
 }

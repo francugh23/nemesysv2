@@ -1,16 +1,18 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { useState } from "react";
 import {
   type ColumnDef,
-  type FilterFn,
   type SortingState,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  ColumnFiltersState,
+  getFilteredRowModel,
+  Table as TanstackTable,
 } from "@tanstack/react-table";
 
 import {
@@ -21,125 +23,162 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import { Button } from "../ui/button";
+
+import { ReactNode } from "react";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  search?: string;
+  onRowClick?: (row: TData) => void;
+  toolbar?: (table: TanstackTable<TData>) => ReactNode;
 }
-
-const globalFilterFn: FilterFn<any> = (row, _columnId, value) => {
-  const search = String(value).toLowerCase();
-
-  return Object.values(row.original).some((field) =>
-    String(field).toLowerCase().includes(search),
-  );
-};
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  search = "",
+  onRowClick,
+  toolbar,
 }: DataTableProps<TData, TValue>) {
-  
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 10,
   });
 
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
   const table = useReactTable({
     data,
     columns,
 
     state: {
-      globalFilter: search,
       pagination,
       sorting,
+      columnFilters,
     },
 
     onPaginationChange: setPagination,
-
     onSortingChange: setSorting,
-
-    globalFilterFn,
-
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-
-    getFilteredRowModel: getFilteredRowModel(),
-
     getSortedRowModel: getSortedRowModel(),
-
     getPaginationRowModel: getPaginationRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
   });
 
+  const totalRows = table.getFilteredRowModel().rows.length;
+  const pageIndex = table.getState().pagination.pageIndex;
+  const pageSize = table.getState().pagination.pageSize;
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-
-        <TableBody>
-          {table.getRowModel().rows.length > 0 ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
+    <div className="space-y-4">
+      {toolbar?.(table)}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                  </TableHead>
                 ))}
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
-                No records found.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-      <div className="flex items-center justify-between p-4">
-        <p className="text-sm text-muted-foreground">
-          Page {table.getState().pagination.pageIndex + 1} of{" "}
-          {table.getPageCount()}
-        </p>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getFilteredRowModel().rows.length > 0 ? (
+              table.getFilteredRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  className={cn(
+                    "transition-colors hover:bg-muted/50",
+                    onRowClick && "cursor-pointer",
+                  )}
+                  onClick={(event) => {
+                    const target = event.target as HTMLElement;
 
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
+                    if (
+                      target.closest("button") ||
+                      target.closest("[role='menuitem']") ||
+                      target.closest("[role='menu']")
+                    ) {
+                      return;
+                    }
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
+                    onRowClick?.(row.original);
+                  }}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-40 text-center"
+                >
+                  <div className="space-y-2">
+                    <p className="font-medium">No records found</p>
+
+                    <p className="text-sm text-muted-foreground">
+                      Try adjusting your search or filters.
+                    </p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+        <div className="flex items-center justify-between p-4">
+          <p className="text-sm text-muted-foreground">
+            Showing{" "}
+            <span className="font-medium">
+              {table.getRowModel().rows.length}
+            </span>{" "}
+            of <span className="font-medium">{data.length}</span> records
+          </p>
+
+          <div className="flex items-center gap-4">
+            <p className="text-sm text-muted-foreground">
+              Page {table.getState().pagination.pageIndex + 1} of{" "}
+              {table.getPageCount()}
+            </p>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                Previous
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

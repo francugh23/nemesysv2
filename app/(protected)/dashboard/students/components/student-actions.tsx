@@ -13,66 +13,53 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import type { Student } from "@/app/generated/prisma/client";
-
-import { StudentViewDialog } from "./student-view-dialog";
-import { StudentEditDialog } from "./edit-student-dialog";
-import { DeleteStudentDialog } from "./delete-student-dialog";
-
 interface StudentActionsProps {
   student: Student;
+  onEdit: (student: Student) => void;
+  onDelete: (student: Student) => void;
 }
 
-export function StudentActions({ student }: StudentActionsProps) {
-  const [viewOpen, setViewOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-
+export function StudentActions({
+  student,
+  onEdit,
+  onDelete,
+}: StudentActionsProps) {
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="ghost" size="icon">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(event) => event.stopPropagation()}
+            >
               <MoreHorizontal className="size-4" />
             </Button>
           }
         />
 
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setViewOpen(true)}>
-            View
-          </DropdownMenuItem>
-
-          <DropdownMenuItem onClick={() => setEditOpen(true)}>
+          <DropdownMenuItem
+            onClick={(event) => {
+              event.stopPropagation();
+              onEdit(student);
+            }}
+          >
             Edit
           </DropdownMenuItem>
 
           <DropdownMenuItem
             className="text-destructive"
-            onClick={() => setDeleteOpen(true)}
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete(student);
+            }}
           >
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <StudentViewDialog
-        student={student}
-        open={viewOpen}
-        onOpenChange={setViewOpen}
-      />
-
-      <StudentEditDialog
-        student={student}
-        open={editOpen}
-        onOpenChange={setEditOpen}
-      />
-
-      <DeleteStudentDialog
-        student={student}
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-      />
     </>
   );
 }

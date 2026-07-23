@@ -1,0 +1,97 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+import {
+  validateStudentImport,
+  ImportValidationError,
+} from "@/lib/student-import-validator";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+interface WizardStepValidationProps {
+  rows: Record<string, unknown>[];
+
+  onValidation: (result: {
+    valid: boolean;
+    errors: ImportValidationError[];
+  }) => void;
+
+  onValidRows: (rows: Record<string, unknown>[]) => void;
+}
+
+export function WizardStepValidation({
+  rows,
+  onValidation,
+  onValidRows,
+}: WizardStepValidationProps) {
+  const [errors, setErrors] = useState<ImportValidationError[]>([]);
+
+  useEffect(() => {
+    const result = validateStudentImport(rows);
+
+    setErrors(result.errors);
+
+    onValidation(result);
+    if (result.valid) {
+      onValidRows(rows);
+    }
+  }, [rows, onValidation]);
+
+  if (errors.length === 0) {
+    return (
+      <div className="rounded-md border p-6 text-center">
+        <p className="font-semibold text-green-600">Validation Passed</p>
+
+        <p className="text-sm text-muted-foreground">
+          Your file is ready for import.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="font-semibold text-destructive">Validation Errors</h3>
+
+        <p className="text-sm text-muted-foreground">
+          Fix these issues before importing.
+        </p>
+      </div>
+
+      <div className="overflow-x-auto rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Row</TableHead>
+
+              <TableHead>Field</TableHead>
+
+              <TableHead>Error</TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {errors.map((error, index) => (
+              <TableRow key={index}>
+                <TableCell>{error.row}</TableCell>
+
+                <TableCell>{error.field ?? "-"}</TableCell>
+
+                <TableCell>{error.message}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
