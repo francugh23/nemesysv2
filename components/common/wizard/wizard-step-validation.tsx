@@ -60,11 +60,7 @@ export function WizardStepValidation({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="font-semibold text-destructive">Validation Errors</h3>
-
-        <p className="text-sm text-muted-foreground">
-          Fix these issues before importing.
-        </p>
+        <h3 className="font-semibold text-destructive">Fix the issues before importing.</h3>
       </div>
 
       <div className="overflow-x-auto rounded-md border">

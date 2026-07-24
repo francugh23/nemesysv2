@@ -56,3 +56,25 @@ export async function findStudentByLRN(lrn: string) {
     },
   });
 }
+
+export async function findStudentsByLRNs(lrns: string[]) {
+  return prisma.student.findMany({
+    where: {
+      lrn: {
+        in: lrns,
+      },
+    },
+    select: {
+      lrn: true,
+    },
+  });
+}
+
+export async function createStudents(
+  data: Prisma.StudentCreateManyInput[],
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).student.createMany({
+    data,
+  });
+}

@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
+import { importStudentsAction } from "@/actions/student-import.action";
 
 import { WizardDialog } from "./wizard-dialog";
 
@@ -14,6 +18,8 @@ import type { ImportValidationError } from "@/lib/student-import-validator";
 
 export function WizardDemo() {
   const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [validation, setValidation] = useState<{
@@ -26,14 +32,55 @@ export function WizardDemo() {
 
   const [importRows, setImportRows] = useState<Record<string, unknown>[]>([]);
 
+  function resetWizard() {
+    setFile(null);
+    setRows([]);
+    setValidation({ valid: false, errors: [] });
+    setImportRows([]);
+  }
+
+  function handleOpenChange(value: boolean) {
+    setOpen(value);
+
+    if (!value) {
+      resetWizard();
+    }
+  }
+
+  function handleImport() {
+    if (!validation.valid || importRows.length === 0) {
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await importStudentsAction(importRows);
+
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      toast.success(result.success);
+
+      await queryClient.invalidateQueries({
+        queryKey: ["students"],
+      });
+
+      handleOpenChange(false);
+    });
+  }
+
   return (
     <>
-      <Button onClick={() => setOpen(true)}>Open Import Wizard</Button>
+      <Button onClick={() => handleOpenChange(true)}>Open Import Wizard</Button>
 
       <WizardDialog
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={handleOpenChange}
         title="Import Students"
+        onFinish={handleImport}
+        isFinishing={isPending}
+        isFinishDisabled={!validation.valid || importRows.length === 0}
         steps={[
           {
             id: "upload",

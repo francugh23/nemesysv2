@@ -8,6 +8,15 @@ export async function createAuditLog(data: Prisma.AuditLogCreateInput) {
   });
 }
 
+export async function createAuditLogs(
+  data: Prisma.AuditLogCreateManyInput[],
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).auditLog.createMany({
+    data,
+  });
+}
+
 export async function findAuditLogs() {
   return prisma.auditLog.findMany({
     include: {

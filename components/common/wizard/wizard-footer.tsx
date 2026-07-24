@@ -4,20 +4,22 @@ import { Button } from "@/components/ui/button";
 
 interface WizardFooterProps {
   currentStep: number;
-  totalSteps: number;
   onPrevious: () => void;
   onNext: () => void;
   onCancel: () => void;
   isLastStep?: boolean;
+  isNextDisabled?: boolean;
+  nextLabel?: string;
 }
 
 export function WizardFooter({
   currentStep,
-  totalSteps,
   onPrevious,
   onNext,
   onCancel,
   isLastStep = false,
+  isNextDisabled = false,
+  nextLabel,
 }: WizardFooterProps) {
   return (
     <div className="flex items-center justify-between border-t pt-6">
@@ -32,7 +34,9 @@ export function WizardFooter({
         >
           Previous
         </Button>
-        <Button onClick={onNext}>{isLastStep ? "Finish" : "Next"}</Button>
+        <Button disabled={isNextDisabled} onClick={onNext}>
+          {nextLabel ?? (isLastStep ? "Finish" : "Next")}
+        </Button>
       </div>
     </div>
   );

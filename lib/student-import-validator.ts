@@ -1,3 +1,5 @@
+import { CreateStudentSchema } from "@/schemas";
+
 export interface ImportValidationError {
   row: number;
   field?: string;
@@ -9,9 +11,15 @@ export interface ImportValidationResult {
   errors: ImportValidationError[];
 }
 
-const REQUIRED_FIELDS = ["lrn", "firstName", "lastName", "gender"];
-
-const VALID_GENDERS = ["MALE", "FEMALE"];
+const REQUIRED_FIELDS = [
+  "lrn",
+  "firstName",
+  "lastName",
+  "gender",
+  "barangay",
+  "municipality",
+  "province",
+];
 
 export function validateStudentImport(
   rows: Record<string, unknown>[],
@@ -47,16 +55,6 @@ export function validateStudentImport(
   rows.forEach((row, index) => {
     const rowNumber = index + 2;
 
-    for (const field of REQUIRED_FIELDS) {
-      if (!row[field]) {
-        errors.push({
-          row: rowNumber,
-          field,
-          message: `${field} is required.`,
-        });
-      }
-    }
-
     const lrn = String(row.lrn ?? "");
 
     if (lrn) {
@@ -71,14 +69,16 @@ export function validateStudentImport(
       lrns.add(lrn);
     }
 
-    const gender = String(row.gender ?? "");
+    const validatedRow = CreateStudentSchema.safeParse(row);
 
-    if (gender && !VALID_GENDERS.includes(gender.toUpperCase())) {
-      errors.push({
-        row: rowNumber,
-        field: "gender",
-        message: `Invalid gender: ${gender}`,
-      });
+    if (!validatedRow.success) {
+      for (const issue of validatedRow.error.issues) {
+        errors.push({
+          row: rowNumber,
+          field: issue.path[0]?.toString(),
+          message: issue.message,
+        });
+      }
     }
   });
 

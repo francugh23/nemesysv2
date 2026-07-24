@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 
 import * as XLSX from "xlsx";
 
+import { normalizeStudentImportRow } from "@/lib/student-import-normalizer";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
 import {
   Table,
   TableBody,
@@ -34,7 +37,10 @@ export function WizardStepPreview({ file, onRowsLoaded }: WizardStepPreviewProps
       const workbook = XLSX.read(buffer);
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet);
+      // Remove SheetJS internal metadata (__rowNum__) for Server Action compatibility.
+      const data = XLSX.utils
+        .sheet_to_json<Record<string, unknown>>(worksheet)
+        .map((row) => normalizeStudentImportRow({ ...row }));
       const previewRows = data.slice(0, 10);
       setRows(previewRows);
       onRowsLoaded(data);
@@ -71,8 +77,8 @@ export function WizardStepPreview({ file, onRowsLoaded }: WizardStepPreviewProps
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
-        <Table>
+      <ScrollArea className="h-80 w-full rounded-md border">
+        <Table className="min-w-max">
           <TableHeader>
             <TableRow>
               {headers.map((header) => (
@@ -93,7 +99,7 @@ export function WizardStepPreview({ file, onRowsLoaded }: WizardStepPreviewProps
             ))}
           </TableBody>
         </Table>
-      </div>
+      </ScrollArea>
     </div>
   );
 }
