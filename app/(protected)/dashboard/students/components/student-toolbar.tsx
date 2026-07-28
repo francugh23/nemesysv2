@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { ExportButton } from "@/components/common/export/export-button";
 import { Input } from "@/components/ui/input";
 
 import {
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/select";
 
 import { CreateStudentDialog } from "./create-student-dialog";
+import { studentExportDefinition } from "./student-export";
 import type { Student } from "@/app/generated/prisma/client";
 import type { Table } from "@tanstack/react-table";
 import { useState } from "react";
@@ -68,7 +70,13 @@ export function StudentToolbar({ table }: StudentToolbarProps) {
           </Button>
         </div>
 
-        <CreateStudentDialog />
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportButton
+            records={table.getFilteredRowModel().rows.map((row) => row.original)}
+            definition={studentExportDefinition}
+          />
+          <CreateStudentDialog />
+        </div>
       </div>
     </div>
   );

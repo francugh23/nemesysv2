@@ -11,15 +11,19 @@ This document is the authoritative source for:
 - coding conventions
 - project decisions
 Do not contradict it without explicit approval.
+Acknowledge once you have finished reading.
+Do not summarize unless I explicitly ask.
+If the repository differs from `docs/architecture/project-context.md`, notify me before making implementation decisions.
 ---
 ## Workflow
 For every task:
 1. Read project-context.md.
-2. Inspect existing implementation patterns.
-3. Identify applicable MCP tools or Skills.
-4. Produce an implementation plan.
-5. Wait for approval before major implementation.
-6. Verify changes after implementation.
+2. Within the current session, do not reread `project-context.md` unless I indicate it has changed.
+3. Inspect existing implementation patterns.
+4. Identify applicable MCP tools or Skills.
+5. Produce an implementation plan.
+6. Wait for approval before major implementation.
+7. Verify changes after implementation.
 ---
 ## Architecture
 Always follow:
@@ -58,5 +62,5 @@ Prioritize:
 2. Maintainability
 3. Consistency
 4. Reusability
-5. Adapt based from my coding pattern.
+5. Follow the existing coding patterns of this repository.
 Build systems, not one-off solutions.
