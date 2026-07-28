@@ -14,9 +14,14 @@ import type { TeacherListItem } from "@/schemas";
 interface TeacherActionsProps {
   teacher: TeacherListItem;
   onEdit: (teacher: TeacherListItem) => void;
+  onDeactivate: (teacher: TeacherListItem) => void;
 }
 
-export function TeacherActions({ teacher, onEdit }: TeacherActionsProps) {
+export function TeacherActions({
+  teacher,
+  onEdit,
+  onDeactivate,
+}: TeacherActionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -39,6 +44,15 @@ export function TeacherActions({ teacher, onEdit }: TeacherActionsProps) {
           }}
         >
           Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="text-destructive"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDeactivate(teacher);
+          }}
+        >
+          Deactivate
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

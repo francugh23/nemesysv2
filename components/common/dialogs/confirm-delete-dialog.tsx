@@ -25,7 +25,10 @@ interface ConfirmDeleteDialogProps {
   itemName: string;
   inputValue: string;
   onInputChange: (value: string) => void;
+  canConfirm?: boolean;
   isDeleting?: boolean;
+  actionLabel?: string;
+  processingLabel?: string;
   onConfirm: () => void;
 }
 
@@ -40,10 +43,13 @@ export function ConfirmDeleteDialog({
   itemName,
   inputValue,
   onInputChange,
+  canConfirm,
   isDeleting = false,
+  actionLabel = "Delete",
+  processingLabel = "Deleting...",
   onConfirm,
 }: ConfirmDeleteDialogProps) {
-  const isConfirmed = inputValue === confirmValue;
+  const isConfirmed = canConfirm ?? inputValue === confirmValue;
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -83,7 +89,7 @@ export function ConfirmDeleteDialog({
             }}
             className="w-full text-white bg-destructive hover:bg-destructive/90 sm:w-auto"
           >
-            {isDeleting ? "Deleting..." : "Delete"}
+            {isDeleting ? processingLabel : actionLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

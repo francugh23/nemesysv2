@@ -31,6 +31,8 @@ Implement the remaining Teacher Module capabilities following the architecture e
 ✅ Phase 6A – Teacher Module Foundation
 ✅ Phase 6B – Teacher Creation
 ✅ Phase 6C – Teacher View & Edit
+✅ Phase 6D – Teacher Deactivation
+✅ Teacher CRUD Module
 ✅ Repository production build verification (`npm run build`)
 ## Next Planned Milestone
 To be determined.

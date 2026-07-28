@@ -6,6 +6,7 @@ import {
   createTeacher,
   findTeacherById,
   findTeachers,
+  softDeleteTeacher,
   updateTeacher,
 } from "@/repositories/teacher.repository";
 import {
@@ -171,5 +172,46 @@ export async function updateTeacherService(
     );
 
     return updatedTeacher;
+  });
+}
+
+export async function deactivateTeacherService(id: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized.");
+  }
+
+  const teacher = await findTeacherById(id);
+
+  if (!teacher) {
+    throw new Error("Teacher not found.");
+  }
+
+  return prisma.$transaction(async (transaction) => {
+    const deactivatedTeacher = await softDeleteTeacher(teacher.id, transaction);
+    const user = await updateUser(
+      teacher.userId,
+      {
+        status: "INACTIVE",
+      },
+      transaction,
+    );
+
+    await createAuditLogs(
+      [
+        {
+          userId: session.user.id,
+          action: "DEACTIVATE",
+          module: "Teacher",
+          recordId: deactivatedTeacher.id,
+          recordName: `${user.lastName}, ${user.firstName}`,
+          description: "Deactivated teacher account",
+        },
+      ],
+      transaction,
+    );
+
+    return deactivatedTeacher;
   });
 }

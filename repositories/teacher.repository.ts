@@ -73,3 +73,17 @@ export async function updateTeacher(
     data,
   });
 }
+
+export async function softDeleteTeacher(
+  id: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).teacher.update({
+    where: {
+      id,
+    },
+    data: {
+      deletedAt: new Date(),
+    },
+  });
+}

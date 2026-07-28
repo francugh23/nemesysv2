@@ -5,6 +5,7 @@ import * as z from "zod";
 import { CreateTeacherSchema, UpdateTeacherSchema } from "@/schemas";
 import {
   createTeacherService,
+  deactivateTeacherService,
   getTeachers,
   updateTeacherService,
 } from "@/services/teacher.service";
@@ -61,6 +62,28 @@ export async function updateTeacherAction(
 
     return {
       success: "Teacher updated successfully.",
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        error: error.message,
+      };
+    }
+
+    return {
+      error: "Something went wrong.",
+    };
+  }
+}
+
+export async function deactivateTeacherAction(
+  id: string,
+): Promise<ActionResponse> {
+  try {
+    await deactivateTeacherService(id);
+
+    return {
+      success: "Teacher deactivated successfully.",
     };
   } catch (error) {
     if (error instanceof Error) {

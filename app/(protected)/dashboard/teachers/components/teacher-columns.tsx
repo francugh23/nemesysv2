@@ -10,10 +10,12 @@ import { TeacherActions } from "./teacher-actions";
 
 interface TeacherColumnProps {
   onEdit: (teacher: TeacherListItem) => void;
+  onDeactivate: (teacher: TeacherListItem) => void;
 }
 
 export function teacherColumns({
   onEdit,
+  onDeactivate,
 }: TeacherColumnProps): ColumnDef<TeacherListItem>[] {
   return [
   {
@@ -88,7 +90,11 @@ export function teacherColumns({
     {
       id: "actions",
       cell: ({ row }) => (
-        <TeacherActions teacher={row.original} onEdit={onEdit} />
+        <TeacherActions
+          teacher={row.original}
+          onEdit={onEdit}
+          onDeactivate={onDeactivate}
+        />
       ),
     },
   ];
