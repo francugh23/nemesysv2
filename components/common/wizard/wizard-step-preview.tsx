@@ -1,10 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import * as XLSX from "xlsx";
-
-import { normalizeStudentImportRow } from "@/lib/student-import-normalizer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import {
@@ -18,36 +13,10 @@ import {
 
 interface WizardStepPreviewProps {
   file: File | null;
-  onRowsLoaded: (rows: Record<string, unknown>[]) => void;
+  rows: Record<string, unknown>[];
 }
 
-export function WizardStepPreview({ file, onRowsLoaded }: WizardStepPreviewProps) {
-  const [rows, setRows] = useState<Record<string, unknown>[]>([]);
-
-  useEffect(() => {
-    if (!file) {
-      setRows([]);
-      return;
-    }
-
-    async function readFile() {
-      if (!file) return;
-
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer);
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      // Remove SheetJS internal metadata (__rowNum__) for Server Action compatibility.
-      const data = XLSX.utils
-        .sheet_to_json<Record<string, unknown>>(worksheet)
-        .map((row) => normalizeStudentImportRow({ ...row }));
-      const previewRows = data.slice(0, 10);
-      setRows(previewRows);
-      onRowsLoaded(data);
-    }
-
-    readFile();
-  }, [file]);
+export function WizardStepPreview({ file, rows }: WizardStepPreviewProps) {
 
   if (!file) {
     return (
@@ -65,7 +34,8 @@ export function WizardStepPreview({ file, onRowsLoaded }: WizardStepPreviewProps
     );
   }
 
-  const headers = Object.keys(rows[0]);
+  const previewRows = rows.slice(0, 10);
+  const headers = Object.keys(previewRows[0]);
 
   return (
     <div className="space-y-4">
@@ -73,7 +43,7 @@ export function WizardStepPreview({ file, onRowsLoaded }: WizardStepPreviewProps
         <h3 className="font-semibold">Preview</h3>
 
         <p className="text-sm text-muted-foreground">
-          Showing first {rows.length} records.
+          Showing first {previewRows.length} records.
         </p>
       </div>
 
@@ -88,7 +58,7 @@ export function WizardStepPreview({ file, onRowsLoaded }: WizardStepPreviewProps
           </TableHeader>
 
           <TableBody>
-            {rows.map((row, index) => (
+            {previewRows.map((row, index) => (
               <TableRow key={index}>
                 {headers.map((header) => (
                   <TableCell key={header}>

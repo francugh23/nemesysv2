@@ -52,6 +52,30 @@ export async function createSubject(
   });
 }
 
+export async function findActiveSubjectsByIdentities(
+  identities: {
+    code: string;
+    gradeLevel: string;
+    trackStrand: string | null;
+  }[],
+) {
+  if (identities.length === 0) {
+    return [];
+  }
+
+  return prisma.subject.findMany({
+    where: {
+      deletedAt: null,
+      OR: identities,
+    },
+    select: {
+      code: true,
+      gradeLevel: true,
+      trackStrand: true,
+    },
+  });
+}
+
 export async function findSubjectById(id: string) {
   return prisma.subject.findFirst({
     where: {

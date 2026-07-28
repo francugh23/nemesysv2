@@ -21,8 +21,10 @@ const HEADER_ALIASES: Record<string, string> = {
   guardiancontact: "guardianContact",
 };
 
-function normalizeHeader(header: string) {
-  return header.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+export function normalizeStudentImportHeader(header: string) {
+  return HEADER_ALIASES[
+    header.trim().toLowerCase().replace(/[^a-z0-9]/g, "")
+  ];
 }
 
 function normalizeString(value: unknown) {
@@ -64,7 +66,7 @@ function normalizeDateOfBirth(value: unknown) {
 export function normalizeStudentImportRow(row: Record<string, unknown>) {
   const mappedRow = Object.entries(row).reduce<Record<string, unknown>>(
     (normalizedRow, [header, value]) => {
-      const field = HEADER_ALIASES[normalizeHeader(header)];
+      const field = normalizeStudentImportHeader(header);
 
       if (field) {
         normalizedRow[field] = value;

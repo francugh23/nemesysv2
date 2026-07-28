@@ -1,11 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import {
-  validateStudentImport,
-  ImportValidationError,
-} from "@/lib/student-import-validator";
+import type { ImportValidationResult } from "@/types/import";
 
 import {
   Table,
@@ -17,33 +12,11 @@ import {
 } from "@/components/ui/table";
 
 interface WizardStepValidationProps {
-  rows: Record<string, unknown>[];
-
-  onValidation: (result: {
-    valid: boolean;
-    errors: ImportValidationError[];
-  }) => void;
-
-  onValidRows: (rows: Record<string, unknown>[]) => void;
+  result: ImportValidationResult;
 }
 
-export function WizardStepValidation({
-  rows,
-  onValidation,
-  onValidRows,
-}: WizardStepValidationProps) {
-  const [errors, setErrors] = useState<ImportValidationError[]>([]);
-
-  useEffect(() => {
-    const result = validateStudentImport(rows);
-
-    setErrors(result.errors);
-
-    onValidation(result);
-    if (result.valid) {
-      onValidRows(rows);
-    }
-  }, [rows, onValidation]);
+export function WizardStepValidation({ result }: WizardStepValidationProps) {
+  const { errors } = result;
 
   if (errors.length === 0) {
     return (

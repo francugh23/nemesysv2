@@ -20,7 +20,7 @@ import {
   StudentDialogManager,
   StudentDialogType,
 } from "./components/student-dialog-manager";
-import { WizardDemo } from "@/components/common/wizard/wizard-demo";
+import { StudentImportDialog } from "./components/student-import-dialog";
 
 export default function StudentsPage() {
   const { data, isLoading } = useStudents();
@@ -44,7 +44,7 @@ export default function StudentsPage() {
   );
   return (
     <div className="space-y-6 p-6">
-      <WizardDemo />
+      <StudentImportDialog />
       <Card>
         <CardHeader>
           <CardTitle>Student Records</CardTitle>

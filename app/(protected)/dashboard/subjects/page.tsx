@@ -14,6 +14,7 @@ import type { SubjectListItem } from "@/schemas";
 import { useMemo, useState } from "react";
 
 import { CreateSubjectDialog } from "./components/create-subject-dialog";
+import { SubjectImportDialog } from "./components/subject-import-dialog";
 import {
   SubjectDialogManager,
   SubjectDialogType,
@@ -54,7 +55,8 @@ export default function SubjectsPage() {
         </CardHeader>
 
         <CardContent>
-          <div className="mb-4 flex justify-end">
+          <div className="mb-4 flex justify-end gap-2">
+            <SubjectImportDialog />
             <CreateSubjectDialog />
           </div>
 

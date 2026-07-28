@@ -1,15 +1,9 @@
 import { CreateStudentSchema } from "@/schemas";
-
-export interface ImportValidationError {
-  row: number;
-  field?: string;
-  message: string;
-}
-
-export interface ImportValidationResult {
-  valid: boolean;
-  errors: ImportValidationError[];
-}
+import type {
+  ImportValidationError,
+  ImportValidationResult,
+} from "@/types/import";
+import { normalizeStudentImportHeader } from "./student-import-normalizer";
 
 const REQUIRED_FIELDS = [
   "lrn",
@@ -23,6 +17,7 @@ const REQUIRED_FIELDS = [
 
 export function validateStudentImport(
   rows: Record<string, unknown>[],
+  headers: string[] = Object.keys(rows[0] ?? {}),
 ): ImportValidationResult {
   const errors: ImportValidationError[] = [];
 
@@ -38,10 +33,12 @@ export function validateStudentImport(
     };
   }
 
-  const headers = Object.keys(rows[0]);
+  const normalizedHeaders = new Set(
+    headers.map((header) => normalizeStudentImportHeader(header)).filter(Boolean),
+  );
 
   for (const field of REQUIRED_FIELDS) {
-    if (!headers.includes(field)) {
+    if (!normalizedHeaders.has(field)) {
       errors.push({
         row: 0,
         field,

@@ -38,6 +38,7 @@ Implement the remaining Subject Module capabilities following the established mo
 ✅ Phase 7C – Subject View & Edit
 ✅ Phase 7C.5 – Subject Identity Correction
 ✅ Phase 7D – Subject Archive
+✅ Phase 7E – Subject Import
 ✅ Repository production build verification (`npm run build`)
 ## Subject Identity Rules
 - Active Subjects use a null-safe normalized identity: code, grade level, and track/strand.
@@ -50,6 +51,13 @@ Implement the remaining Subject Module capabilities following the established mo
 - Subjects with active SubjectAssignments cannot be archived.
 - Grades, historical SubjectAssignments, and audit history are preserved when a Subject is archived.
 - Archive actions create audit logs.
+## Subject Import Rules
+- Phase 7E – Subject Import is complete.
+- The generic ImportWizard, spreadsheet parser, validation types, and wizard presentation components are reusable shared infrastructure.
+- Student Import was migrated to the shared import framework through a Student feature wrapper.
+- Subject Import uses the shared framework through a Subject feature wrapper with Subject-specific normalization, validation, server action, service, and repository behavior.
+- Subject imports reuse normalized Subject identity rules, reject duplicate identities within the file, skip active identity collisions, and allow identities that match archived Subjects as new active records.
+- Subject persistence and per-Subject audit logging are transactional; successful imports invalidate `['subjects']`.
 ## Next Planned Milestone
 To be determined.
 # Technology Stack

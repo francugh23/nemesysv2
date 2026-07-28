@@ -1,7 +1,10 @@
 import { auth } from "@/auth";
 import { Prisma } from "@/app/generated/prisma/client";
 import prisma from "@/lib/prisma";
-import { normalizeSubjectIdentity } from "@/lib/subject-identity";
+import {
+  getSubjectIdentityKey,
+  normalizeSubjectIdentity,
+} from "@/lib/subject-identity";
 import { createAuditLogs } from "@/repositories/audit.repository";
 import {
   createSubject,
@@ -10,6 +13,7 @@ import {
   findSubjectById,
   findSubjectByIdentity,
   findSubjects,
+  findActiveSubjectsByIdentities,
   hasActiveSubjectAssignments,
   archiveSubject,
   updateSubject,
@@ -141,6 +145,91 @@ export async function updateSubjectService(
 
       return updatedSubject;
     });
+  } catch (error) {
+    rethrowSubjectIdentityConflict(error);
+  }
+}
+
+export async function importSubjectsService(
+  values: z.infer<typeof CreateSubjectSchema>[],
+) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized.");
+  }
+
+  const identities = values.map((subject) => normalizeSubjectIdentity(subject));
+  const identityKeys = new Set<string>();
+
+  for (const identity of identities) {
+    const identityKey = getSubjectIdentityKey(identity);
+
+    if (identityKeys.has(identityKey)) {
+      throw new Error("Duplicate Subject identity in import data.");
+    }
+
+    identityKeys.add(identityKey);
+  }
+
+  const existingSubjects = await findActiveSubjectsByIdentities(identities);
+  const existingIdentityKeys = new Set(
+    existingSubjects.map((subject) =>
+      getSubjectIdentityKey(normalizeSubjectIdentity(subject)),
+    ),
+  );
+  const subjectsToCreate = values.filter(
+    (subject) =>
+      !existingIdentityKeys.has(
+        getSubjectIdentityKey(normalizeSubjectIdentity(subject)),
+      ),
+  );
+
+  if (subjectsToCreate.length === 0) {
+    return {
+      importedCount: 0,
+      skippedCount: values.length,
+    };
+  }
+
+  try {
+    const createdSubjects = await prisma.$transaction(async (transaction) => {
+      const subjects = [];
+
+      for (const subject of subjectsToCreate) {
+        const identity = normalizeSubjectIdentity(subject);
+        const createdSubject = await createSubject(
+          {
+            ...identity,
+            description: subject.description,
+            semester: subject.semester ?? null,
+            createdById: session.user.id,
+          },
+          transaction,
+        );
+
+        subjects.push(createdSubject);
+      }
+
+      await createAuditLogs(
+        subjects.map((subject) => ({
+          userId: session.user.id,
+          action: "CREATE",
+          module: "Subject",
+          recordId: subject.id,
+          recordName: subject.code,
+          description: "Imported subject",
+        })),
+        transaction,
+      );
+
+      return subjects;
+    });
+
+    return {
+      importedCount: createdSubjects.length,
+      skippedCount: values.length - createdSubjects.length,
+    };
   } catch (error) {
     rethrowSubjectIdentityConflict(error);
   }

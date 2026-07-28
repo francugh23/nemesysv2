@@ -1,47 +1,41 @@
-# ImportDialog
+# Import Wizard
 
 ## Purpose
 
-Reusable wizard dialog used for importing data into NEMESYS.
+Reusable import workflow for importing data into NEMESYS.
 
 ## Responsibilities
 
-- Open and close the import wizard.
-- Maintain the current wizard step.
-- Reset the wizard when closed.
-- Provide a consistent layout for every import flow.
+- Parse the first worksheet from XLSX and CSV files.
+- Preview normalized records.
+- Present feature-provided validation results.
+- Provide a consistent multi-step layout for every import flow.
+- Invalidate the feature-provided React Query key after a successful import.
 
 ## Does NOT
 
-- Parse Excel files.
-- Parse CSV files.
-- Validate records.
-- Import records.
-- Display business-specific information.
+- Define domain normalization rules.
+- Define domain validation rules.
+- Persist records.
+- Decide duplicate or authorization behavior.
 
 ## Used By
 
 - Students
-- Teachers
-- Users
 - Subjects
-- Sections
-- Class Assignments
+- Future feature-specific import wrappers
 
 ## Internal State
 
-Maintains:
+Maintains the selected file, parsed rows, and wizard state.
 
-- Current Step Index
-
-Receives:
-
-- Array of ImportStep
+Receives feature configuration for the entity label, row normalizer, row
+validator, server action, and React Query key.
 
 Displays:
 
-- Current Step Header
-- Current Step Content
+- Current WizardStep header
+- Current WizardStep content
 
 ## Navigation
 
@@ -53,10 +47,8 @@ Provides:
 
 Maintains:
 
-- Current step index
-
 Automatically:
 
 - Prevents going before the first step.
 - Prevents going past the final step.
-- Resets to step 1 whenever the dialog closes.
+- Resets file and parsed-row state whenever the dialog closes.

@@ -20,9 +20,18 @@ Reusable multi-step workflow engine for NEMESYS.
 
 ## Used By
 
-- Import Wizard
+- ImportWizard
 - Enrollment Wizard
 - Promotion Wizard
 - Graduation Wizard
 - Teacher Assignment Wizard
 - Future multi-step workflows
+
+## ImportWizard
+
+`components/common/import/ImportWizard` composes the generic wizard shell with
+shared spreadsheet parsing, preview, validation presentation, summary, and
+React Query refresh behavior. Feature wrappers provide the entity label,
+normalizer, validator, import action, and query key.
+
+Student and Subject import domain rules remain feature-specific.

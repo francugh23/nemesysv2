@@ -1,15 +1,17 @@
 "use client";
 
 import { Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 
 interface WizardStepUploadProps {
+  entityLabel: string;
   file: File | null;
   onFileChange: (file: File | null) => void;
 }
 
 export function WizardStepUpload({
+  entityLabel,
   file,
   onFileChange,
 }: WizardStepUploadProps) {
@@ -22,7 +24,7 @@ export function WizardStepUpload({
       </div>
 
       <div className="space-y-2 text-center">
-        <h3 className="text-lg font-semibold">Upload Student File</h3>
+        <h3 className="text-lg font-semibold">Upload {entityLabel} File</h3>
 
         <p className="text-sm text-muted-foreground">
           Drag and drop your Excel or CSV file here, or browse your computer.
