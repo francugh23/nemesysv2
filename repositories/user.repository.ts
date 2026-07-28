@@ -41,3 +41,16 @@ export async function createUser(
     data,
   });
 }
+
+export async function updateUser(
+  id: string,
+  data: Prisma.UserUpdateInput,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).user.update({
+    where: {
+      id,
+    },
+    data,
+  });
+}

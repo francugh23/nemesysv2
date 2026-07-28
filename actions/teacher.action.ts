@@ -2,10 +2,11 @@
 
 import * as z from "zod";
 
-import { CreateTeacherSchema } from "@/schemas";
+import { CreateTeacherSchema, UpdateTeacherSchema } from "@/schemas";
 import {
   createTeacherService,
   getTeachers,
+  updateTeacherService,
 } from "@/services/teacher.service";
 import { ActionResponse } from "@/types/action-response";
 
@@ -29,6 +30,37 @@ export async function createTeacherAction(
 
     return {
       success: "Teacher created successfully.",
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        error: error.message,
+      };
+    }
+
+    return {
+      error: "Something went wrong.",
+    };
+  }
+}
+
+export async function updateTeacherAction(
+  id: string,
+  values: z.infer<typeof UpdateTeacherSchema>,
+): Promise<ActionResponse> {
+  const validatedFields = UpdateTeacherSchema.safeParse(values);
+
+  if (!validatedFields.success) {
+    return {
+      error: "Invalid fields.",
+    };
+  }
+
+  try {
+    await updateTeacherService(id, validatedFields.data);
+
+    return {
+      success: "Teacher updated successfully.",
     };
   } catch (error) {
     if (error instanceof Error) {

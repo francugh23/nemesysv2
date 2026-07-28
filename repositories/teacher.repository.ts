@@ -47,3 +47,29 @@ export async function createTeacher(
     data,
   });
 }
+
+export async function findTeacherById(id: string) {
+  return prisma.teacher.findFirst({
+    where: {
+      id,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      userId: true,
+    },
+  });
+}
+
+export async function updateTeacher(
+  id: string,
+  data: Prisma.TeacherUpdateInput,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).teacher.update({
+    where: {
+      id,
+    },
+    data,
+  });
+}

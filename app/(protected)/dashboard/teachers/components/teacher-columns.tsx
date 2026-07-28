@@ -6,8 +6,16 @@ import { GenderBadge } from "@/components/common/badges";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Badge } from "@/components/ui/badge";
 import type { TeacherListItem } from "@/schemas";
+import { TeacherActions } from "./teacher-actions";
 
-export const teacherColumns: ColumnDef<TeacherListItem>[] = [
+interface TeacherColumnProps {
+  onEdit: (teacher: TeacherListItem) => void;
+}
+
+export function teacherColumns({
+  onEdit,
+}: TeacherColumnProps): ColumnDef<TeacherListItem>[] {
+  return [
   {
     accessorKey: "user.employeeNumber",
     header: ({ column }) => (
@@ -77,4 +85,11 @@ export const teacherColumns: ColumnDef<TeacherListItem>[] = [
       </Badge>
     ),
   },
-];
+    {
+      id: "actions",
+      cell: ({ row }) => (
+        <TeacherActions teacher={row.original} onEdit={onEdit} />
+      ),
+    },
+  ];
+}
