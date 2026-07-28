@@ -22,7 +22,9 @@ export async function findAuditLogs() {
     include: {
       user: {
         select: {
-          name: true,
+          firstName: true,
+          middleName: true,
+          lastName: true,
           username: true,
           role: true,
         },
