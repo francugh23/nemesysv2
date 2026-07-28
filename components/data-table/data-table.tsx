@@ -81,8 +81,6 @@ export function DataTable<TData, TValue>({
   }, [table, tableRef]);
 
   const totalRows = table.getFilteredRowModel().rows.length;
-  const pageIndex = table.getState().pagination.pageIndex;
-  const pageSize = table.getState().pagination.pageSize;
 
   return (
     <div className="space-y-4">
@@ -107,7 +105,7 @@ export function DataTable<TData, TValue>({
           </TableHeader>
           <TableBody>
             {table.getFilteredRowModel().rows.length > 0 ? (
-              table.getFilteredRowModel().rows.map((row) => (
+              table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
                   className={cn(
@@ -162,7 +160,7 @@ export function DataTable<TData, TValue>({
             <span className="font-medium">
               {table.getRowModel().rows.length}
             </span>{" "}
-            of <span className="font-medium">{data.length}</span> records
+            of <span className="font-medium">{totalRows}</span> records
           </p>
 
           <div className="flex items-center gap-4">

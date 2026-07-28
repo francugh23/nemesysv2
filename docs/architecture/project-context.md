@@ -20,9 +20,9 @@ It is not intended to be a historical development log.
 Whenever a milestone is completed, this document should be updated so that it always reflects the current implementation.
 # Current Development Status
 ## Current Milestone
-Phase 7 – Subject Module
+Phase 8 – Subject Assignment Module
 ## Current Objective
-Implement the remaining Subject Module capabilities following the established module architecture.
+Implement the Subject Assignment Module following the established module architecture.
 ## Completed Milestones
 ✅ Student CRUD
 ✅ Student Module UI
@@ -41,6 +41,8 @@ Implement the remaining Subject Module capabilities following the established mo
 ✅ Phase 7E – Subject Import
 ✅ Phase 7F – CRUD Toolbar Standardisation
 ✅ Phase 7F.1 – CRUD Toolbar Layout Refinement
+✅ Phase 8A – Subject Assignment Foundation
+✅ Phase 8A.1 – Shared DataTable Sorting Fix
 ✅ Repository production build verification (`npm run build`)
 ## Subject Identity Rules
 - Active Subjects use a null-safe normalized identity: code, grade level, and track/strand.
@@ -69,8 +71,20 @@ Implement the remaining Subject Module capabilities following the established mo
 - Subject actions are Import Subject and Add Subject; Teacher exposes only Add Teacher.
 - Import dialogs use custom inline button triggers and retain their default trigger behavior when no trigger is supplied.
 - Existing business logic, server actions, repositories, services, validation, audit logging, and React Query behavior remain unchanged.
+## Shared DataTable Rules
+- Phase 8A.1 – Shared DataTable Sorting Fix is complete.
+- DataTable renders visible rows through `table.getRowModel().rows`, so filtering, sorting, and pagination operate together for Students, Teachers, Subjects, and Subject Assignments.
+- Empty-state behavior continues to use filtered-row state.
+- Student export intentionally uses `table.getFilteredRowModel().rows` so it includes all filtered records rather than only the current page.
+## Subject Assignment Foundation
+- Phase 8A – Subject Assignment Foundation is complete.
+- The read path is schema → repository → service → server action → React Query hook → page.
+- The read-only Assignment page is available at `/dashboard/assignments`.
+- The flat read model includes Teacher employee number and full name; Subject code and description; Section grade level, track/strand, and section name; and academic year.
+- The page uses the shared DataTable, sortable DataTableColumnHeader columns, and a dedicated loading skeleton.
+- Subject Assignment remains read-only. No Assignment CRUD, import/export, scheduling, curriculum, grades, attendance, or assignment validation/eligibility logic exists yet.
 ## Next Planned Milestone
-To be determined.
+Phase 8B – Subject Assignment Creation
 # Technology Stack
 ## Framework
 - Next.js (App Router)
