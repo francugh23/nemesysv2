@@ -1,4 +1,36 @@
 import prisma from "@/lib/prisma";
+import { Prisma } from "@/app/generated/prisma/client";
+
+interface SubjectAssignmentIdentity {
+  teacherId: string;
+  subjectId: string;
+  sectionId: string;
+  academicYear: string;
+}
+
+export async function findActiveSubjectAssignment(
+  identity: SubjectAssignmentIdentity,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).subjectAssignment.findFirst({
+    where: {
+      ...identity,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+    },
+  });
+}
+
+export async function createSubjectAssignment(
+  data: Prisma.SubjectAssignmentUncheckedCreateInput,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).subjectAssignment.create({
+    data,
+  });
+}
 
 export async function findAllSubjectAssignments() {
   return prisma.subjectAssignment.findMany({

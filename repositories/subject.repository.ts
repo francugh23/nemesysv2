@@ -113,6 +113,8 @@ export async function findActiveSubjectById(
     select: {
       id: true,
       code: true,
+      gradeLevel: true,
+      trackStrand: true,
     },
   });
 }

@@ -20,9 +20,9 @@ It is not intended to be a historical development log.
 Whenever a milestone is completed, this document should be updated so that it always reflects the current implementation.
 # Current Development Status
 ## Current Milestone
-Phase 8 – Subject Assignment Module
+Architectural Improvement Sprint – AI Infrastructure
 ## Current Objective
-Implement the Subject Assignment Module following the established module architecture.
+Maintain the completed AI operating infrastructure while Subject Assignment feature work remains frozen pending explicit approval.
 ## Completed Milestones
 ✅ Student CRUD
 ✅ Student Module UI
@@ -43,7 +43,14 @@ Implement the Subject Assignment Module following the established module archite
 ✅ Phase 7F.1 – CRUD Toolbar Layout Refinement
 ✅ Phase 8A – Subject Assignment Foundation
 ✅ Phase 8A.1 – Shared DataTable Sorting Fix
+✅ Architectural Improvement Sprint – AI Infrastructure
 ✅ Repository production build verification (`npm run build`)
+## AI Development Infrastructure
+- The repository-level `AGENTS.md` is the AI operating manual and defines resource loading, approval gates, architecture, data policy, MCP-first verification, documentation, verification, and Git workflows.
+- `.ai/context/architecture.md` contains stable architectural principles only; evolving implementation state remains in this document.
+- `.ai/skills/` contains focused references for the project's framework, UI, data, layering, lifecycle, planning, verification, and investigation practices.
+- `.ai/prompts/` is reserved for reusable workflows that reference current context instead of duplicating it.
+- Third-party API proposals must be verified through an available authoritative MCP, with official documentation, installed types/source, or CLI output used as an explicit fallback.
 ## Subject Identity Rules
 - Active Subjects use a null-safe normalized identity: code, grade level, and track/strand.
 - Subject codes and track/strand values are trimmed and stored uppercase; grade levels use canonical values `7` through `12`; blank and null track/strand values are equivalent.
@@ -82,9 +89,14 @@ Implement the Subject Assignment Module following the established module archite
 - The read-only Assignment page is available at `/dashboard/assignments`.
 - The flat read model includes Teacher employee number and full name; Subject code and description; Section grade level, track/strand, and section name; and academic year.
 - The page uses the shared DataTable, sortable DataTableColumnHeader columns, and a dedicated loading skeleton.
-- Subject Assignment remains read-only. No Assignment CRUD, import/export, scheduling, curriculum, grades, attendance, or assignment validation/eligibility logic exists yet.
+- Phase 8B – Subject Assignment Creation implementation is present but feature work is frozen pending explicit approval to resume stabilization.
+- Assignment creation uses the schema → action → service → repository path, with React Query invalidation for `['subject-assignments']` after successful creation.
+- The Create Assignment dialog uses reusable searchable selectors for active Teachers, Subjects, and Sections.
+- Creation requires an authenticated user, active related records, matching Subject and Section grade levels, and matching track/strand when the Subject specifies one.
+- Active duplicate Teacher + Subject + Section + academic year assignments are rejected; creation and CREATE audit logging are transactional.
+- Assignment edit, archive, import/export, scheduling, room, shift, timetable, curriculum, grades, and attendance remain out of scope.
 ## Next Planned Milestone
-Phase 8B – Subject Assignment Creation
+Resume Phase 8B – Subject Assignment Creation stabilization only after explicit approval.
 # Technology Stack
 ## Framework
 - Next.js (App Router)

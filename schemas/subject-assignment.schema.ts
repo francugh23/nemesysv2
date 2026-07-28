@@ -1,5 +1,12 @@
 import * as z from "zod";
 
+export const CreateSubjectAssignmentSchema = z.object({
+  teacherId: z.string().min(1, "Teacher is required."),
+  subjectId: z.string().min(1, "Subject is required."),
+  sectionId: z.string().min(1, "Section is required."),
+  academicYear: z.string().trim().min(1, "Academic year is required."),
+});
+
 export const SubjectAssignmentListItemSchema = z.object({
   id: z.string(),
   teacherId: z.string(),

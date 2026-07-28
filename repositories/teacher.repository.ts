@@ -61,6 +61,72 @@ export async function findTeacherById(id: string) {
   });
 }
 
+export async function findActiveTeacherForAssignment(
+  id: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).teacher.findFirst({
+    where: {
+      id,
+      deletedAt: null,
+      user: {
+        is: {
+          deletedAt: null,
+          status: "ACTIVE",
+        },
+      },
+    },
+    select: {
+      id: true,
+      user: {
+        select: {
+          employeeNumber: true,
+          firstName: true,
+          middleName: true,
+          lastName: true,
+        },
+      },
+    },
+  });
+}
+
+export async function findActiveTeachersForAssignment() {
+  return prisma.teacher.findMany({
+    where: {
+      deletedAt: null,
+      user: {
+        is: {
+          deletedAt: null,
+          status: "ACTIVE",
+        },
+      },
+    },
+    select: {
+      id: true,
+      user: {
+        select: {
+          employeeNumber: true,
+          firstName: true,
+          middleName: true,
+          lastName: true,
+        },
+      },
+    },
+    orderBy: [
+      {
+        user: {
+          lastName: "asc",
+        },
+      },
+      {
+        user: {
+          firstName: "asc",
+        },
+      },
+    ],
+  });
+}
+
 export async function updateTeacher(
   id: string,
   data: Prisma.TeacherUpdateInput,
