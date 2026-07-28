@@ -53,6 +53,7 @@ Maintain the completed AI operating infrastructure while Subject Assignment feat
 - `.ai/prompts/` is reserved for reusable workflows that reference current context instead of duplicating it.
 - Third-party API proposals must be verified through an available authoritative MCP, with official documentation, installed types/source, or CLI output used as an explicit fallback.
 - The Knowledge Promotion workflow preserves reusable implementation learning in repository documentation before conversation compaction or transition to another approved phase.
+- Project knowledge continuously migrates from conversation history into repository documentation: the repository is long-term project memory, while conversation history is short-term working memory.
 ## Subject Identity Rules
 - Active Subjects use a null-safe normalized identity: code, grade level, and track/strand.
 - Subject codes and track/strand values are trimmed and stored uppercase; grade levels use canonical values `7` through `12`; blank and null track/strand values are equivalent.
@@ -94,6 +95,9 @@ Maintain the completed AI operating infrastructure while Subject Assignment feat
 - Phase 8B – Subject Assignment Creation implementation is present but feature work is frozen pending explicit approval to resume stabilization.
 - Assignment creation uses the schema → action → service → repository path, with React Query invalidation for `['subject-assignments']` after successful creation.
 - The Create Assignment dialog uses reusable searchable selectors for active Teachers, Subjects, and Sections.
+- Searchable selectors keep primitive string IDs as their public, React Hook Form, and Base UI Combobox values; option objects are used only to resolve labels and filtering text.
+- `SubjectAssignmentForm` uses React Hook Form `Controller` bindings instead of `form.watch` and `form.setValue` adapters, isolating controlled-field subscription and mutation lifecycles during dropdown selection and popup unmount; live Teacher and Subject selections retain their labels and IDs.
+- End-to-end creation remains unverified because no Section options are currently available in the form.
 - Creation requires an authenticated user, active related records, matching Subject and Section grade levels, and matching track/strand when the Subject specifies one.
 - Active duplicate Teacher + Subject + Section + academic year assignments are rejected; creation and CREATE audit logging are transactional.
 - Assignment edit, archive, import/export, scheduling, room, shift, timetable, curriculum, grades, and attendance remain out of scope.

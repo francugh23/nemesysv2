@@ -32,16 +32,29 @@ export function SearchableSelect({
   disabled = false,
   className,
 }: SearchableSelectProps) {
-  const selectedOption = options.find((option) => option.value === value) ?? null;
+  const optionsByValue = new Map(
+    options.map((option) => [option.value, option]),
+  );
+  const optionValues = options.map((option) => option.value);
+
+  function getOptionLabel(optionValue: string) {
+    return optionsByValue.get(optionValue)?.label ?? "";
+  }
+
+  function filterOption(optionValue: string, query: string) {
+    const option = optionsByValue.get(optionValue);
+    const searchText = `${option?.label ?? ""} ${option?.searchValue ?? ""}`;
+
+    return searchText.toLowerCase().includes(query.toLowerCase());
+  }
 
   return (
     <Combobox
-      items={options}
-      value={selectedOption}
-      onValueChange={(option) => onValueChange(option?.value ?? "")}
-      itemToStringValue={(option) =>
-        `${option.label} ${option.searchValue ?? ""}`
-      }
+      items={optionValues}
+      value={value ?? null}
+      onValueChange={(optionValue) => onValueChange(optionValue ?? "")}
+      itemToStringLabel={getOptionLabel}
+      filter={filterOption}
       disabled={disabled}
     >
       <ComboboxInput
@@ -53,8 +66,8 @@ export function SearchableSelect({
         <ComboboxEmpty>No matching options.</ComboboxEmpty>
         <ComboboxList>
           {(option) => (
-            <ComboboxItem key={option.value} value={option}>
-              {option.label}
+            <ComboboxItem key={option} value={option}>
+              {getOptionLabel(option)}
             </ComboboxItem>
           )}
         </ComboboxList>

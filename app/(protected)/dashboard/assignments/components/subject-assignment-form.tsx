@@ -1,6 +1,6 @@
 "use client";
 
-import type { UseFormReturn } from "react-hook-form";
+import { Controller, type UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 
 import {
@@ -64,42 +64,60 @@ export function SubjectAssignmentForm({ form }: SubjectAssignmentFormProps) {
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <Field>
         <FieldLabel>Teacher</FieldLabel>
-        <SearchableSelect
-          value={form.watch("teacherId")}
-          onValueChange={(value) =>
-            form.setValue("teacherId", value, { shouldValidate: true })
-          }
-          options={teacherOptions}
-          placeholder={isLoading ? "Loading teachers..." : "Search teachers"}
-          disabled={isLoading}
+        <Controller
+          name="teacherId"
+          control={form.control}
+          render={({ field }) => (
+            <SearchableSelect
+              value={field.value}
+              onValueChange={field.onChange}
+              options={teacherOptions}
+              placeholder={
+                isLoading ? "Loading teachers..." : "Search teachers"
+              }
+              disabled={isLoading}
+            />
+          )}
         />
         <FieldError>{form.formState.errors.teacherId?.message}</FieldError>
       </Field>
 
       <Field>
         <FieldLabel>Subject</FieldLabel>
-        <SearchableSelect
-          value={form.watch("subjectId")}
-          onValueChange={(value) =>
-            form.setValue("subjectId", value, { shouldValidate: true })
-          }
-          options={subjectOptions}
-          placeholder={isLoading ? "Loading subjects..." : "Search subjects"}
-          disabled={isLoading}
+        <Controller
+          name="subjectId"
+          control={form.control}
+          render={({ field }) => (
+            <SearchableSelect
+              value={field.value}
+              onValueChange={field.onChange}
+              options={subjectOptions}
+              placeholder={
+                isLoading ? "Loading subjects..." : "Search subjects"
+              }
+              disabled={isLoading}
+            />
+          )}
         />
         <FieldError>{form.formState.errors.subjectId?.message}</FieldError>
       </Field>
 
       <Field>
         <FieldLabel>Section</FieldLabel>
-        <SearchableSelect
-          value={form.watch("sectionId")}
-          onValueChange={(value) =>
-            form.setValue("sectionId", value, { shouldValidate: true })
-          }
-          options={sectionOptions}
-          placeholder={isLoading ? "Loading sections..." : "Search sections"}
-          disabled={isLoading}
+        <Controller
+          name="sectionId"
+          control={form.control}
+          render={({ field }) => (
+            <SearchableSelect
+              value={field.value}
+              onValueChange={field.onChange}
+              options={sectionOptions}
+              placeholder={
+                isLoading ? "Loading sections..." : "Search sections"
+              }
+              disabled={isLoading}
+            />
+          )}
         />
         <FieldError>{form.formState.errors.sectionId?.message}</FieldError>
       </Field>
