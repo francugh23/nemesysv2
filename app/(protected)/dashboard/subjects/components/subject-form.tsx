@@ -1,14 +1,8 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useQueryClient } from "@tanstack/react-query";
-import { useTransition } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import type { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 
-import { createSubjectAction } from "@/actions/subject.action";
-import { Button } from "@/components/ui/button";
 import {
   Field,
   FieldError,
@@ -24,92 +18,81 @@ import {
 } from "@/components/ui/select";
 import { CreateSubjectSchema } from "@/schemas";
 
+type SubjectFormValues = z.infer<typeof CreateSubjectSchema>;
+
 interface SubjectFormProps {
-  onSuccess?: () => void;
+  form: UseFormReturn<SubjectFormValues>;
 }
 
-export function SubjectForm({ onSuccess }: SubjectFormProps) {
-  const [isPending, startTransition] = useTransition();
-  const queryClient = useQueryClient();
-  const form = useForm<z.infer<typeof CreateSubjectSchema>>({
-    resolver: zodResolver(CreateSubjectSchema),
-    defaultValues: {
-      code: "",
-      description: "",
-      gradeLevel: "",
-      trackStrand: "",
-      semester: undefined,
-    },
-  });
-
-  function onSubmit(values: z.infer<typeof CreateSubjectSchema>) {
-    startTransition(async () => {
-      const result = await createSubjectAction(values);
-
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
-
-      toast.success(result.success);
-      await queryClient.invalidateQueries({
-        queryKey: ["subjects"],
-      });
-      form.reset();
-      onSuccess?.();
-    });
-  }
-
+export function SubjectForm({ form }: SubjectFormProps) {
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Field>
-          <FieldLabel>Subject Code</FieldLabel>
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <Field>
+        <FieldLabel>Subject Code</FieldLabel>
           <Input {...form.register("code")} />
-          <FieldError>{form.formState.errors.code?.message}</FieldError>
-        </Field>
+        <FieldError>{form.formState.errors.code?.message}</FieldError>
+      </Field>
 
-        <Field>
-          <FieldLabel>Grade Level</FieldLabel>
-          <Input {...form.register("gradeLevel")} />
-          <FieldError>{form.formState.errors.gradeLevel?.message}</FieldError>
-        </Field>
+      <Field>
+        <FieldLabel>Grade Level</FieldLabel>
+        <Select
+          value={form.watch("gradeLevel") || undefined}
+          onValueChange={(value) =>
+            form.setValue("gradeLevel", value as "7" | "8" | "9" | "10" | "11" | "12", {
+              shouldValidate: true,
+            })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select grade level" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="7">Grade 7</SelectItem>
+            <SelectItem value="8">Grade 8</SelectItem>
+            <SelectItem value="9">Grade 9</SelectItem>
+            <SelectItem value="10">Grade 10</SelectItem>
+            <SelectItem value="11">Grade 11</SelectItem>
+            <SelectItem value="12">Grade 12</SelectItem>
+          </SelectContent>
+        </Select>
+        <FieldError>{form.formState.errors.gradeLevel?.message}</FieldError>
+      </Field>
 
-        <Field className="md:col-span-2">
-          <FieldLabel>Description</FieldLabel>
-          <Input {...form.register("description")} />
-          <FieldError>{form.formState.errors.description?.message}</FieldError>
-        </Field>
+      <Field className="md:col-span-2">
+        <FieldLabel>Description</FieldLabel>
+        <Input {...form.register("description")} />
+        <FieldError>{form.formState.errors.description?.message}</FieldError>
+      </Field>
 
-        <Field>
-          <FieldLabel>Track / Strand</FieldLabel>
-          <Input {...form.register("trackStrand")} />
-        </Field>
+      <Field>
+        <FieldLabel>Track / Strand</FieldLabel>
+        <Input
+          placeholder="Leave blank for JHS or shared SHS subjects"
+          {...form.register("trackStrand")}
+        />
+        <FieldError>{form.formState.errors.trackStrand?.message}</FieldError>
+      </Field>
 
-        <Field>
-          <FieldLabel>Semester</FieldLabel>
-          <Select
-            onValueChange={(value) =>
-              form.setValue("semester", value as "FIRST" | "SECOND", {
-                shouldValidate: true,
-              })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select semester" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="FIRST">First</SelectItem>
-              <SelectItem value="SECOND">Second</SelectItem>
-            </SelectContent>
-          </Select>
-          <FieldError>{form.formState.errors.semester?.message}</FieldError>
-        </Field>
-      </div>
-
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Creating..." : "Create Subject"}
-      </Button>
-    </form>
+      <Field>
+        <FieldLabel>Semester</FieldLabel>
+        <Select
+          value={form.watch("semester") || undefined}
+          onValueChange={(value) =>
+            form.setValue("semester", value as "FIRST" | "SECOND", {
+              shouldValidate: true,
+            })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select semester" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="FIRST">First</SelectItem>
+            <SelectItem value="SECOND">Second</SelectItem>
+          </SelectContent>
+        </Select>
+        <FieldError>{form.formState.errors.semester?.message}</FieldError>
+      </Field>
+    </div>
   );
 }

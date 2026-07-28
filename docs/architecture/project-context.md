@@ -35,7 +35,14 @@ Implement the remaining Subject Module capabilities following the established mo
 ✅ Teacher CRUD Module
 ✅ Phase 7A – Subject Module Foundation
 ✅ Phase 7B – Subject Creation
+✅ Phase 7C – Subject View & Edit
+✅ Phase 7C.5 – Subject Identity Correction
 ✅ Repository production build verification (`npm run build`)
+## Subject Identity Rules
+- Active Subjects use a null-safe normalized identity: code, grade level, and track/strand.
+- Subject codes and track/strand values are trimmed and stored uppercase; grade levels use canonical values `7` through `12`; blank and null track/strand values are equivalent.
+- Grades 7 through 10 cannot have a track/strand. Grades 11 and 12 may omit one for shared/core Subjects or specify one for strand-specific Subjects.
+- The null-safe active Subject identity migration was applied successfully after the redundant ENG8 Subject was archived. No SubjectAssignments or Grades required reassignment.
 ## Next Planned Milestone
 To be determined.
 # Technology Stack

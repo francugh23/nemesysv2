@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import type { SubjectListItem } from "@/schemas";
+import { SubjectActions } from "./subject-actions";
 
 function formatSemester(semester: SubjectListItem["semester"]) {
   if (!semester) return "-";
@@ -11,7 +12,14 @@ function formatSemester(semester: SubjectListItem["semester"]) {
   return semester === "FIRST" ? "First" : "Second";
 }
 
-export const subjectColumns: ColumnDef<SubjectListItem>[] = [
+interface SubjectColumnProps {
+  onEdit: (subject: SubjectListItem) => void;
+}
+
+export function subjectColumns({
+  onEdit,
+}: SubjectColumnProps): ColumnDef<SubjectListItem>[] {
+  return [
   {
     accessorKey: "code",
     header: ({ column }) => (
@@ -44,4 +52,11 @@ export const subjectColumns: ColumnDef<SubjectListItem>[] = [
     ),
     cell: ({ row }) => formatSemester(row.original.semester),
   },
-];
+    {
+      id: "actions",
+      cell: ({ row }) => (
+        <SubjectActions subject={row.original} onEdit={onEdit} />
+      ),
+    },
+  ];
+}

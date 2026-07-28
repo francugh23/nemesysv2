@@ -185,7 +185,6 @@ model Subject {
   assignments SubjectAssignment[]
   grades      Grade[]
 
-  @@unique([code, gradeLevel, trackStrand])
 }
 
 model SubjectAssignment {

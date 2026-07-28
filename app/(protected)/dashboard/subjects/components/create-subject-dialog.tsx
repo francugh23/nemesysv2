@@ -5,7 +5,7 @@ import { useState } from "react";
 import { FormDialog } from "@/components/common/dialogs/form-dialog";
 import { Button } from "@/components/ui/button";
 
-import { SubjectForm } from "./subject-form";
+import { CreateSubjectForm } from "./create-subject-form";
 
 export function CreateSubjectDialog() {
   const [open, setOpen] = useState(false);
@@ -14,7 +14,7 @@ export function CreateSubjectDialog() {
     <>
       <Button onClick={() => setOpen(true)}>Add Subject</Button>
       <FormDialog open={open} onOpenChange={setOpen} title="Create Subject">
-        <SubjectForm onSuccess={() => setOpen(false)} />
+        <CreateSubjectForm onSuccess={() => setOpen(false)} />
       </FormDialog>
     </>
   );

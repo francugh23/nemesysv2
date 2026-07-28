@@ -2,10 +2,11 @@
 
 import * as z from "zod";
 
-import { CreateSubjectSchema } from "@/schemas";
+import { CreateSubjectSchema, UpdateSubjectSchema } from "@/schemas";
 import {
   createSubjectService,
   getSubjects,
+  updateSubjectService,
 } from "@/services/subject.service";
 import { ActionResponse } from "@/types/action-response";
 
@@ -29,6 +30,37 @@ export async function createSubjectAction(
 
     return {
       success: "Subject created successfully.",
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        error: error.message,
+      };
+    }
+
+    return {
+      error: "Something went wrong.",
+    };
+  }
+}
+
+export async function updateSubjectAction(
+  id: string,
+  values: z.infer<typeof UpdateSubjectSchema>,
+): Promise<ActionResponse> {
+  const validatedFields = UpdateSubjectSchema.safeParse(values);
+
+  if (!validatedFields.success) {
+    return {
+      error: "Invalid fields.",
+    };
+  }
+
+  try {
+    await updateSubjectService(id, validatedFields.data);
+
+    return {
+      success: "Subject updated successfully.",
     };
   } catch (error) {
     if (error instanceof Error) {

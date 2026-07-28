@@ -31,13 +31,14 @@ export async function findSubjects() {
 export async function findSubjectByIdentity(
   code: string,
   gradeLevel: string,
-  trackStrand: string,
+  trackStrand: string | null,
 ) {
   return prisma.subject.findFirst({
     where: {
       code,
       gradeLevel,
       trackStrand,
+      deletedAt: null,
     },
   });
 }
@@ -47,6 +48,31 @@ export async function createSubject(
   transaction?: Prisma.TransactionClient,
 ) {
   return (transaction ?? prisma).subject.create({
+    data,
+  });
+}
+
+export async function findSubjectById(id: string) {
+  return prisma.subject.findFirst({
+    where: {
+      id,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+    },
+  });
+}
+
+export async function updateSubject(
+  id: string,
+  data: Prisma.SubjectUpdateInput,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).subject.update({
+    where: {
+      id,
+    },
     data,
   });
 }
