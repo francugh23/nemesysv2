@@ -14,21 +14,27 @@ import type { SubjectListItem } from "@/schemas";
 import { useMemo, useState } from "react";
 
 import { CreateSubjectDialog } from "./components/create-subject-dialog";
-import { EditSubjectDialog } from "./components/edit-subject-dialog";
+import {
+  SubjectDialogManager,
+  SubjectDialogType,
+} from "./components/subject-dialog-manager";
 import { subjectColumns } from "./components/subject-columns";
-import { SubjectViewDialog } from "./components/subject-view-dialog";
 
 export default function SubjectsPage() {
   const { data, isLoading } = useSubjects();
   const [selectedSubject, setSelectedSubject] =
     useState<SubjectListItem | null>(null);
-  const [dialog, setDialog] = useState<"view" | "edit" | null>(null);
+  const [dialog, setDialog] = useState<SubjectDialogType>(null);
   const columns = useMemo(
     () =>
       subjectColumns({
         onEdit: (subject) => {
           setSelectedSubject(subject);
           setDialog("edit");
+        },
+        onArchive: (subject) => {
+          setSelectedSubject(subject);
+          setDialog("archive");
         },
       }),
     [],
@@ -64,20 +70,11 @@ export default function SubjectsPage() {
                   setDialog("view");
                 }}
               />
-              {selectedSubject && (
-                <>
-                  <SubjectViewDialog
-                    subject={selectedSubject}
-                    open={dialog === "view"}
-                    onOpenChange={(open) => !open && closeDialog()}
-                  />
-                  <EditSubjectDialog
-                    subject={selectedSubject}
-                    open={dialog === "edit"}
-                    onOpenChange={(open) => !open && closeDialog()}
-                  />
-                </>
-              )}
+              <SubjectDialogManager
+                subject={selectedSubject}
+                dialog={dialog}
+                onClose={closeDialog}
+              />
             </>
           )}
         </CardContent>

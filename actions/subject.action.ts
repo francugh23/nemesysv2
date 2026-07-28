@@ -4,6 +4,7 @@ import * as z from "zod";
 
 import { CreateSubjectSchema, UpdateSubjectSchema } from "@/schemas";
 import {
+  archiveSubjectService,
   createSubjectService,
   getSubjects,
   updateSubjectService,
@@ -61,6 +62,26 @@ export async function updateSubjectAction(
 
     return {
       success: "Subject updated successfully.",
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        error: error.message,
+      };
+    }
+
+    return {
+      error: "Something went wrong.",
+    };
+  }
+}
+
+export async function archiveSubjectAction(id: string): Promise<ActionResponse> {
+  try {
+    await archiveSubjectService(id);
+
+    return {
+      success: "Subject archived successfully.",
     };
   } catch (error) {
     if (error instanceof Error) {

@@ -5,9 +5,13 @@ import { normalizeSubjectIdentity } from "@/lib/subject-identity";
 import { createAuditLogs } from "@/repositories/audit.repository";
 import {
   createSubject,
+  countSubjectGrades,
+  findActiveSubjectById,
   findSubjectById,
   findSubjectByIdentity,
   findSubjects,
+  hasActiveSubjectAssignments,
+  archiveSubject,
   updateSubject,
 } from "@/repositories/subject.repository";
 import { CreateSubjectSchema, UpdateSubjectSchema } from "@/schemas";
@@ -140,4 +144,54 @@ export async function updateSubjectService(
   } catch (error) {
     rethrowSubjectIdentityConflict(error);
   }
+}
+
+export async function archiveSubjectService(id: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized.");
+  }
+
+  if (session.user.role !== "SUPER_ADMIN") {
+    throw new Error("Forbidden.");
+  }
+
+  return prisma.$transaction(async (transaction) => {
+    const subject = await findActiveSubjectById(id, transaction);
+
+    if (!subject) {
+      throw new Error("Subject not found.");
+    }
+
+    const [hasActiveAssignments, gradeCount] = await Promise.all([
+      hasActiveSubjectAssignments(subject.id, transaction),
+      countSubjectGrades(subject.id, transaction),
+    ]);
+
+    if (hasActiveAssignments) {
+      throw new Error("Subject cannot be archived while it has active assignments.");
+    }
+
+    const archivedSubject = await archiveSubject(subject.id, transaction);
+
+    await createAuditLogs(
+      [
+        {
+          userId: session.user.id,
+          action: "ARCHIVE",
+          module: "Subject",
+          recordId: archivedSubject.id,
+          recordName: archivedSubject.code,
+          description: "Archived subject",
+          metadata: {
+            gradeCount,
+          },
+        },
+      ],
+      transaction,
+    );
+
+    return archivedSubject;
+  });
 }

@@ -14,9 +14,14 @@ import type { SubjectListItem } from "@/schemas";
 interface SubjectActionsProps {
   subject: SubjectListItem;
   onEdit: (subject: SubjectListItem) => void;
+  onArchive: (subject: SubjectListItem) => void;
 }
 
-export function SubjectActions({ subject, onEdit }: SubjectActionsProps) {
+export function SubjectActions({
+  subject,
+  onEdit,
+  onArchive,
+}: SubjectActionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -39,6 +44,15 @@ export function SubjectActions({ subject, onEdit }: SubjectActionsProps) {
           }}
         >
           Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="text-destructive"
+          onClick={(event) => {
+            event.stopPropagation();
+            onArchive(subject);
+          }}
+        >
+          Archive
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

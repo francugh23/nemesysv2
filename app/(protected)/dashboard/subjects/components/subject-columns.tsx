@@ -14,10 +14,12 @@ function formatSemester(semester: SubjectListItem["semester"]) {
 
 interface SubjectColumnProps {
   onEdit: (subject: SubjectListItem) => void;
+  onArchive: (subject: SubjectListItem) => void;
 }
 
 export function subjectColumns({
   onEdit,
+  onArchive,
 }: SubjectColumnProps): ColumnDef<SubjectListItem>[] {
   return [
   {
@@ -55,7 +57,11 @@ export function subjectColumns({
     {
       id: "actions",
       cell: ({ row }) => (
-        <SubjectActions subject={row.original} onEdit={onEdit} />
+        <SubjectActions
+          subject={row.original}
+          onEdit={onEdit}
+          onArchive={onArchive}
+        />
       ),
     },
   ];
