@@ -39,3 +39,9 @@ Do not bypass a layer to save code.
 - TanStack Query manages client server-state and targeted invalidation.
 - Prefer generated shadcn/Base UI primitives and established project components over handwritten interaction primitives.
 - Keep evolving feature status and decisions in `docs/architecture/project-context.md`, not this file.
+
+## Project Memory
+- Project knowledge continuously migrates from conversation history into repository documentation.
+- The repository is the project's long-term memory; conversation history is short-term working memory.
+- Reusable knowledge is promoted before conversation compaction or transition to a new approved phase.
+- Stable principles belong here, reusable practices belong in `.ai/skills/` or `.ai/prompts/`, and evolving state belongs in `docs/architecture/project-context.md`.

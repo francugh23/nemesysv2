@@ -44,6 +44,7 @@ Maintain the completed AI operating infrastructure while Subject Assignment feat
 ✅ Phase 8A – Subject Assignment Foundation
 ✅ Phase 8A.1 – Shared DataTable Sorting Fix
 ✅ Architectural Improvement Sprint – AI Infrastructure
+✅ Workflow Improvement – Knowledge Promotion
 ✅ Repository production build verification (`npm run build`)
 ## AI Development Infrastructure
 - The repository-level `AGENTS.md` is the AI operating manual and defines resource loading, approval gates, architecture, data policy, MCP-first verification, documentation, verification, and Git workflows.
@@ -51,6 +52,7 @@ Maintain the completed AI operating infrastructure while Subject Assignment feat
 - `.ai/skills/` contains focused references for the project's framework, UI, data, layering, lifecycle, planning, verification, and investigation practices.
 - `.ai/prompts/` is reserved for reusable workflows that reference current context instead of duplicating it.
 - Third-party API proposals must be verified through an available authoritative MCP, with official documentation, installed types/source, or CLI output used as an explicit fallback.
+- The Knowledge Promotion workflow preserves reusable implementation learning in repository documentation before conversation compaction or transition to another approved phase.
 ## Subject Identity Rules
 - Active Subjects use a null-safe normalized identity: code, grade level, and track/strand.
 - Subject codes and track/strand values are trimmed and stored uppercase; grade levels use canonical values `7` through `12`; blank and null track/strand values are equivalent.

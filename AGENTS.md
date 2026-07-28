@@ -54,6 +54,17 @@ Do not reason from memory when an authoritative MCP is available. If no relevant
 - Update `project-context.md` after a successfully completed approved milestone or architectural sprint, before declaring it complete.
 - Do not turn `project-context.md` into a chronological development log.
 
+## Knowledge Promotion Workflow
+Conversations are temporary working memory; repository documentation is permanent project memory. At the completion of every feature phase or subphase:
+
+1. Review the completed implementation.
+2. Identify reusable architectural, implementation, verification, debugging, or workflow patterns.
+3. Promote reusable knowledge into the appropriate `.ai/context/`, `.ai/skills/`, or `.ai/prompts/` document.
+4. Avoid duplicating guidance that already exists.
+5. Update `docs/architecture/project-context.md` with the resulting current state.
+6. Perform the normal Git workflow, subject to the explicit commit and push approval rules below.
+7. Compact the conversation only after durable project knowledge has been preserved.
+
 ## Verification
 - Run targeted ESLint for changed TypeScript/JavaScript files.
 - Run `git diff --check`.
