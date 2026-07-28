@@ -34,6 +34,7 @@ Implement the remaining Subject Module capabilities following the established mo
 ✅ Phase 6D – Teacher Deactivation
 ✅ Teacher CRUD Module
 ✅ Phase 7A – Subject Module Foundation
+✅ Phase 7B – Subject Creation
 ✅ Repository production build verification (`npm run build`)
 ## Next Planned Milestone
 To be determined.

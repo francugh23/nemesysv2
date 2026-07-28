@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { Prisma } from "@/app/generated/prisma/client";
 
 export async function findSubjects() {
   return prisma.subject.findMany({
@@ -24,5 +25,28 @@ export async function findSubjects() {
         trackStrand: "asc",
       },
     ],
+  });
+}
+
+export async function findSubjectByIdentity(
+  code: string,
+  gradeLevel: string,
+  trackStrand: string,
+) {
+  return prisma.subject.findFirst({
+    where: {
+      code,
+      gradeLevel,
+      trackStrand,
+    },
+  });
+}
+
+export async function createSubject(
+  data: Prisma.SubjectUncheckedCreateInput,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).subject.create({
+    data,
   });
 }

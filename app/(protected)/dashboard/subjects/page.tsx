@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { useSubjects } from "@/hooks/subject.hook";
 
+import { CreateSubjectDialog } from "./components/create-subject-dialog";
 import { subjectColumns } from "./components/subject-columns";
 
 export default function SubjectsPage() {
@@ -25,6 +26,10 @@ export default function SubjectsPage() {
         </CardHeader>
 
         <CardContent>
+          <div className="mb-4 flex justify-end">
+            <CreateSubjectDialog />
+          </div>
+
           {isLoading ? (
             <SubjectTableSkeleton />
           ) : (
