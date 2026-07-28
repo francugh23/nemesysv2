@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { Prisma } from "@/app/generated/prisma/client";
 
 export async function findUserByUsername(username: string) {
   return prisma.user.findUnique({
@@ -14,4 +15,29 @@ export async function findUserById(id: string) {
       id
     }
   })
+}
+
+export async function findUserByEmail(email: string) {
+  return prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+}
+
+export async function findUserByEmployeeNumber(employeeNumber: string) {
+  return prisma.user.findUnique({
+    where: {
+      employeeNumber,
+    },
+  });
+}
+
+export async function createUser(
+  data: Prisma.UserCreateInput,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).user.create({
+    data,
+  });
 }

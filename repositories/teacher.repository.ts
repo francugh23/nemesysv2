@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { Prisma } from "@/app/generated/prisma/client";
 
 export async function findTeachers() {
   return prisma.teacher.findMany({
@@ -35,5 +36,14 @@ export async function findTeachers() {
         },
       },
     ],
+  });
+}
+
+export async function createTeacher(
+  data: Prisma.TeacherUncheckedCreateInput,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).teacher.create({
+    data,
   });
 }

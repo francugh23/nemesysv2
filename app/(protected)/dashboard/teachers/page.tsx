@@ -11,6 +11,7 @@ import { DataTable } from "@/components/data-table";
 import { TeacherTableSkeleton } from "@/components/skeletons/teacher-table-skeleton";
 import { useTeachers } from "@/hooks/teacher.hook";
 
+import { CreateTeacherDialog } from "./components/create-teacher-dialog";
 import { teacherColumns } from "./components/teacher-columns";
 
 export default function TeachersPage() {
@@ -25,6 +26,10 @@ export default function TeachersPage() {
         </CardHeader>
 
         <CardContent>
+          <div className="mb-4 flex justify-end">
+            <CreateTeacherDialog />
+          </div>
+
           {isLoading ? (
             <TeacherTableSkeleton />
           ) : (

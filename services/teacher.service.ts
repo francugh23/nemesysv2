@@ -1,5 +1,95 @@
-import { findTeachers } from "@/repositories/teacher.repository";
+import { auth } from "@/auth";
+import { hashPassword } from "@/lib";
+import prisma from "@/lib/prisma";
+import { createAuditLogs } from "@/repositories/audit.repository";
+import {
+  createTeacher,
+  findTeachers,
+} from "@/repositories/teacher.repository";
+import {
+  createUser,
+  findUserByEmail,
+  findUserByEmployeeNumber,
+  findUserByUsername,
+} from "@/repositories/user.repository";
+import { CreateTeacherSchema } from "@/schemas";
+import { z } from "zod";
 
 export async function getTeachers() {
   return await findTeachers();
+}
+
+export async function createTeacherService(
+  values: z.infer<typeof CreateTeacherSchema>,
+) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized.");
+  }
+
+  const [existingEmployeeNumber, existingUsername, existingEmail] =
+    await Promise.all([
+      findUserByEmployeeNumber(values.employeeNumber),
+      findUserByUsername(values.username),
+      findUserByEmail(values.email),
+    ]);
+
+  if (existingEmployeeNumber) {
+    throw new Error("Employee number already exists.");
+  }
+
+  if (existingUsername) {
+    throw new Error("Username already exists.");
+  }
+
+  if (existingEmail) {
+    throw new Error("Email already exists.");
+  }
+
+  const passwordHash = await hashPassword(values.temporaryPassword);
+
+  return prisma.$transaction(async (transaction) => {
+    const user = await createUser(
+      {
+        employeeNumber: values.employeeNumber,
+        username: values.username,
+        email: values.email,
+        passwordHash,
+        firstName: values.firstName,
+        middleName: values.middleName,
+        lastName: values.lastName,
+        gender: values.gender,
+        role: "TEACHER",
+        isFirstLogin: true,
+      },
+      transaction,
+    );
+
+    const teacher = await createTeacher(
+      {
+        userId: user.id,
+        degree: values.degree,
+        major: values.major,
+        isAdviser: false,
+      },
+      transaction,
+    );
+
+    await createAuditLogs(
+      [
+        {
+          userId: session.user.id,
+          action: "CREATE",
+          module: "Teacher",
+          recordId: teacher.id,
+          recordName: `${user.lastName}, ${user.firstName}`,
+          description: "Created teacher profile",
+        },
+      ],
+      transaction,
+    );
+
+    return teacher;
+  });
 }
