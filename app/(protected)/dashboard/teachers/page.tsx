@@ -3,11 +3,9 @@
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { DataTable } from "@/components/data-table";
+import { CrudToolbar } from "@/components/common/crud-toolbar";
 import { TeacherTableSkeleton } from "@/components/skeletons/teacher-table-skeleton";
 import { useTeachers } from "@/hooks/teacher.hook";
 import type { TeacherListItem } from "@/schemas";
@@ -47,17 +45,19 @@ export default function TeachersPage() {
 
   return (
     <div className="space-y-6 p-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold">Teacher Records</h1>
+          <p className="text-sm text-muted-foreground">
+            View teacher profiles and account status.
+          </p>
+        </div>
+
+        <CrudToolbar primaryAction={<CreateTeacherDialog />} />
+      </div>
+
       <Card>
-        <CardHeader>
-          <CardTitle>Teacher Records</CardTitle>
-          <CardDescription>View teacher profiles and account status.</CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <div className="mb-4 flex justify-end">
-            <CreateTeacherDialog />
-          </div>
-
+        <CardContent className="pt-6">
           {isLoading ? (
             <TeacherTableSkeleton />
           ) : (

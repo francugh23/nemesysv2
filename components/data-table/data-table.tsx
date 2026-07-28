@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { type MutableRefObject, type ReactNode, useEffect, useState } from "react";
 import {
   type ColumnDef,
   type SortingState,
@@ -26,13 +26,12 @@ import {
 
 import { Button } from "../ui/button";
 
-import { ReactNode } from "react";
-
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   onRowClick?: (row: TData) => void;
   toolbar?: (table: TanstackTable<TData>) => ReactNode;
+  tableRef?: MutableRefObject<TanstackTable<TData> | null>;
 }
 
 export function DataTable<TData, TValue>({
@@ -40,6 +39,7 @@ export function DataTable<TData, TValue>({
   data,
   onRowClick,
   toolbar,
+  tableRef,
 }: DataTableProps<TData, TValue>) {
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -67,6 +67,18 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   });
+
+  useEffect(() => {
+    if (!tableRef) return;
+
+    tableRef.current = table;
+
+    return () => {
+      if (tableRef.current === table) {
+        tableRef.current = null;
+      }
+    };
+  }, [table, tableRef]);
 
   const totalRows = table.getFilteredRowModel().rows.length;
   const pageIndex = table.getState().pagination.pageIndex;

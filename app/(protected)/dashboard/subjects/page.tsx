@@ -1,14 +1,13 @@
 "use client";
 
 import { DataTable } from "@/components/data-table";
+import { CrudToolbar } from "@/components/common/crud-toolbar";
 import { SubjectTableSkeleton } from "@/components/skeletons/subject-table-skeleton";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useSubjects } from "@/hooks/subject.hook";
 import type { SubjectListItem } from "@/schemas";
 import { useMemo, useState } from "react";
@@ -48,18 +47,26 @@ export default function SubjectsPage() {
 
   return (
     <div className="space-y-6 p-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold">Subject Records</h1>
+          <p className="text-sm text-muted-foreground">
+            View available subjects by grade level.
+          </p>
+        </div>
+
+        <CrudToolbar
+          primaryAction={<CreateSubjectDialog />}
+          actions={
+            <SubjectImportDialog
+              trigger={<Button variant="outline">Import Subject</Button>}
+            />
+          }
+        />
+      </div>
+
       <Card>
-        <CardHeader>
-          <CardTitle>Subject Records</CardTitle>
-          <CardDescription>View available subjects by grade level.</CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <div className="mb-4 flex justify-end gap-2">
-            <SubjectImportDialog />
-            <CreateSubjectDialog />
-          </div>
-
+        <CardContent className="pt-6">
           {isLoading ? (
             <SubjectTableSkeleton />
           ) : (

@@ -4,12 +4,18 @@ import { importStudentsAction } from "@/actions/student-import.action";
 import { ImportWizard } from "@/components/common/import/import-wizard";
 import { normalizeStudentImportRow } from "@/lib/student-import-normalizer";
 import { validateStudentImport } from "@/lib/student-import-validator";
+import type { ReactNode } from "react";
 
-export function StudentImportDialog() {
+interface StudentImportDialogProps {
+  trigger?: ReactNode;
+}
+
+export function StudentImportDialog({ trigger }: StudentImportDialogProps) {
   return (
     <ImportWizard
       entityLabel="Student"
       queryKey={["students"]}
+      trigger={trigger}
       normalizeRow={normalizeStudentImportRow}
       validateRows={validateStudentImport}
       importRecords={importStudentsAction}

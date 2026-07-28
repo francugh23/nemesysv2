@@ -39,6 +39,8 @@ Implement the remaining Subject Module capabilities following the established mo
 ✅ Phase 7C.5 – Subject Identity Correction
 ✅ Phase 7D – Subject Archive
 ✅ Phase 7E – Subject Import
+✅ Phase 7F – CRUD Toolbar Standardisation
+✅ Phase 7F.1 – CRUD Toolbar Layout Refinement
 ✅ Repository production build verification (`npm run build`)
 ## Subject Identity Rules
 - Active Subjects use a null-safe normalized identity: code, grade level, and track/strand.
@@ -58,6 +60,15 @@ Implement the remaining Subject Module capabilities following the established mo
 - Subject Import uses the shared framework through a Subject feature wrapper with Subject-specific normalization, validation, server action, service, and repository behavior.
 - Subject imports reuse normalized Subject identity rules, reject duplicate identities within the file, skip active identity collisions, and allow identities that match archived Subjects as new active records.
 - Subject persistence and per-Subject audit logging are transactional; successful imports invalidate `['subjects']`.
+## CRUD Toolbar Rules
+- Phase 7F – CRUD Toolbar Standardisation is complete.
+- Phase 7F.1 – CRUD Toolbar Layout Refinement is complete.
+- Each module page owns its header title, description, and reusable CrudToolbar action row outside the records card.
+- CrudToolbar renders inline secondary actions before the primary action and omits secondary controls when none are supplied.
+- Student actions are Import Student, filtered Export, and Add Student; export uses the live filtered TanStack Table row model only.
+- Subject actions are Import Subject and Add Subject; Teacher exposes only Add Teacher.
+- Import dialogs use custom inline button triggers and retain their default trigger behavior when no trigger is supplied.
+- Existing business logic, server actions, repositories, services, validation, audit logging, and React Query behavior remain unchanged.
 ## Next Planned Milestone
 To be determined.
 # Technology Stack

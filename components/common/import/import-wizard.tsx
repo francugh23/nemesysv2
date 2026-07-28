@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useEffectEvent, useState, useTransition } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  type ReactNode,
+  useEffect,
+  useEffectEvent,
+  useState,
+  useTransition,
+} from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -17,6 +25,7 @@ import { WizardStepValidation } from "@/components/common/wizard/wizard-step-val
 interface ImportWizardProps {
   entityLabel: string;
   queryKey: readonly unknown[];
+  trigger?: ReactNode;
   normalizeRow: (row: Record<string, unknown>) => Record<string, unknown>;
   validateRows: (
     rows: Record<string, unknown>[],
@@ -28,6 +37,7 @@ interface ImportWizardProps {
 export function ImportWizard({
   entityLabel,
   queryKey,
+  trigger,
   normalizeRow,
   validateRows,
   importRecords,
@@ -107,7 +117,13 @@ export function ImportWizard({
 
   return (
     <>
-      <Button onClick={() => handleOpenChange(true)}>Import {entityLabel}</Button>
+      {trigger && isValidElement<{ onClick?: () => void }>(trigger) ? (
+        cloneElement(trigger, {
+          onClick: () => handleOpenChange(true),
+        })
+      ) : (
+        <Button onClick={() => handleOpenChange(true)}>Import {entityLabel}</Button>
+      )}
 
       <WizardDialog
         open={open}

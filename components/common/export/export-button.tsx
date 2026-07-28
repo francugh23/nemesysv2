@@ -8,18 +8,27 @@ import { exportToExcel } from "@/lib/export";
 import type { ExportDefinition } from "@/types/export";
 
 interface ExportButtonProps<TData> {
-  records: TData[];
+  records?: TData[];
+  getRecords?: () => TData[];
   definition: ExportDefinition<TData>;
 }
 
 export function ExportButton<TData>({
   records,
+  getRecords,
   definition,
 }: ExportButtonProps<TData>) {
   function handleExport() {
+    const exportRecords = getRecords?.() ?? records ?? [];
+
+    if (exportRecords.length === 0) {
+      toast.error("No records available to export.");
+      return;
+    }
+
     try {
-      exportToExcel(records, definition);
-      toast.success(`${records.length} record${records.length === 1 ? "" : "s"} exported.`);
+      exportToExcel(exportRecords, definition);
+      toast.success(`${exportRecords.length} record${exportRecords.length === 1 ? "" : "s"} exported.`);
     } catch {
       toast.error("Unable to export records.");
     }
@@ -30,7 +39,7 @@ export function ExportButton<TData>({
       type="button"
       variant="outline"
       onClick={handleExport}
-      disabled={records.length === 0}
+      disabled={!getRecords && (records?.length ?? 0) === 0}
     >
       <Download />
       Export
