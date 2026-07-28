@@ -7,3 +7,4 @@ export const LoginSchema = z.object({
 
 export * from "./student.schema"
 export * from "./teacher.schema"
+export * from "./subject.schema"

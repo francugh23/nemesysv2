@@ -20,9 +20,9 @@ It is not intended to be a historical development log.
 Whenever a milestone is completed, this document should be updated so that it always reflects the current implementation.
 # Current Development Status
 ## Current Milestone
-Phase 6 – Teacher Module
+Phase 7 – Subject Module
 ## Current Objective
-Implement the remaining Teacher Module capabilities following the architecture established by the Student Module.
+Implement the remaining Subject Module capabilities following the established module architecture.
 ## Completed Milestones
 ✅ Student CRUD
 ✅ Student Module UI
@@ -33,6 +33,7 @@ Implement the remaining Teacher Module capabilities following the architecture e
 ✅ Phase 6C – Teacher View & Edit
 ✅ Phase 6D – Teacher Deactivation
 ✅ Teacher CRUD Module
+✅ Phase 7A – Subject Module Foundation
 ✅ Repository production build verification (`npm run build`)
 ## Next Planned Milestone
 To be determined.
