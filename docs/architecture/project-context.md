@@ -20,16 +20,16 @@ It is not intended to be a historical development log.
 Whenever a milestone is completed, this document should be updated so that it always reflects the current implementation.
 # Current Development Status
 ## Current Milestone
-Phase 5B – Export Framework
+Phase 6 – Teacher Module
 ## Current Objective
-Implement a reusable export framework beginning with Student Export.
+Implement the Teacher Module following the architecture established by the Student Module.
 ## Completed Milestones
 ✅ Student CRUD
 ✅ Student Module UI
 ✅ Student Import Framework
+✅ Student Export Framework
 ## Next Planned Milestone
-Phase 6 – Teacher Module
-The Teacher Module should follow the architecture established by the Student Module.
+To be determined.
 # Technology Stack
 ## Framework
 - Next.js (App Router)
