@@ -20,9 +20,9 @@ It is not intended to be a historical development log.
 Whenever a milestone is completed, this document should be updated so that it always reflects the current implementation.
 # Current Development Status
 ## Current Milestone
-Architectural Improvement Sprint – AI Infrastructure
+Section Management Module
 ## Current Objective
-Maintain the completed AI operating infrastructure while Subject Assignment feature work remains frozen pending explicit approval.
+Implement Section Management so active Sections can be created and made available for Subject Assignment creation.
 ## Completed Milestones
 ✅ Student CRUD
 ✅ Student Module UI
@@ -43,6 +43,7 @@ Maintain the completed AI operating infrastructure while Subject Assignment feat
 ✅ Phase 7F.1 – CRUD Toolbar Layout Refinement
 ✅ Phase 8A – Subject Assignment Foundation
 ✅ Phase 8A.1 – Shared DataTable Sorting Fix
+✅ Phase 8B – Subject Assignment Creation
 ✅ Architectural Improvement Sprint – AI Infrastructure
 ✅ Workflow Improvement – Knowledge Promotion
 ✅ Repository production build verification (`npm run build`)
@@ -92,17 +93,26 @@ Maintain the completed AI operating infrastructure while Subject Assignment feat
 - The read-only Assignment page is available at `/dashboard/assignments`.
 - The flat read model includes Teacher employee number and full name; Subject code and description; Section grade level, track/strand, and section name; and academic year.
 - The page uses the shared DataTable, sortable DataTableColumnHeader columns, and a dedicated loading skeleton.
-- Phase 8B – Subject Assignment Creation implementation is present but feature work is frozen pending explicit approval to resume stabilization.
+- Phase 8B – Subject Assignment Creation is complete.
 - Assignment creation uses the schema → action → service → repository path, with React Query invalidation for `['subject-assignments']` after successful creation.
 - The Create Assignment dialog uses reusable searchable selectors for active Teachers, Subjects, and Sections.
 - Searchable selectors keep primitive string IDs as their public, React Hook Form, and Base UI Combobox values; option objects are used only to resolve labels and filtering text.
 - `SubjectAssignmentForm` uses React Hook Form `Controller` bindings instead of `form.watch` and `form.setValue` adapters, isolating controlled-field subscription and mutation lifecycles during dropdown selection and popup unmount; live Teacher and Subject selections retain their labels and IDs.
-- End-to-end creation remains unverified because no Section options are currently available in the form.
+- Verification passed. The current inability to complete an Assignment is expected because Section Management has not yet created any Section records; it is not a Phase 8B defect.
+- Section Management is the prerequisite for populating the active Section selector and completing Assignment creation with real Section data.
 - Creation requires an authenticated user, active related records, matching Subject and Section grade levels, and matching track/strand when the Subject specifies one.
 - Active duplicate Teacher + Subject + Section + academic year assignments are rejected; creation and CREATE audit logging are transactional.
 - Assignment edit, archive, import/export, scheduling, room, shift, timetable, curriculum, grades, and attendance remain out of scope.
 ## Next Planned Milestone
-Resume Phase 8B – Subject Assignment Creation stabilization only after explicit approval.
+Section Management Module – establish Section records and active Section selection for Subject Assignment creation.
+## Milestone Dependencies
+Section Management is a foundational academic module. Its completion enables:
+- Subject Assignment (active Section selection)
+- Student Enrolment (Section placement)
+- Adviser Assignment
+- Class Lists
+- Attendance
+- Grades
 # Technology Stack
 ## Framework
 - Next.js (App Router)
