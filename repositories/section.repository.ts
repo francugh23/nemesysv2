@@ -11,6 +11,7 @@ export async function findActiveSections() {
       gradeLevel: true,
       trackStrand: true,
       sectionName: true,
+      adviserId: true,
       room: true,
       shift: true,
       adviser: {
@@ -43,6 +44,7 @@ export async function findActiveSectionByIdentity(
   gradeLevel: string,
   trackStrand: string | null,
   sectionName: string,
+  excludeId?: string,
   transaction?: Prisma.TransactionClient,
 ) {
   return (transaction ?? prisma).section.findFirst({
@@ -53,10 +55,36 @@ export async function findActiveSectionByIdentity(
         equals: sectionName,
         mode: "insensitive",
       },
+      id: excludeId
+        ? {
+            not: excludeId,
+          }
+        : undefined,
       deletedAt: null,
     },
     select: {
       id: true,
+    },
+  });
+}
+
+export async function findActiveSectionById(
+  id: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).section.findFirst({
+    where: {
+      id,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      gradeLevel: true,
+      trackStrand: true,
+      sectionName: true,
+      adviserId: true,
+      room: true,
+      shift: true,
     },
   });
 }
@@ -67,6 +95,68 @@ export async function createSection(
 ) {
   return (transaction ?? prisma).section.create({
     data,
+  });
+}
+
+export async function updateSection(
+  id: string,
+  data: Prisma.SectionUncheckedUpdateInput,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).section.update({
+    where: {
+      id,
+    },
+    data,
+  });
+}
+
+export async function hasActiveSectionSubjectAssignments(
+  sectionId: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  const assignment = await (transaction ?? prisma).subjectAssignment.findFirst({
+    where: {
+      sectionId,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return assignment !== null;
+}
+
+export async function hasActiveSectionEnrollments(
+  sectionId: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  const enrollment = await (transaction ?? prisma).enrollment.findFirst({
+    where: {
+      sectionId,
+      status: "ACTIVE",
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return enrollment !== null;
+}
+
+export async function archiveSection(
+  id: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).section.update({
+    where: {
+      id,
+    },
+    data: {
+      deletedAt: new Date(),
+    },
   });
 }
 

@@ -119,11 +119,17 @@ export function SectionForm({ form }: SectionFormProps) {
           name="shift"
           control={form.control}
           render={({ field }) => (
-            <Select value={field.value ?? null} onValueChange={field.onChange}>
+            <Select
+              value={field.value ?? "NONE"}
+              onValueChange={(value) =>
+                field.onChange(value === "NONE" ? undefined : value)
+              }
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select shift" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="NONE">No shift</SelectItem>
                 <SelectItem value="MORNING">Morning</SelectItem>
                 <SelectItem value="AFTERNOON">Afternoon</SelectItem>
               </SelectContent>

@@ -22,7 +22,7 @@ Whenever a milestone is completed, this document should be updated so that it al
 ## Current Milestone
 Section Management Module
 ## Current Objective
-Deploy the approved Section identity migration and behaviorally verify the completed Phase 9A and Phase 9B source implementation before proceeding to Phase 9C.
+Complete final Section Management verification and knowledge promotion after the Phase 9C source implementation.
 ## Completed Milestones
 ✅ Student CRUD
 ✅ Student Module UI
@@ -44,6 +44,9 @@ Deploy the approved Section identity migration and behaviorally verify the compl
 ✅ Phase 8A – Subject Assignment Foundation
 ✅ Phase 8A.1 – Shared DataTable Sorting Fix
 ✅ Phase 8B – Subject Assignment Creation
+✅ Phase 9A – Section Foundation and Read Path
+✅ Phase 9B – Section Creation and Adviser Management
+✅ Phase 9C – Section View, Edit, and Archive
 ✅ Architectural Improvement Sprint – AI Infrastructure
 ✅ Workflow Improvement – Knowledge Promotion
 ✅ Repository production build verification (`npm run build`)
@@ -105,7 +108,7 @@ Deploy the approved Section identity migration and behaviorally verify the compl
 - Active duplicate Teacher + Subject + Section + academic year assignments are rejected; creation and CREATE audit logging are transactional.
 - Assignment edit, archive, import/export, scheduling, room, shift, timetable, curriculum, grades, and attendance remain out of scope.
 ## Next Planned Milestone
-Section Management Module – establish Section records and active Section selection for Subject Assignment creation.
+Phase 9D – Section Management final verification and knowledge promotion.
 ## Milestone Dependencies
 Section Management is a foundational academic module. Its completion enables:
 - Subject Assignment (active Section selection)
@@ -126,23 +129,26 @@ Section Management is a foundational academic module. Its completion enables:
 - Creation, update, and archive mutations create transactional audit records identifying the actor, action, module, Section identity, and outcome.
 - Archive sets `deletedAt` and never hard-deletes a Section. Active reads and form options explicitly exclude archived Sections. Archive is blocked when active SubjectAssignments or active Enrolments exist; historical relations and audit records are preserved.
 - The Section page will use the existing CrudToolbar, DataTable, loading skeleton, dialog-manager, React Hook Form, Zod, toast, confirmation-dialog, and SearchableSelect patterns. Adviser selection uses primitive active Teacher IDs.
-- Section hooks use `['sections']` and `['section-form-options']` keys. Successful mutations invalidate the narrowest relevant Section keys, `['subject-assignment-options']`, and `['dashboard']` where active Section counts are consumed.
+- Section hooks use `['sections']` and `['section-form-options']` keys. Successful mutations invalidate `['sections']`, `['section-form-options']`, and `['subject-assignment-options']`; dashboard invalidation is not part of Phase 9.
 - Phase 9A: Section Foundation and Read Path: identity migration, schemas, repository/service/action/hook reads, and the active Sections page.
 - Phase 9B: Section Creation and Adviser Management: active Teacher form options, transactional creation, identity enforcement, CREATE audit logging, creation dialog, and Assignment-option invalidation.
-- Phase 9C: Section View, Edit, and Archive: transactional updates, UPDATE audit logging, archive dependency checks, soft deletion, ARCHIVE audit logging, confirmation dialog, and archived-option exclusion.
+- Phase 9C: Section View, Edit, and Archive is complete: transactional updates, UPDATE audit logging, archive dependency checks, soft deletion, ARCHIVE audit logging, confirmation dialog, and archived-option exclusion.
 - Phase 9D: Documentation and Knowledge Promotion: update current project context with completed rules and deferred work, promote reusable knowledge where needed, and complete final verification.
 - Phase 9 verification includes targeted ESLint for changed TypeScript files, `npx prisma validate`, `git diff --check`, `npm run build`, and documented behavioral checks for identity, grade/strand, adviser eligibility, archive dependencies, audit records, cache refresh, and confirmation that archived Sections never appear in SearchableSelect or Section form options.
 ## Section Management
-- Phase 9A and Phase 9B source implementation is complete. The active Section read path is repository → service → server action → `useSections` React Query hook → `/dashboard/sections`.
+- Phase 9A, Phase 9B, and Phase 9C source implementation is complete. The active Section read path is repository → service → server action → `useSections` React Query hook → `/dashboard/sections`.
 - Section reads require an authenticated `SUPER_ADMIN` at both the Server Action and service boundaries. The repository explicitly excludes archived records with `deletedAt: null` and returns only the fields required by the list.
 - The flat Section list model contains grade level, track/strand, section name, optional adviser name, optional room, and optional shift. Adviser status is not read from or synchronized to `Teacher.isAdviser`.
-- `/dashboard/sections` uses the shared CrudToolbar and DataTable, sortable columns, and dedicated loading, empty, error, and retry states. Its Create Section dialog uses React Hook Form, Zod, and a Controller-bound SearchableSelect populated only with active Teacher/User records.
+- `/dashboard/sections` uses the shared CrudToolbar and DataTable, sortable columns, and dedicated loading, empty, error, and retry states. Row selection opens a read-only Section details dialog; row actions open edit and archive dialogs through the shared dialog-manager pattern.
+- Create and Edit Section dialogs use React Hook Form, Zod, Controller-bound Base UI Selects, and a primitive-ID SearchableSelect populated only with active Teacher/User records. Adviser and room remain optional, room remains informational, and Section mutations do not read or synchronize `Teacher.isAdviser`.
 - Section creation is restricted to `SUPER_ADMIN`, normalizes track/strand to uppercase and blank optional values to null, rejects JHS track/strand values, validates optional adviser activity inside the transaction, and does not read or persist `Teacher.isAdviser`.
 - Creation checks active normalized Section identity before writing and relies on the approved PostgreSQL partial unique expression index for concurrency-safe enforcement. Section creation and its CREATE audit record commit or roll back together.
-- Successful creation invalidates `['sections']`, `['section-form-options']`, and `['subject-assignment-options']`, refreshing the Subject Assignment Section selector without changing Subject Assignment behavior.
-- Section edit, archive, restore, capacity, import/export, and Subject Assignment changes remain out of scope for Phase 9B.
+- Section updates reload the active record inside the service-owned transaction, normalize and preserve the approved active identity rule, validate an optional adviser as active, update the Section, and create an UPDATE audit record atomically.
+- Section archive requires an active Section with no active SubjectAssignments and no non-deleted Enrolments in ACTIVE status. It sets `deletedAt` and creates an ARCHIVE audit record in the same transaction; it never hard-deletes or cascades lifecycle changes, and all historical relationships remain intact.
+- Active Section reads, Section lists, Section form options, and Subject Assignment Section options explicitly exclude archived Sections. Successful create, update, and archive mutations invalidate `['sections']`, `['section-form-options']`, and `['subject-assignment-options']` only.
+- Restore, capacity, import/export, scheduling, timetables, Student enrolment workflows, and Subject Assignment feature changes remain deferred.
 - The null-safe active Section identity migration is authored as `20260729000000_section_identity_null_safe`. It normalizes Section identity values, rejects invalid or duplicate active data before modification, and defines a partial unique expression index for active grade level + track/strand + section name identities.
-- Migration deployment remains pending because Prisma's Windows schema-engine process currently fails to launch with `spawn UNKNOWN`; database-backed Section creation and identity enforcement require the migration to be deployed.
+- Migration deployment remains pending because Prisma's Windows schema-engine process currently fails to launch with `spawn UNKNOWN`. This is an environmental limitation rather than a Phase 9C source implementation blocker; database-level concurrency enforcement of the active identity rule still requires the migration.
 # Technology Stack
 ## Framework
 - Next.js (App Router)

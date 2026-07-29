@@ -3,11 +3,13 @@
 import * as z from "zod";
 
 import { auth } from "@/auth";
-import { CreateSectionSchema } from "@/schemas";
+import { CreateSectionSchema, UpdateSectionSchema } from "@/schemas";
 import {
+  archiveSectionService,
   createSectionService,
   getSectionFormOptions,
   getSections,
+  updateSectionService,
 } from "@/services/section.service";
 import { ActionResponse } from "@/types/action-response";
 
@@ -55,6 +57,84 @@ export async function createSectionAction(
 
     return {
       success: "Section created successfully.",
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        error: error.message,
+      };
+    }
+
+    return {
+      error: "Something went wrong.",
+    };
+  }
+}
+
+export async function updateSectionAction(
+  id: string,
+  values: z.infer<typeof UpdateSectionSchema>,
+): Promise<ActionResponse> {
+  try {
+    await requireSuperAdmin();
+  } catch {
+    return {
+      error: "Unauthorized.",
+    };
+  }
+
+  const validatedId = z.string().min(1).safeParse(id);
+  const validatedFields = UpdateSectionSchema.safeParse(values);
+
+  if (!validatedId.success || !validatedFields.success) {
+    return {
+      error: "Invalid fields.",
+    };
+  }
+
+  try {
+    await updateSectionService(validatedId.data, validatedFields.data);
+
+    return {
+      success: "Section updated successfully.",
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        error: error.message,
+      };
+    }
+
+    return {
+      error: "Something went wrong.",
+    };
+  }
+}
+
+export async function archiveSectionAction(
+  id: string,
+): Promise<ActionResponse> {
+  try {
+    await requireSuperAdmin();
+  } catch {
+    return {
+      error: "Unauthorized.",
+    };
+  }
+
+  const validatedId = z.string().min(1).safeParse(id);
+
+  if (!validatedId.success) {
+    return {
+      error: "Invalid section.",
+    };
+  }
+
+  try {
+    await archiveSectionService(validatedId.data);
+
+    return {
+      success: "Section archived successfully.",
     };
   } catch (error) {
     if (error instanceof Error) {

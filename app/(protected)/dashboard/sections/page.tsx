@@ -6,12 +6,55 @@ import { SectionTableSkeleton } from "@/components/skeletons/section-table-skele
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useSections } from "@/hooks/section.hook";
+import type { SectionListItem } from "@/schemas";
+import { useMemo, useState } from "react";
 
 import { sectionColumns } from "./components/section-columns";
 import { CreateSectionDialog } from "./components/create-section-dialog";
+import {
+  SectionDialogManager,
+  type SectionDialogType,
+} from "./components/section-dialog-manager";
 
 export default function SectionsPage() {
   const { data, isLoading, isError, refetch, isFetching } = useSections();
+  const [{ selectedSection, dialog, instanceId }, setDialogState] = useState<{
+    selectedSection: SectionListItem | null;
+    dialog: SectionDialogType;
+    instanceId: number;
+  }>({
+    selectedSection: null,
+    dialog: null,
+    instanceId: 0,
+  });
+  const columns = useMemo(
+    () =>
+      sectionColumns({
+        onEdit: (section) => {
+          setDialogState((current) => ({
+            selectedSection: section,
+            dialog: "edit",
+            instanceId: current.instanceId + 1,
+          }));
+        },
+        onArchive: (section) => {
+          setDialogState((current) => ({
+            selectedSection: section,
+            dialog: "archive",
+            instanceId: current.instanceId + 1,
+          }));
+        },
+      }),
+    [],
+  );
+
+  function closeDialog(closingInstanceId: number) {
+    setDialogState((current) =>
+      current.instanceId === closingInstanceId
+        ? { ...current, selectedSection: null, dialog: null }
+        : current,
+    );
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -48,10 +91,23 @@ export default function SectionsPage() {
             </div>
           ) : (
             <DataTable
-              columns={sectionColumns}
+              columns={columns}
               data={data ?? []}
+              onRowClick={(section) => {
+                setDialogState((current) => ({
+                  selectedSection: section,
+                  dialog: "view",
+                  instanceId: current.instanceId + 1,
+                }));
+              }}
             />
           )}
+          <SectionDialogManager
+            section={selectedSection}
+            dialog={dialog}
+            instanceId={instanceId}
+            onClose={closeDialog}
+          />
         </CardContent>
       </Card>
     </div>

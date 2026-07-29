@@ -9,7 +9,7 @@ export const SECTION_GRADE_LEVELS = [
   "12",
 ] as const;
 
-export const CreateSectionSchema = z
+const SectionFieldsSchema = z
   .object({
     gradeLevel: z.enum(SECTION_GRADE_LEVELS),
     trackStrand: z.string().trim().optional(),
@@ -31,11 +31,15 @@ export const CreateSectionSchema = z
     }
   });
 
+export const CreateSectionSchema = SectionFieldsSchema;
+export const UpdateSectionSchema = SectionFieldsSchema;
+
 export const SectionListItemSchema = z.object({
   id: z.string(),
   gradeLevel: z.string(),
   trackStrand: z.string().nullable(),
   sectionName: z.string(),
+  adviserId: z.string().nullable(),
   adviserFirstName: z.string().nullable(),
   adviserMiddleName: z.string().nullable(),
   adviserLastName: z.string().nullable(),
