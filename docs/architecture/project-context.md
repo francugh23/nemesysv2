@@ -22,7 +22,7 @@ Whenever a milestone is completed, this document should be updated so that it al
 ## Current Milestone
 Section Management Module
 ## Current Objective
-Implement Section Management so active Sections can be created and made available for Subject Assignment creation.
+Complete the Phase 9A Section identity migration rollout, then proceed to Section creation in Phase 9B.
 ## Completed Milestones
 ✅ Student CRUD
 ✅ Student Module UI
@@ -87,6 +87,7 @@ Implement Section Management so active Sections can be created and made availabl
 - DataTable renders visible rows through `table.getRowModel().rows`, so filtering, sorting, and pagination operate together for Students, Teachers, Subjects, and Subject Assignments.
 - Empty-state behavior continues to use filtered-row state.
 - Student export intentionally uses `table.getFilteredRowModel().rows` so it includes all filtered records rather than only the current page.
+- DataTable accepts optional feature-specific empty-state titles and descriptions while preserving shared defaults, and empty tables display a valid single-page pagination state.
 ## Subject Assignment Foundation
 - Phase 8A – Subject Assignment Foundation is complete.
 - The read path is schema → repository → service → server action → React Query hook → page.
@@ -131,6 +132,13 @@ Section Management is a foundational academic module. Its completion enables:
 - Phase 9C: Section View, Edit, and Archive: transactional updates, UPDATE audit logging, archive dependency checks, soft deletion, ARCHIVE audit logging, confirmation dialog, and archived-option exclusion.
 - Phase 9D: Documentation and Knowledge Promotion: update current project context with completed rules and deferred work, promote reusable knowledge where needed, and complete final verification.
 - Phase 9 verification includes targeted ESLint for changed TypeScript files, `npx prisma validate`, `git diff --check`, `npm run build`, and documented behavioral checks for identity, grade/strand, adviser eligibility, archive dependencies, audit records, cache refresh, and confirmation that archived Sections never appear in SearchableSelect or Section form options.
+## Section Management Foundation
+- Phase 9A source implementation is complete. The active Section read path is repository → service → server action → `useSections` React Query hook → `/dashboard/sections`.
+- Section reads require an authenticated `SUPER_ADMIN` at both the Server Action and service boundaries. The repository explicitly excludes archived records with `deletedAt: null` and returns only the fields required by the list.
+- The flat Section list model contains grade level, track/strand, section name, optional adviser name, optional room, and optional shift. Adviser status is not read from or synchronized to `Teacher.isAdviser`.
+- `/dashboard/sections` is read-only and uses sortable shared DataTable columns with dedicated loading, empty, error, and retry states. Phase 9A adds no creation, edit, archive, adviser selection, or Subject Assignment behavior.
+- The null-safe active Section identity migration is authored as `20260729000000_section_identity_null_safe`. It normalizes Section identity values, rejects invalid or duplicate active data before modification, and defines a partial unique expression index for active grade level + track/strand + section name identities.
+- Prisma schema validation and the production build pass. Migration deployment remains pending because Prisma's Windows schema-engine process currently fails to launch with `spawn UNKNOWN`; no database changes were applied during Phase 9A verification.
 # Technology Stack
 ## Framework
 - Next.js (App Router)
