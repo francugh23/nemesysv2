@@ -39,6 +39,37 @@ export async function findActiveSections() {
   });
 }
 
+export async function findActiveSectionByIdentity(
+  gradeLevel: string,
+  trackStrand: string | null,
+  sectionName: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).section.findFirst({
+    where: {
+      gradeLevel,
+      trackStrand,
+      sectionName: {
+        equals: sectionName,
+        mode: "insensitive",
+      },
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+    },
+  });
+}
+
+export async function createSection(
+  data: Prisma.SectionUncheckedCreateInput,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).section.create({
+    data,
+  });
+}
+
 export async function findActiveSectionForAssignment(
   id: string,
   transaction?: Prisma.TransactionClient,

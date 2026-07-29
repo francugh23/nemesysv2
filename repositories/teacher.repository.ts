@@ -127,6 +127,17 @@ export async function findActiveTeachersForAssignment() {
   });
 }
 
+export async function findActiveTeacherForSection(
+  id: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return findActiveTeacherForAssignment(id, transaction);
+}
+
+export async function findActiveTeachersForSection() {
+  return findActiveTeachersForAssignment();
+}
+
 export async function updateTeacher(
   id: string,
   data: Prisma.TeacherUpdateInput,
