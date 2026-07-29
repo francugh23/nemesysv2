@@ -1,0 +1,68 @@
+# Phase 09: Section Management
+
+## Scope And Outcome
+
+Phase 9 delivered full Section CRUD at `/dashboard/sections`: active-list reads, creation, view, edit, and soft archive.
+
+Completed subphases:
+
+- Phase 9A: Section Foundation and Read Path
+- Phase 9B: Section Creation and Adviser Management
+- Phase 9C: Section View, Edit, and Archive
+
+## Domain Decisions
+
+- Section fields are grade level, track/strand, section name, optional adviser, optional room, and optional shift. No model attributes were added.
+- Active identity is normalized grade level, null-safe normalized track/strand, and normalized section name. Archived identities may be reused by a newly active Section.
+- Grade levels use canonical values `7` through `12`. Grades 7 through 10 require null track/strand; grades 11 and 12 may omit a track/strand or use a trimmed uppercase value.
+- Section names are trimmed, non-empty, and compared case-insensitively for active identity. Blank optional values normalize to null.
+- Room is informational only, with no scheduling or uniqueness rules. Capacity remains deferred.
+- Adviser is optional and must reference an active Teacher. Adviser status is derived from active Section relationships only; Section mutations do not read, write, or synchronize `Teacher.isAdviser`.
+
+## Data And Mutation Architecture
+
+- Reads and mutations follow `Components -> Server Actions -> Services -> Repositories -> Prisma -> PostgreSQL`.
+- Section reads require an authenticated `SUPER_ADMIN` at both Server Action and service boundaries. The repository explicitly filters active records with `deletedAt: null`.
+- The flat list contains grade level, track/strand, section name, optional adviser name, optional room, and optional shift.
+- Creation reloads and validates active relationships in the service-owned transaction, checks normalized active identity, creates the Section, and writes a CREATE audit record atomically.
+- Update reloads the active Section inside its transaction, normalizes and checks the identity excluding the current record, validates an optional active adviser, updates the record, and writes an UPDATE audit record atomically.
+- Mutations are restricted to `SUPER_ADMIN`; navigation visibility is not authorization.
+
+## Active Identity Migration
+
+- Migration `20260729000000_section_identity_null_safe` normalizes Section identity values, rejects invalid or duplicate active data before modification, and defines a PostgreSQL partial unique expression index for active grade level + track/strand + section name identities.
+- The migration was authored but remains undeployed because Prisma's Windows schema-engine process fails to launch with `spawn UNKNOWN`.
+- Until deployed, source-level checks enforce the rule during ordinary requests, but database-level concurrency enforcement is not active.
+
+## Archive Lifecycle And Audit
+
+- Archive never hard-deletes or cascades lifecycle changes. It sets `deletedAt` and preserves historical relationships and audit records.
+- Archive requires an active Section with no active SubjectAssignments and no non-deleted Enrolments in `ACTIVE` status.
+- Archive and its ARCHIVE audit record commit or roll back together.
+- Active Section lists, Section form options, and Subject Assignment Section options exclude archived Sections.
+
+## UI And Client-State Decisions
+
+- The page uses the existing CrudToolbar, DataTable, loading skeleton, dialog-manager, React Hook Form, Zod, toast, confirmation-dialog, and SearchableSelect patterns.
+- The page provides loading, empty, error, and retry states. Clicking a row opens read-only details; row actions open edit and archive dialogs.
+- Create and Edit forms use `Controller`-bound Base UI Selects and primitive active-Teacher IDs in SearchableSelect. The optional shift can be cleared and normalizes to null.
+- Dialog state uses a per-open instance token. A stale mutation completion can close only its originating dialog instance, including when a dialog is reopened for the same Section.
+- Successful create, update, and archive mutations invalidate only `['sections']`, `['section-form-options']`, and `['subject-assignment-options']`. Dashboard data is not invalidated.
+
+## Verification
+
+- Phase 9B browser verification confirmed that selecting Grade 7 produces no controlled-state warnings or console errors.
+- Phase 9C targeted ESLint, `npx prisma validate`, `git diff --check`, and `npm run build` passed.
+- The production build includes `/dashboard/sections`.
+- `git diff --check` produced only LF-to-CRLF workspace warnings.
+- Database-backed behavioral tests were not run because the identity migration is pending deployment.
+
+## Deferred Work And Residual Risks
+
+- Restore, capacity, import/export, scheduling, timetables, Student Enrolment workflows, and Subject Assignment feature changes remain deferred.
+- Archive dependency checks have a residual race with concurrent Subject Assignment or future Enrolment creation. Coordinated locking across those creation paths is outside Phase 9 scope.
+- Deployment of the identity migration remains required for database-level concurrency-safe identity enforcement.
+
+## Dependencies
+
+- Section Management enables active Section selection for Subject Assignment, Student Enrolment placement, adviser assignment, class lists, attendance, and grades.
