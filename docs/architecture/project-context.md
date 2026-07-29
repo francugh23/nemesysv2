@@ -113,6 +113,24 @@ Section Management is a foundational academic module. Its completion enables:
 - Class Lists
 - Attendance
 - Grades
+## Section Management Plan
+- Phase 9 implements full Section CRUD at `/dashboard/sections`: active-list read path, creation, view/edit, and soft archive. Import/export, restoration, enrolment workflows, scheduling, timetables, class lists, attendance, and grades remain out of scope.
+- Section management is restricted to `SUPER_ADMIN` users, consistent with the existing Sections navigation visibility. Server Actions and services enforce this authorization; navigation visibility alone is not authorization.
+- Section fields are grade level, track/strand, section name, optional adviser, optional room, and optional shift. The existing Section model is sufficient; no new Section attributes are required for Phase 9.
+- Active Section identity is the normalized grade level, null-safe normalized track/strand, and normalized section name. Archived identities may be reused by a newly created active Section. A PostgreSQL partial unique expression index will enforce this rule.
+- Grade levels use canonical values `7` through `12`. Grades 7 through 10 require a null track/strand. Grades 11 and 12 may omit a track/strand or use a trimmed uppercase value.
+- Section names are trimmed, non-empty, and compared case-insensitively for active identity. Room is an optional informational field only; it has no scheduling, uniqueness, or additional validation rules. Section capacity is deferred to a future milestone.
+- An adviser is optional and must reference an active Teacher. Adviser status is derived exclusively from active Section relationships; do not introduce, update, or persist `Teacher.isAdviser`.
+- All Section mutations use the Components → Server Actions → Services → Repositories → Prisma → PostgreSQL flow. Services own authorization, normalization, transactions, dependency checks, and audit coordination; repositories own data access only.
+- Creation, update, and archive mutations create transactional audit records identifying the actor, action, module, Section identity, and outcome.
+- Archive sets `deletedAt` and never hard-deletes a Section. Active reads and form options explicitly exclude archived Sections. Archive is blocked when active SubjectAssignments or active Enrolments exist; historical relations and audit records are preserved.
+- The Section page will use the existing CrudToolbar, DataTable, loading skeleton, dialog-manager, React Hook Form, Zod, toast, confirmation-dialog, and SearchableSelect patterns. Adviser selection uses primitive active Teacher IDs.
+- Section hooks use `['sections']` and `['section-form-options']` keys. Successful mutations invalidate the narrowest relevant Section keys, `['subject-assignment-options']`, and `['dashboard']` where active Section counts are consumed.
+- Phase 9A: Section Foundation and Read Path: identity migration, schemas, repository/service/action/hook reads, and the active Sections page.
+- Phase 9B: Section Creation and Adviser Management: active Teacher form options, transactional creation, identity enforcement, CREATE audit logging, creation dialog, and Assignment-option invalidation.
+- Phase 9C: Section View, Edit, and Archive: transactional updates, UPDATE audit logging, archive dependency checks, soft deletion, ARCHIVE audit logging, confirmation dialog, and archived-option exclusion.
+- Phase 9D: Documentation and Knowledge Promotion: update current project context with completed rules and deferred work, promote reusable knowledge where needed, and complete final verification.
+- Phase 9 verification includes targeted ESLint for changed TypeScript files, `npx prisma validate`, `git diff --check`, `npm run build`, and documented behavioral checks for identity, grade/strand, adviser eligibility, archive dependencies, audit records, cache refresh, and confirmation that archived Sections never appear in SearchableSelect or Section form options.
 # Technology Stack
 ## Framework
 - Next.js (App Router)
