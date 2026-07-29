@@ -57,7 +57,7 @@ export function SectionForm({ form }: SectionFormProps) {
           name="gradeLevel"
           control={form.control}
           render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select value={field.value ?? null} onValueChange={field.onChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select grade level" />
               </SelectTrigger>
@@ -119,7 +119,7 @@ export function SectionForm({ form }: SectionFormProps) {
           name="shift"
           control={form.control}
           render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select value={field.value ?? null} onValueChange={field.onChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select shift" />
               </SelectTrigger>
