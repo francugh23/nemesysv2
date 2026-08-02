@@ -9,11 +9,11 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-No active implementation milestone. Phase 9: Section Management is complete.
+No active implementation milestone. Phase 10A: Enrollment Module Foundation and Read Path is complete.
 
 ### Current Objective
 
-Select the next functional milestone through the approved planning workflow without reopening completed or deferred Phase 9 scope.
+Approve Phase 10B business rules and scope through the planning workflow before implementing Enrollment mutations or lifecycle behavior.
 
 ### Completed Modules
 
@@ -23,11 +23,13 @@ Select the next functional milestone through the approved planning workflow with
 - Shared CRUD toolbar and DataTable sorting improvements
 - Subject Assignment foundation and creation
 - Section Management foundation, creation, view, edit, and archive
+- Enrollment Management foundation and read path
 
 ### Milestone Records
 
 - [Phase 08: Subject Assignment](./milestones/phase-08-subject-assignment.md)
 - [Phase 09: Section Management](./milestones/phase-09-section-management.md)
+- [Phase 10: Enrollment Management](./milestones/phase-10-enrollment.md)
 
 ## Current Architecture
 
@@ -60,7 +62,7 @@ Select the next functional milestone through the approved planning workflow with
 
 ## Next Planned Milestone
 
-Select and plan the next functional milestone through the approved planning workflow. No subsequent milestone is active or approved.
+Plan Phase 10B Enrollment creation and domain rules through the approved planning workflow. Phase 10B is not active or approved.
 
 ## Technology Stack
 

@@ -1,0 +1,86 @@
+"use client";
+
+import type { ColumnDef } from "@tanstack/react-table";
+
+import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { Badge } from "@/components/ui/badge";
+import { displayValue, formatFullName } from "@/lib/format";
+import type { EnrollmentListItem } from "@/schemas";
+
+const statusVariants = {
+  ACTIVE: "default",
+  COMPLETED: "secondary",
+  DROPPED: "destructive",
+  TRANSFERRED: "outline",
+} as const;
+
+export const enrollmentColumns: ColumnDef<EnrollmentListItem>[] = [
+  {
+    accessorKey: "studentLrn",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="LRN" />
+    ),
+  },
+  {
+    accessorKey: "studentLastName",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Student" />
+    ),
+    cell: ({ row }) =>
+      formatFullName(
+        row.original.studentFirstName,
+        row.original.studentMiddleName,
+        row.original.studentLastName,
+      ),
+  },
+  {
+    accessorKey: "sectionGradeLevel",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Grade" />
+    ),
+  },
+  {
+    accessorKey: "sectionTrackStrand",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Track / Strand" />
+    ),
+    cell: ({ row }) => displayValue(row.original.sectionTrackStrand),
+  },
+  {
+    accessorKey: "sectionName",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Section" />
+    ),
+  },
+  {
+    accessorKey: "academicYear",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Academic Year" />
+    ),
+  },
+  {
+    accessorKey: "semester",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Semester" />
+    ),
+    cell: ({ row }) => {
+      const semester = row.original.semester;
+
+      return semester
+        ? semester.charAt(0) + semester.slice(1).toLowerCase()
+        : displayValue(null);
+    },
+  },
+  {
+    accessorKey: "status",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Status" />
+    ),
+    cell: ({ row }) => (
+      <Badge variant={statusVariants[row.original.status]}>
+        {row.original.status.charAt(0) +
+          row.original.status.slice(1).toLowerCase()}
+      </Badge>
+    ),
+  },
+];
