@@ -9,6 +9,7 @@ Completed subphases:
 - Phase 9A: Section Foundation and Read Path
 - Phase 9B: Section Creation and Adviser Management
 - Phase 9C: Section View, Edit, and Archive
+- Phase 9D: Verification and Knowledge Promotion
 
 ## Domain Decisions
 
@@ -28,7 +29,7 @@ Completed subphases:
 - Update reloads the active Section inside its transaction, normalizes and checks the identity excluding the current record, validates an optional active adviser, updates the record, and writes an UPDATE audit record atomically.
 - Mutations are restricted to `SUPER_ADMIN`; navigation visibility is not authorization.
 
-## Active Identity Migration
+## Pending Identity Migration
 
 - Migration `20260729000000_section_identity_null_safe` normalizes Section identity values, rejects invalid or duplicate active data before modification, and defines a PostgreSQL partial unique expression index for active grade level + track/strand + section name identities.
 - The migration was authored but remains undeployed because Prisma's Windows schema-engine process fails to launch with `spawn UNKNOWN`.
@@ -53,15 +54,24 @@ Completed subphases:
 
 - Phase 9B browser verification confirmed that selecting Grade 7 produces no controlled-state warnings or console errors.
 - Phase 9C targeted ESLint, `npx prisma validate`, `git diff --check`, and `npm run build` passed.
+- Phase 9D reran targeted ESLint across the Section feature, `npx prisma validate`, `git diff --check`, and `npm run build`; all passed.
 - The production build includes `/dashboard/sections`.
-- `git diff --check` produced only LF-to-CRLF workspace warnings.
 - Database-backed behavioral tests were not run because the identity migration is pending deployment.
+
+## Reusable Implementation Knowledge
+
+- Normalize business identity values once at the schema boundary, repeat identity checks in the service transaction, and use a database constraint for concurrency-safe enforcement when deployment is available.
+- Partial unique expression indexes are the PostgreSQL mechanism for active-only, normalized, null-safe identities when archived identities may be reused.
+- Treat relationship-derived state as authoritative when a legacy boolean can drift. Section adviser status is derived from active Section relationships rather than synchronized to `Teacher.isAdviser`.
+- Reload mutable records and referenced active relationships inside the service-owned transaction before enforcing business rules or writing audit records.
+- Use per-open dialog instance tokens when asynchronous mutation completion must not close a newer dialog instance.
+- Invalidate feature lists and dependent option queries after mutations, but do not invalidate unrelated dashboard data.
 
 ## Deferred Work And Residual Risks
 
 - Restore, capacity, import/export, scheduling, timetables, Student Enrolment workflows, and Subject Assignment feature changes remain deferred.
 - Archive dependency checks have a residual race with concurrent Subject Assignment or future Enrolment creation. Coordinated locking across those creation paths is outside Phase 9 scope.
-- Deployment of the identity migration remains required for database-level concurrency-safe identity enforcement.
+- Deployment of the identity migration remains an environment blocker for database-level concurrency-safe identity enforcement and database-backed behavioral verification. It does not block completion of the implemented Phase 9 application scope.
 
 ## Dependencies
 

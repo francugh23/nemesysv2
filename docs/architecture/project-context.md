@@ -9,11 +9,11 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-Phase 9D: Section Management final verification and knowledge promotion.
+No active implementation milestone. Phase 9: Section Management is complete.
 
 ### Current Objective
 
-Maintain scalable repository memory by keeping current operational state here and permanent feature implementation history in milestone records.
+Select the next functional milestone through the approved planning workflow without reopening completed or deferred Phase 9 scope.
 
 ### Completed Modules
 
@@ -50,7 +50,7 @@ Maintain scalable repository memory by keeping current operational state here an
 
 ## Known Environmental Issue
 
-- Prisma's Windows schema-engine process fails to launch with `spawn UNKNOWN`, blocking deployment of the pending Section identity migration. See the [Phase 09 record](./milestones/phase-09-section-management.md#active-identity-migration) for impact and migration details.
+- Prisma's Windows schema-engine process fails to launch with `spawn UNKNOWN`, blocking deployment of the pending Section identity migration and database-backed behavioral verification. This is a documented environment blocker, not an implementation blocker for completed Phase 9 application scope. See the [Phase 09 record](./milestones/phase-09-section-management.md#pending-identity-migration) for impact and migration details.
 
 ## Dependency Relationships
 
@@ -60,7 +60,7 @@ Maintain scalable repository memory by keeping current operational state here an
 
 ## Next Planned Milestone
 
-Complete Phase 9D final behavioral verification and knowledge promotion, then select the next functional milestone through the approved planning workflow.
+Select and plan the next functional milestone through the approved planning workflow. No subsequent milestone is active or approved.
 
 ## Technology Stack
 
