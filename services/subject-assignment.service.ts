@@ -9,7 +9,10 @@ import {
 import {
   createSubjectAssignment,
   findActiveSubjectAssignment,
+  findActiveSubjectAssignmentById,
+  findActiveSubjectAssignmentExcludingId,
   findAllSubjectAssignments,
+  updateSubjectAssignment,
 } from "@/repositories/subject-assignment.repository";
 import {
   findActiveSubjectById,
@@ -22,6 +25,7 @@ import {
 import {
   CreateSubjectAssignmentSchema,
   type SubjectAssignmentListItem,
+  UpdateSubjectAssignmentSchema,
 } from "@/schemas";
 import { z } from "zod";
 
@@ -146,6 +150,91 @@ export async function createSubjectAssignmentService(
       );
 
       return assignment;
+    });
+  } catch (error) {
+    rethrowSubjectAssignmentConflict(error);
+  }
+}
+
+export async function updateSubjectAssignmentService(
+  id: string,
+  values: z.infer<typeof UpdateSubjectAssignmentSchema>,
+) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized.");
+  }
+
+  try {
+    return await prisma.$transaction(async (transaction) => {
+      const [assignment, teacher, subject, section] = await Promise.all([
+        findActiveSubjectAssignmentById(id, transaction),
+        findActiveTeacherForAssignment(values.teacherId, transaction),
+        findActiveSubjectById(values.subjectId, transaction),
+        findActiveSectionForAssignment(values.sectionId, transaction),
+      ]);
+
+      if (!assignment) {
+        throw new Error("Subject assignment not found.");
+      }
+
+      if (!teacher) {
+        throw new Error("Teacher not found or inactive.");
+      }
+
+      if (!subject) {
+        throw new Error("Subject not found or archived.");
+      }
+
+      if (!section) {
+        throw new Error("Section not found or inactive.");
+      }
+
+      if (subject.gradeLevel !== section.gradeLevel) {
+        throw new Error("Subject and section grade levels must match.");
+      }
+
+      if (
+        subject.trackStrand !== null &&
+        subject.trackStrand !== section.trackStrand
+      ) {
+        throw new Error("Subject and section track/strand must match.");
+      }
+
+      const duplicate = await findActiveSubjectAssignmentExcludingId(
+        values,
+        assignment.id,
+        transaction,
+      );
+
+      if (duplicate) {
+        throw new Error(
+          "An active assignment already exists for this teacher, subject, section, and academic year.",
+        );
+      }
+
+      const updatedAssignment = await updateSubjectAssignment(
+        assignment.id,
+        values,
+        transaction,
+      );
+
+      await createAuditLogs(
+        [
+          {
+            userId: session.user.id,
+            action: "UPDATE",
+            module: "SubjectAssignment",
+            recordId: updatedAssignment.id,
+            recordName: `${subject.code} - ${section.sectionName}`,
+            description: "Updated subject assignment",
+          },
+        ],
+        transaction,
+      );
+
+      return updatedAssignment;
     });
   } catch (error) {
     rethrowSubjectAssignmentConflict(error);

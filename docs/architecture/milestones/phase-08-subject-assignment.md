@@ -2,13 +2,14 @@
 
 ## Scope And Outcome
 
-Phase 8 delivered the Subject Assignment foundation, read path, creation flow, and a shared DataTable sorting correction. The read-only Assignment page is available at `/dashboard/assignments`; creation is available through its dialog.
+Phase 8 delivered the Subject Assignment foundation, read path, creation flow, view/edit lifecycle, and a shared DataTable sorting correction. The Assignment page is available at `/dashboard/assignments`.
 
 Completed subphases:
 
 - Phase 8A: Subject Assignment Foundation
 - Phase 8A.1: Shared DataTable Sorting Fix
 - Phase 8B: Subject Assignment Creation
+- Phase 8C: Subject Assignment View and Edit
 
 ## Architecture And Read Model
 
@@ -35,11 +36,23 @@ Completed subphases:
 - `SubjectAssignmentForm` uses React Hook Form `Controller` bindings rather than `form.watch` and `form.setValue` adapters. This isolates controlled-field subscriptions and mutation lifecycles during dropdown selection and popup unmounting, retaining selected Teacher and Subject labels and IDs.
 - Successful creation invalidates `['subject-assignments']` only.
 
+## View And Edit Rules
+
+- Clicking an Assignment row opens a read-only details dialog; the row action menu opens Edit without triggering the view dialog.
+- Dialog state follows the Section Management per-open instance token pattern so stale mutation completion cannot close a newer dialog instance.
+- Edit reuses `SubjectAssignmentForm` and the existing active Teacher, Subject, and Section option query.
+- Update preserves the existing authenticated-user authorization policy at both action and service boundaries and validates the Assignment and all selected relationships inside the service-owned transaction.
+- Subject and Section grade levels must match. When the Subject specifies a track/strand, it must match the Section track/strand.
+- Active duplicate identity checks exclude the Assignment being edited.
+- Assignment update and its UPDATE audit log commit or roll back together.
+- Successful updates invalidate only `['subject-assignments']` and `['subject-assignment-options']`.
+- Schedule, room, and shift remain outside the Assignment form and read model.
+
 ## Verification And Deferred Work
 
-- Phase verification passed.
+- Phase 8C targeted ESLint, `npx prisma validate`, `git diff --check`, and `npm run build` passed.
 - At delivery, an Assignment could not be completed against real data because no Section records existed. This was expected until Section Management populated the active Section selector, not a Phase 8B defect.
-- Editing, archiving, import/export, scheduling, room, shift, timetable, curriculum, grades, and attendance were deferred.
+- Phase 8D archive lifecycle remains deferred. Import/export, scheduling, room, shift, timetable, curriculum, grades, and attendance remain outside the active Subject Assignment milestone.
 
 ## Dependencies
 

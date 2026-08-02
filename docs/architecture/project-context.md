@@ -9,11 +9,11 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-No active implementation milestone. Phase 10A: Enrollment Module Foundation and Read Path is complete.
+No active implementation milestone. Phase 8C: Subject Assignment View and Edit is complete; Enrollment remains paused after Phase 10A.
 
 ### Current Objective
 
-Approve Phase 10B business rules and scope through the planning workflow before implementing Enrollment mutations or lifecycle behavior.
+Plan Phase 8D Subject Assignment archive lifecycle through the approved planning workflow without resuming Enrollment work.
 
 ### Completed Modules
 
@@ -21,7 +21,7 @@ Approve Phase 10B business rules and scope through the planning workflow before 
 - Teacher CRUD
 - Subject CRUD, identity correction, archive, and import
 - Shared CRUD toolbar and DataTable sorting improvements
-- Subject Assignment foundation and creation
+- Subject Assignment foundation, creation, view, and edit
 - Section Management foundation, creation, view, edit, and archive
 - Enrollment Management foundation and read path
 
@@ -62,7 +62,7 @@ Approve Phase 10B business rules and scope through the planning workflow before 
 
 ## Next Planned Milestone
 
-Plan Phase 10B Enrollment creation and domain rules through the approved planning workflow. Phase 10B is not active or approved.
+Plan Phase 8D Subject Assignment archive lifecycle through the approved planning workflow. Phase 8D is not active or approved.
 
 ## Technology Stack
 

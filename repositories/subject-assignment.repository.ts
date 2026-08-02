@@ -23,11 +23,58 @@ export async function findActiveSubjectAssignment(
   });
 }
 
+export async function findActiveSubjectAssignmentById(
+  id: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).subjectAssignment.findFirst({
+    where: {
+      id,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+    },
+  });
+}
+
+export async function findActiveSubjectAssignmentExcludingId(
+  identity: SubjectAssignmentIdentity,
+  excludeId: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).subjectAssignment.findFirst({
+    where: {
+      ...identity,
+      id: {
+        not: excludeId,
+      },
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+    },
+  });
+}
+
 export async function createSubjectAssignment(
   data: Prisma.SubjectAssignmentUncheckedCreateInput,
   transaction?: Prisma.TransactionClient,
 ) {
   return (transaction ?? prisma).subjectAssignment.create({
+    data,
+  });
+}
+
+export async function updateSubjectAssignment(
+  id: string,
+  data: Prisma.SubjectAssignmentUncheckedUpdateInput,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).subjectAssignment.update({
+    where: {
+      id,
+    },
     data,
   });
 }
