@@ -38,7 +38,7 @@ export default async function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
           suppressHydrationWarning={true}
         >
-          <Toaster richColors position="top-right" />
+          <Toaster richColors position="bottom-right" />
           <ReactQueryProvider>{children}</ReactQueryProvider>
         </body>
       </html>
