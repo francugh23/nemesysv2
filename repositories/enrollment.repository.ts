@@ -1,4 +1,10 @@
+import { Prisma } from "@/app/generated/prisma/client";
 import prisma from "@/lib/prisma";
+
+interface EnrollmentIdentity {
+  studentId: string;
+  academicYear: string;
+}
 
 export async function findNonArchivedEnrollments() {
   return prisma.enrollment.findMany({
@@ -48,5 +54,28 @@ export async function findNonArchivedEnrollments() {
         },
       },
     ],
+  });
+}
+
+export async function findEnrollmentByIdentity(
+  identity: EnrollmentIdentity,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).enrollment.findUnique({
+    where: {
+      studentId_academicYear: identity,
+    },
+    select: {
+      id: true,
+    },
+  });
+}
+
+export async function createEnrollment(
+  data: Prisma.EnrollmentUncheckedCreateInput,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).enrollment.create({
+    data,
   });
 }

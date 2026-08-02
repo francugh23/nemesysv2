@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useEnrollments } from "@/hooks/enrollment.hook";
 
 import { enrollmentColumns } from "./components/enrollment-columns";
+import { CreateEnrollmentDialog } from "./components/create-enrollment-dialog";
 
 export default function EnrollmentPage() {
   const { data, isLoading, isError, refetch, isFetching } = useEnrollments();
@@ -22,7 +23,7 @@ export default function EnrollmentPage() {
           </p>
         </div>
 
-        <CrudToolbar primaryAction={null} />
+        <CrudToolbar primaryAction={<CreateEnrollmentDialog />} />
       </div>
 
       <Card>

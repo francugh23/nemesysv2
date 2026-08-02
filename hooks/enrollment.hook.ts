@@ -1,12 +1,43 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { getEnrollmentsAction } from "@/actions/enrollment.action";
+import {
+  createEnrollmentAction,
+  getEnrollmentFormOptionsAction,
+  getEnrollmentsAction,
+} from "@/actions/enrollment.action";
 
 export function useEnrollments() {
   return useQuery({
     queryKey: ["enrollments"],
     queryFn: getEnrollmentsAction,
+  });
+}
+
+export function useEnrollmentFormOptions() {
+  return useQuery({
+    queryKey: ["enrollment-form-options"],
+    queryFn: getEnrollmentFormOptionsAction,
+  });
+}
+
+export function useCreateEnrollment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createEnrollmentAction,
+    onSuccess: async (result) => {
+      if (result.error) {
+        return;
+      }
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["enrollments"] }),
+        queryClient.invalidateQueries({
+          queryKey: ["enrollment-form-options"],
+        }),
+      ]);
+    },
   });
 }

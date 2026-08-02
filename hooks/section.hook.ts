@@ -20,6 +20,9 @@ function useInvalidateSectionQueries() {
       queryClient.invalidateQueries({
         queryKey: ["subject-assignment-options"],
       }),
+      queryClient.invalidateQueries({
+        queryKey: ["enrollment-form-options"],
+      }),
     ]);
   };
 }

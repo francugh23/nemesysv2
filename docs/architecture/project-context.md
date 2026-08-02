@@ -9,11 +9,11 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-No active implementation milestone. Phase 8D: Subject Assignment Archive is complete; Enrollment remains paused after Phase 10A.
+No active implementation milestone. Phase 10B: Enrollment Creation is complete.
 
 ### Current Objective
 
-Plan Phase 8E final Subject Assignment verification and knowledge promotion through the approved workflow without resuming Enrollment work.
+No active implementation objective. Enrollment creation is complete and its remaining workflows stay deferred.
 
 ### Completed Modules
 
@@ -23,7 +23,7 @@ Plan Phase 8E final Subject Assignment verification and knowledge promotion thro
 - Shared CRUD toolbar and DataTable sorting improvements
 - Subject Assignment foundation, creation, view, edit, and archive
 - Section Management foundation, creation, view, edit, and archive
-- Enrollment Management foundation and read path
+- Enrollment Management foundation, read path, and creation
 
 ### Milestone Records
 
@@ -62,7 +62,7 @@ Plan Phase 8E final Subject Assignment verification and knowledge promotion thro
 
 ## Next Planned Milestone
 
-Plan Phase 8E final Subject Assignment verification and knowledge promotion through the approved planning workflow. Phase 8E is not active or approved.
+No next milestone is active or approved.
 
 ## Technology Stack
 

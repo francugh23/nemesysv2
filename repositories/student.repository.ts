@@ -19,6 +19,51 @@ export async function findStudents() {
   });
 }
 
+export async function findActiveStudentsForEnrollment() {
+  return prisma.student.findMany({
+    where: {
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      lrn: true,
+      firstName: true,
+      middleName: true,
+      lastName: true,
+    },
+    orderBy: [
+      {
+        lastName: "asc",
+      },
+      {
+        firstName: "asc",
+      },
+      {
+        lrn: "asc",
+      },
+    ],
+  });
+}
+
+export async function findActiveStudentForEnrollment(
+  id: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).student.findFirst({
+    where: {
+      id,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      lrn: true,
+      firstName: true,
+      middleName: true,
+      lastName: true,
+    },
+  });
+}
+
 export async function createStudent(data: Prisma.StudentCreateInput) {
   return prisma.student.create({
     data,

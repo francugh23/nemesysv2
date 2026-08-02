@@ -1,5 +1,14 @@
 import * as z from "zod";
 
+export const CreateEnrollmentSchema = z.object({
+  studentId: z.string().min(1, "Student is required."),
+  sectionId: z.string().min(1, "Section is required."),
+  academicYear: z.string().trim().min(1, "Academic year is required."),
+  semester: z.enum(["FIRST", "SECOND"]).optional(),
+});
+
+export type CreateEnrollmentInput = z.infer<typeof CreateEnrollmentSchema>;
+
 export const EnrollmentListItemSchema = z.object({
   id: z.string(),
   studentId: z.string(),
