@@ -10,10 +10,12 @@ import { SubjectAssignmentActions } from "./subject-assignment-actions";
 
 interface SubjectAssignmentColumnProps {
   onEdit: (assignment: SubjectAssignmentListItem) => void;
+  onArchive: (assignment: SubjectAssignmentListItem) => void;
 }
 
 export function subjectAssignmentColumns({
   onEdit,
+  onArchive,
 }: SubjectAssignmentColumnProps): ColumnDef<SubjectAssignmentListItem>[] {
   return [
     {
@@ -78,6 +80,7 @@ export function subjectAssignmentColumns({
         <SubjectAssignmentActions
           assignment={row.original}
           onEdit={onEdit}
+          onArchive={onArchive}
         />
       ),
     },

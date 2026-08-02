@@ -38,6 +38,13 @@ export default function SubjectAssignmentsPage() {
             instanceId: current.instanceId + 1,
           }));
         },
+        onArchive: (assignment) => {
+          setDialogState((current) => ({
+            selectedAssignment: assignment,
+            dialog: "archive",
+            instanceId: current.instanceId + 1,
+          }));
+        },
       }),
     [],
   );

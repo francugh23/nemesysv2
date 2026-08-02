@@ -34,6 +34,32 @@ export async function findActiveSubjectAssignmentById(
     },
     select: {
       id: true,
+      academicYear: true,
+      teacher: {
+        select: {
+          user: {
+            select: {
+              employeeNumber: true,
+              firstName: true,
+              middleName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
+      subject: {
+        select: {
+          code: true,
+          description: true,
+        },
+      },
+      section: {
+        select: {
+          gradeLevel: true,
+          trackStrand: true,
+          sectionName: true,
+        },
+      },
     },
   });
 }
@@ -76,6 +102,20 @@ export async function updateSubjectAssignment(
       id,
     },
     data,
+  });
+}
+
+export async function archiveSubjectAssignment(
+  id: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).subjectAssignment.update({
+    where: {
+      id,
+    },
+    data: {
+      deletedAt: new Date(),
+    },
   });
 }
 

@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  archiveSubjectAssignmentAction,
   getSubjectAssignmentOptionsAction,
   getSubjectAssignmentsAction,
   updateSubjectAssignmentAction,
@@ -33,6 +34,26 @@ export function useUpdateSubjectAssignment() {
       id: string;
       values: Parameters<typeof updateSubjectAssignmentAction>[1];
     }) => updateSubjectAssignmentAction(id, values),
+    onSuccess: async (result) => {
+      if (result.error) {
+        return;
+      }
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["subject-assignments"] }),
+        queryClient.invalidateQueries({
+          queryKey: ["subject-assignment-options"],
+        }),
+      ]);
+    },
+  });
+}
+
+export function useArchiveSubjectAssignment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: archiveSubjectAssignmentAction,
     onSuccess: async (result) => {
       if (result.error) {
         return;

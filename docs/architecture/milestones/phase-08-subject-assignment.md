@@ -2,7 +2,7 @@
 
 ## Scope And Outcome
 
-Phase 8 delivered the Subject Assignment foundation, read path, creation flow, view/edit lifecycle, and a shared DataTable sorting correction. The Assignment page is available at `/dashboard/assignments`.
+Phase 8 delivered the Subject Assignment foundation, read path, creation flow, view/edit/archive lifecycle, and a shared DataTable sorting correction. The Assignment page is available at `/dashboard/assignments`.
 
 Completed subphases:
 
@@ -10,6 +10,7 @@ Completed subphases:
 - Phase 8A.1: Shared DataTable Sorting Fix
 - Phase 8B: Subject Assignment Creation
 - Phase 8C: Subject Assignment View and Edit
+- Phase 8D: Subject Assignment Archive
 
 ## Architecture And Read Model
 
@@ -48,11 +49,22 @@ Completed subphases:
 - Successful updates invalidate only `['subject-assignments']` and `['subject-assignment-options']`.
 - Schedule, room, and shift remain outside the Assignment form and read model.
 
+## Archive Lifecycle And Audit
+
+- Archive preserves the existing authenticated-user authorization policy at both action and service boundaries.
+- The service reloads the active Assignment inside its transaction and rejects missing or already archived records.
+- Archive only sets `SubjectAssignment.deletedAt`; it never hard-deletes or cascades lifecycle changes.
+- Enrollment and Grade do not directly reference SubjectAssignment in the current schema. Phase 8D therefore adds no dependency checks or changes to related records, and future dependency policy remains deferred.
+- The soft archive and one ARCHIVE audit record commit or roll back together. The audit identity includes Teacher, Subject, Section, and Academic Year.
+- The row action opens a shared confirmation dialog that requires typing `ARCHIVE` and uses the existing per-open instance token protection.
+- Successful archive invalidates only `['subject-assignments']` and `['subject-assignment-options']`.
+
 ## Verification And Deferred Work
 
 - Phase 8C targeted ESLint, `npx prisma validate`, `git diff --check`, and `npm run build` passed.
+- Phase 8D targeted ESLint, `npx prisma validate`, `git diff --check`, and `npm run build` passed. The first build identified an incorrect repository selection placement; the selection was corrected and the final build passed.
 - At delivery, an Assignment could not be completed against real data because no Section records existed. This was expected until Section Management populated the active Section selector, not a Phase 8B defect.
-- Phase 8D archive lifecycle remains deferred. Import/export, scheduling, room, shift, timetable, curriculum, grades, and attendance remain outside the active Subject Assignment milestone.
+- Phase 8E final verification and knowledge promotion remains deferred. Import/export, scheduling, room, shift, timetable, curriculum, grades, and attendance remain outside the active Subject Assignment milestone.
 
 ## Dependencies
 

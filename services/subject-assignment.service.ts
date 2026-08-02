@@ -1,12 +1,14 @@
 import { Prisma } from "@/app/generated/prisma/client";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
+import { formatFullName } from "@/lib/format";
 import { createAuditLogs } from "@/repositories/audit.repository";
 import {
   findActiveSectionForAssignment,
   findActiveSectionsForAssignment,
 } from "@/repositories/section.repository";
 import {
+  archiveSubjectAssignment,
   createSubjectAssignment,
   findActiveSubjectAssignment,
   findActiveSubjectAssignmentById,
@@ -239,4 +241,50 @@ export async function updateSubjectAssignmentService(
   } catch (error) {
     rethrowSubjectAssignmentConflict(error);
   }
+}
+
+export async function archiveSubjectAssignmentService(id: string) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized.");
+  }
+
+  return prisma.$transaction(async (transaction) => {
+    const assignment = await findActiveSubjectAssignmentById(id, transaction);
+
+    if (!assignment) {
+      throw new Error("Subject assignment not found.");
+    }
+
+    const archivedAssignment = await archiveSubjectAssignment(
+      assignment.id,
+      transaction,
+    );
+    const teacherName = formatFullName(
+      assignment.teacher.user.firstName,
+      assignment.teacher.user.middleName,
+      assignment.teacher.user.lastName,
+    );
+    const teacherIdentity = assignment.teacher.user.employeeNumber
+      ? `${assignment.teacher.user.employeeNumber} - ${teacherName}`
+      : teacherName;
+    const sectionIdentity = `Grade ${assignment.section.gradeLevel}${assignment.section.trackStrand ? ` - ${assignment.section.trackStrand}` : ""} - ${assignment.section.sectionName}`;
+
+    await createAuditLogs(
+      [
+        {
+          userId: session.user.id,
+          action: "ARCHIVE",
+          module: "SubjectAssignment",
+          recordId: archivedAssignment.id,
+          recordName: `Teacher: ${teacherIdentity} | Subject: ${assignment.subject.code} - ${assignment.subject.description} | Section: ${sectionIdentity} | Academic Year: ${assignment.academicYear}`,
+          description: "Archived subject assignment",
+        },
+      ],
+      transaction,
+    );
+
+    return archivedAssignment;
+  });
 }

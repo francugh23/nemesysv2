@@ -8,6 +8,7 @@ import {
   UpdateSubjectAssignmentSchema,
 } from "@/schemas";
 import {
+  archiveSubjectAssignmentService,
   createSubjectAssignmentService,
   getSubjectAssignmentOptions,
   getSubjectAssignments,
@@ -79,6 +80,44 @@ export async function updateSubjectAssignmentAction(
 
     return {
       success: "Subject assignment updated successfully.",
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        error: error.message,
+      };
+    }
+
+    return {
+      error: "Something went wrong.",
+    };
+  }
+}
+
+export async function archiveSubjectAssignmentAction(
+  id: string,
+): Promise<ActionResponse> {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return {
+      error: "Unauthorized.",
+    };
+  }
+
+  const validatedId = z.string().min(1).safeParse(id);
+
+  if (!validatedId.success) {
+    return {
+      error: "Invalid subject assignment.",
+    };
+  }
+
+  try {
+    await archiveSubjectAssignmentService(validatedId.data);
+
+    return {
+      success: "Subject assignment archived successfully.",
     };
   } catch (error) {
     if (error instanceof Error) {

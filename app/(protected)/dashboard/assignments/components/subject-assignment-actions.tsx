@@ -14,11 +14,13 @@ import type { SubjectAssignmentListItem } from "@/schemas";
 interface SubjectAssignmentActionsProps {
   assignment: SubjectAssignmentListItem;
   onEdit: (assignment: SubjectAssignmentListItem) => void;
+  onArchive: (assignment: SubjectAssignmentListItem) => void;
 }
 
 export function SubjectAssignmentActions({
   assignment,
   onEdit,
+  onArchive,
 }: SubjectAssignmentActionsProps) {
   return (
     <DropdownMenu>
@@ -41,6 +43,15 @@ export function SubjectAssignmentActions({
           }}
         >
           Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="text-destructive"
+          onClick={(event) => {
+            event.stopPropagation();
+            onArchive(assignment);
+          }}
+        >
+          Archive
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
