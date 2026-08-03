@@ -103,14 +103,6 @@ export function EnrollmentToolbar({
         disabled={isLoading || isError}
       />
       <DataTableFacetedFilter
-        label="Academic Year"
-        allLabel="All Academic Years"
-        value={filters.academicYear}
-        options={academicYearOptions}
-        onValueChange={(value) => onFilterChange("academicYear", value)}
-        disabled={isLoading || isError}
-      />
-      <DataTableFacetedFilter
         label="Section"
         allLabel="All Sections"
         value={filters.sectionId}
@@ -118,6 +110,14 @@ export function EnrollmentToolbar({
         onValueChange={(value) => onFilterChange("sectionId", value)}
         disabled={isLoading || isError}
         className="sm:max-w-52"
+      />
+      <DataTableFacetedFilter
+        label="Academic Year"
+        allLabel="All Academic Years"
+        value={filters.academicYear}
+        options={academicYearOptions}
+        onValueChange={(value) => onFilterChange("academicYear", value)}
+        disabled={isLoading || isError}
       />
       <DataTableFacetedFilter
         label="Semester"
