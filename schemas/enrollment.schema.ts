@@ -16,6 +16,12 @@ export const EnrollmentStatusSchema = z.enum([
   "TRANSFERRED",
 ]);
 
+export const EnrollmentSemesterFilterSchema = z.enum([
+  "FIRST",
+  "SECOND",
+  "NONE",
+]);
+
 export const UpdateEnrollmentSchema = z.object({
   sectionId: z.string().min(1, "Section is required."),
   semester: z.enum(["FIRST", "SECOND"]).optional(),
@@ -23,6 +29,35 @@ export const UpdateEnrollmentSchema = z.object({
 });
 
 export type UpdateEnrollmentInput = z.infer<typeof UpdateEnrollmentSchema>;
+
+export const EnrollmentSortFieldSchema = z.enum([
+  "studentLrn",
+  "studentName",
+  "sectionGradeLevel",
+  "sectionTrackStrand",
+  "sectionName",
+  "academicYear",
+  "semester",
+  "status",
+]);
+
+export const EnrollmentTableQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  status: EnrollmentStatusSchema.optional(),
+  gradeLevel: z.string().trim().min(1).optional(),
+  academicYear: z.string().trim().min(1).optional(),
+  sectionId: z.string().trim().min(1).optional(),
+  semester: EnrollmentSemesterFilterSchema.optional(),
+  sort: EnrollmentSortFieldSchema.optional(),
+  direction: z.enum(["asc", "desc"]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(10),
+});
+
+export type EnrollmentTableQueryInput = z.input<
+  typeof EnrollmentTableQuerySchema
+>;
+export type EnrollmentTableQuery = z.output<typeof EnrollmentTableQuerySchema>;
 
 export const EnrollmentListItemSchema = z.object({
   id: z.string(),
@@ -43,3 +78,22 @@ export const EnrollmentListItemSchema = z.object({
 });
 
 export type EnrollmentListItem = z.infer<typeof EnrollmentListItemSchema>;
+
+export interface EnrollmentPage {
+  items: EnrollmentListItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  pageCount: number;
+}
+
+export interface EnrollmentFilterOptions {
+  academicYears: string[];
+  gradeLevels: string[];
+  sections: Array<{
+    id: string;
+    gradeLevel: string;
+    trackStrand: string | null;
+    sectionName: string;
+  }>;
+}

@@ -31,7 +31,8 @@ export function enrollmentColumns({
       ),
     },
     {
-      accessorKey: "studentLastName",
+      id: "studentName",
+      accessorFn: (enrollment) => enrollment.studentLastName,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Student" />
       ),
@@ -94,6 +95,7 @@ export function enrollmentColumns({
     },
     {
       id: "actions",
+      enableSorting: false,
       cell: ({ row }) =>
         row.original.status === "ACTIVE" ? (
           <EnrollmentActions enrollment={row.original} onEdit={onEdit} />

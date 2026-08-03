@@ -1,18 +1,33 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import {
   createEnrollmentAction,
+  getEnrollmentFilterOptionsAction,
   getEnrollmentFormOptionsAction,
   getEnrollmentsAction,
   updateEnrollmentAction,
 } from "@/actions/enrollment.action";
+import type { EnrollmentTableQueryInput } from "@/schemas";
 
-export function useEnrollments() {
+export function useEnrollments(query: EnrollmentTableQueryInput) {
   return useQuery({
-    queryKey: ["enrollments"],
-    queryFn: getEnrollmentsAction,
+    queryKey: ["enrollments", query],
+    queryFn: () => getEnrollmentsAction(query),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useEnrollmentFilterOptions() {
+  return useQuery({
+    queryKey: ["enrollment-filter-options"],
+    queryFn: getEnrollmentFilterOptionsAction,
   });
 }
 
@@ -36,6 +51,9 @@ export function useCreateEnrollment() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["enrollments"] }),
         queryClient.invalidateQueries({ queryKey: ["students"] }),
+        queryClient.invalidateQueries({
+          queryKey: ["enrollment-filter-options"],
+        }),
         queryClient.invalidateQueries({
           queryKey: ["enrollment-form-options"],
         }),
@@ -63,6 +81,9 @@ export function useUpdateEnrollment() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["enrollments"] }),
         queryClient.invalidateQueries({ queryKey: ["students"] }),
+        queryClient.invalidateQueries({
+          queryKey: ["enrollment-filter-options"],
+        }),
       ]);
     },
   });

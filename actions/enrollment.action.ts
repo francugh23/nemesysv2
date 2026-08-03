@@ -3,20 +3,37 @@
 import * as z from "zod";
 
 import { Permissions, requirePermission } from "@/lib/authorization";
-import { CreateEnrollmentSchema, UpdateEnrollmentSchema } from "@/schemas";
+import {
+  CreateEnrollmentSchema,
+  EnrollmentTableQuerySchema,
+  UpdateEnrollmentSchema,
+  type EnrollmentTableQueryInput,
+} from "@/schemas";
 import {
   createEnrollmentService,
   EnrollmentServiceError,
+  getEnrollmentFilterOptions,
   getEnrollmentFormOptions,
   getEnrollments,
   updateEnrollmentService,
 } from "@/services/enrollment.service";
 import type { ActionResponse } from "@/types/action-response";
 
-export async function getEnrollmentsAction() {
+export async function getEnrollmentsAction(query: EnrollmentTableQueryInput) {
+  await requirePermission(Permissions.ENROLLMENT);
+  const validatedQuery = EnrollmentTableQuerySchema.safeParse(query);
+
+  if (!validatedQuery.success) {
+    throw new EnrollmentServiceError("Invalid enrollment query.");
+  }
+
+  return await getEnrollments(validatedQuery.data);
+}
+
+export async function getEnrollmentFilterOptionsAction() {
   await requirePermission(Permissions.ENROLLMENT);
 
-  return await getEnrollments();
+  return await getEnrollmentFilterOptions();
 }
 
 export async function getEnrollmentFormOptionsAction() {

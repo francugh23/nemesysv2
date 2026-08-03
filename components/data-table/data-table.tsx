@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 import { type MutableRefObject, type ReactNode, useEffect, useState } from "react";
 import {
   type ColumnDef,
+  type OnChangeFn,
+  type PaginationState,
   type SortingState,
   flexRender,
   getCoreRowModel,
@@ -24,7 +26,29 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { Button } from "../ui/button";
+import { DataTablePagination } from "./data-table-pagination";
+
+export interface DataTableServerOptions {
+  pagination: PaginationState;
+  sorting: SortingState;
+  pageCount: number;
+  totalCount: number;
+  onPaginationChange: OnChangeFn<PaginationState>;
+  onSortingChange: OnChangeFn<SortingState>;
+  pageSizeOptions?: number[];
+  disabled?: boolean;
+}
+
+export interface DataTableStateOptions {
+  isLoading?: boolean;
+  isError?: boolean;
+  isFetching?: boolean;
+  loadingFallback?: ReactNode;
+  errorFallback?: ReactNode;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  emptyAction?: ReactNode;
+}
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -32,6 +56,8 @@ interface DataTableProps<TData, TValue> {
   onRowClick?: (row: TData) => void;
   toolbar?: (table: TanstackTable<TData>) => ReactNode;
   tableRef?: MutableRefObject<TanstackTable<TData> | null>;
+  server?: DataTableServerOptions;
+  state?: DataTableStateOptions;
 }
 
 export function DataTable<TData, TValue>({
@@ -40,15 +66,21 @@ export function DataTable<TData, TValue>({
   onRowClick,
   toolbar,
   tableRef,
+  server,
+  state,
 }: DataTableProps<TData, TValue>) {
-  const [pagination, setPagination] = useState({
+  const [clientPagination, setClientPagination] = useState({
     pageIndex: 0,
     pageSize: 10,
   });
 
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [clientSorting, setClientSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const pagination = server?.pagination ?? clientPagination;
+  const sorting = server?.sorting ?? clientSorting;
 
+  // TanStack Table exposes mutable APIs and is intentionally not compiler-memoized.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
@@ -59,9 +91,12 @@ export function DataTable<TData, TValue>({
       columnFilters,
     },
 
-    onPaginationChange: setPagination,
-    onSortingChange: setSorting,
+    onPaginationChange: server?.onPaginationChange ?? setClientPagination,
+    onSortingChange: server?.onSortingChange ?? setClientSorting,
     onColumnFiltersChange: setColumnFilters,
+    manualPagination: Boolean(server),
+    manualSorting: Boolean(server),
+    pageCount: server?.pageCount,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -80,7 +115,23 @@ export function DataTable<TData, TValue>({
     };
   }, [table, tableRef]);
 
-  const totalRows = table.getFilteredRowModel().rows.length;
+  const totalRows = server?.totalCount ?? table.getFilteredRowModel().rows.length;
+
+  if (state?.isLoading) {
+    return state.loadingFallback ?? (
+      <div className="flex min-h-64 items-center justify-center text-sm text-muted-foreground">
+        Loading records...
+      </div>
+    );
+  }
+
+  if (state?.isError) {
+    return state.errorFallback ?? (
+      <div className="flex min-h-64 items-center justify-center text-sm text-muted-foreground">
+        Unable to load records.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -104,7 +155,7 @@ export function DataTable<TData, TValue>({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getFilteredRowModel().rows.length > 0 ? (
+            {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
@@ -143,53 +194,27 @@ export function DataTable<TData, TValue>({
                   className="h-40 text-center"
                 >
                   <div className="space-y-2">
-                    <p className="font-medium">No records found</p>
+                    <p className="font-medium">
+                      {state?.emptyTitle ?? "No records found"}
+                    </p>
 
                     <p className="text-sm text-muted-foreground">
-                      Try adjusting your search or filters.
+                      {state?.emptyDescription ??
+                        "Try adjusting your search or filters."}
                     </p>
+                    {state?.emptyAction}
                   </div>
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
-        <div className="flex items-center justify-between p-4">
-          <p className="text-sm text-muted-foreground">
-            Showing{" "}
-            <span className="font-medium">
-              {table.getRowModel().rows.length}
-            </span>{" "}
-            of <span className="font-medium">{totalRows}</span> records
-          </p>
-
-          <div className="flex items-center gap-4">
-            <p className="text-sm text-muted-foreground">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount()}
-            </p>
-
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                Previous
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </div>
+        <DataTablePagination
+          table={table}
+          totalCount={totalRows}
+          pageSizeOptions={server?.pageSizeOptions}
+          disabled={server?.disabled}
+        />
       </div>
     </div>
   );

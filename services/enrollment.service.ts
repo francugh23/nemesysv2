@@ -4,11 +4,14 @@ import prisma from "@/lib/prisma";
 import { createAuditLogs } from "@/repositories/audit.repository";
 import {
   createEnrollment,
+  countNonArchivedEnrollments,
   findActiveEnrollmentById,
+  findEnrollmentFilterOptionValues,
   findEnrollmentByIdentity,
   findLatestActiveEnrollmentByStudent,
   findLatestTerminalEnrollmentByStudent,
   findNonArchivedEnrollments,
+  findNonArchivedEnrollmentsByGrade,
   updateEnrollment,
 } from "@/repositories/enrollment.repository";
 import {
@@ -23,7 +26,10 @@ import {
 } from "@/repositories/student.repository";
 import type {
   CreateEnrollmentInput,
+  EnrollmentFilterOptions,
   EnrollmentListItem,
+  EnrollmentPage,
+  EnrollmentTableQuery,
   UpdateEnrollmentInput,
 } from "@/schemas";
 
@@ -47,28 +53,128 @@ const allowedStatusTransitions: Record<
   TRANSFERRED: [],
 };
 
-export async function getEnrollments(): Promise<EnrollmentListItem[]> {
+function getEnrollmentOrderBy(
+  query: EnrollmentTableQuery,
+): Prisma.EnrollmentOrderByWithRelationInput[] {
+  const direction = query.direction ?? "asc";
+
+  switch (query.sort) {
+    case "studentLrn":
+      return [{ student: { lrn: direction } }, { id: "asc" }];
+    case "studentName":
+      return [
+        { student: { lastName: direction } },
+        { student: { firstName: direction } },
+        { student: { lrn: direction } },
+        { id: "asc" },
+      ];
+    case "sectionGradeLevel":
+      return [{ section: { gradeLevel: direction } }, { id: "asc" }];
+    case "sectionTrackStrand":
+      return [{ section: { trackStrand: direction } }, { id: "asc" }];
+    case "sectionName":
+      return [{ section: { sectionName: direction } }, { id: "asc" }];
+    case "academicYear":
+      return [{ academicYear: direction }, { id: "asc" }];
+    case "semester":
+      return [{ semester: direction }, { id: "asc" }];
+    case "status":
+      return [{ status: direction }, { id: "asc" }];
+    default:
+      return [
+        { academicYear: "desc" },
+        { student: { lastName: "asc" } },
+        { student: { firstName: "asc" } },
+        { student: { lrn: "asc" } },
+        { id: "asc" },
+      ];
+  }
+}
+
+export async function getEnrollments(
+  query: EnrollmentTableQuery,
+): Promise<EnrollmentPage> {
   await requirePermission(Permissions.ENROLLMENT);
 
-  const enrollments = await findNonArchivedEnrollments();
+  const filters = {
+    search: query.q,
+    status: query.status,
+    gradeLevel: query.gradeLevel,
+    academicYear: query.academicYear,
+    sectionId: query.sectionId,
+    semester: query.semester,
+  };
+  const totalCount = await countNonArchivedEnrollments(filters);
+  const pageCount = Math.ceil(totalCount / query.pageSize);
+  const page = Math.min(query.page, Math.max(pageCount, 1));
+  const pagination = {
+    skip: (page - 1) * query.pageSize,
+    take: query.pageSize,
+  };
+  const enrollments =
+    query.sort === "sectionGradeLevel"
+      ? await findNonArchivedEnrollmentsByGrade(
+          filters,
+          pagination,
+          query.direction ?? "asc",
+        )
+      : await findNonArchivedEnrollments(
+          filters,
+          pagination,
+          getEnrollmentOrderBy(query),
+        );
 
-  return enrollments.map((enrollment) => ({
-    id: enrollment.id,
-    studentId: enrollment.studentId,
-    sectionId: enrollment.sectionId,
-    studentLrn: enrollment.student.lrn,
-    studentFirstName: enrollment.student.firstName,
-    studentMiddleName: enrollment.student.middleName,
-    studentLastName: enrollment.student.lastName,
-    sectionGradeLevel: enrollment.section.gradeLevel,
-    sectionTrackStrand: enrollment.section.trackStrand,
-    sectionName: enrollment.section.sectionName,
-    academicYear: enrollment.academicYear,
-    semester: enrollment.semester,
-    status: enrollment.status,
-    createdAt: enrollment.createdAt,
-    updatedAt: enrollment.updatedAt,
-  }));
+  return {
+    items: enrollments.map((enrollment): EnrollmentListItem => ({
+      id: enrollment.id,
+      studentId: enrollment.studentId,
+      sectionId: enrollment.sectionId,
+      studentLrn: enrollment.student.lrn,
+      studentFirstName: enrollment.student.firstName,
+      studentMiddleName: enrollment.student.middleName,
+      studentLastName: enrollment.student.lastName,
+      sectionGradeLevel: enrollment.section.gradeLevel,
+      sectionTrackStrand: enrollment.section.trackStrand,
+      sectionName: enrollment.section.sectionName,
+      academicYear: enrollment.academicYear,
+      semester: enrollment.semester,
+      status: enrollment.status,
+      createdAt: enrollment.createdAt,
+      updatedAt: enrollment.updatedAt,
+    })),
+    totalCount,
+    page,
+    pageSize: query.pageSize,
+    pageCount,
+  };
+}
+
+export async function getEnrollmentFilterOptions(): Promise<EnrollmentFilterOptions> {
+  await requirePermission(Permissions.ENROLLMENT);
+
+  const [academicYears, sections] = await findEnrollmentFilterOptionValues();
+
+  return {
+    academicYears: academicYears.map((value) => value.academicYear),
+    gradeLevels: [...new Set(sections.map((section) => section.gradeLevel))].sort(
+      (first, second) => Number(first) - Number(second),
+    ),
+    sections: sections.sort((first, second) => {
+      const gradeDifference = Number(first.gradeLevel) - Number(second.gradeLevel);
+
+      if (gradeDifference !== 0) {
+        return gradeDifference;
+      }
+
+      const trackDifference = (first.trackStrand ?? "").localeCompare(
+        second.trackStrand ?? "",
+      );
+
+      return trackDifference !== 0
+        ? trackDifference
+        : first.sectionName.localeCompare(second.sectionName);
+    }),
+  };
 }
 
 export async function getEnrollmentFormOptions() {

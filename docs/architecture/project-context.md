@@ -9,21 +9,21 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-No active implementation milestone. Enrollment Management Phase 10D is complete.
+No active implementation milestone. Enrollment Management Phase 10E is complete.
 
 ### Current Objective
 
-No active implementation objective. Enrollment lifecycle synchronization and controlled cross-grade correction are complete.
+No active implementation objective. Enrollment server-side search, filters, sorting, pagination, and reusable table infrastructure are complete.
 
 ### Completed Modules
 
 - Student CRUD, UI, import, and export
 - Teacher CRUD
 - Subject CRUD, identity correction, archive, and import
-- Shared CRUD toolbar and DataTable sorting improvements
+- Shared CRUD toolbar and backward-compatible client/server DataTable infrastructure
 - Subject Assignment foundation, creation, view, edit, and archive
 - Section Management foundation, creation, view, edit, and archive
-- Enrollment Management foundation, read path, creation, details, edit, status lifecycle, Student summary synchronization, and controlled cross-grade correction
+- Enrollment Management foundation, lifecycle completion, controlled correction, and URL-driven server-table UX
 - Security Hardening Phase S1 centralized authorization architecture
 - Security Hardening Phase S2 active-account revalidation
 - Security Hardening Phase S3 immediate production security
@@ -52,6 +52,7 @@ No active implementation objective. Enrollment lifecycle synchronization and con
 - Production startup validates required secrets, database configuration, and any configured canonical Auth.js URL.
 - Enrollment is the operational lifecycle source of truth. Student status and current Section are synchronized summaries maintained transactionally by `EnrollmentService`.
 - Student current placement is normalized through nullable `currentSectionId`; grade, track/strand, shift, adviser, and other placement details are derived from Section.
+- Enrollment is the reference implementation for URL-driven server tables. Shared components provide generic state and controls while feature modules retain query schemas, filters, sort mapping, repositories, services, and authorization.
 - Stable architectural principles are maintained in [`.ai/context/architecture.md`](../../.ai/context/architecture.md).
 
 ## Active Constraints
