@@ -3,19 +3,35 @@
 import * as z from "zod";
 
 import { Permissions, requirePermission } from "@/lib/authorization";
-import { CreateStudentSchema } from "@/schemas";
+import {
+  CreateStudentSchema,
+  StudentTableQuerySchema,
+  type StudentTableQueryInput,
+} from "@/schemas";
 import {
   createStudentService,
+  getStudentFilterOptions,
   getStudents,
   updateStudentService,
   deleteStudentService,
 } from "@/services/student.service";
 import { ActionResponse } from "@/types/action-response";
 
-export async function getStudentsAction() {
+export async function getStudentsAction(query: StudentTableQueryInput) {
+  await requirePermission(Permissions.STUDENTS);
+  const validatedQuery = StudentTableQuerySchema.safeParse(query);
+
+  if (!validatedQuery.success) {
+    throw new Error("Invalid student query.");
+  }
+
+  return await getStudents(validatedQuery.data);
+}
+
+export async function getStudentFilterOptionsAction() {
   await requirePermission(Permissions.STUDENTS);
 
-  return await getStudents();
+  return await getStudentFilterOptions();
 }
 
 export async function createStudentAction(

@@ -5,6 +5,7 @@ import { StudentActions } from "./student-actions";
 import type { StudentListItem } from "@/types/student";
 import { StatusBadge, GenderBadge } from "@/components/common/badges";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { formatDate, formatFullName } from "@/lib/format";
 
 interface StudentColumnProps {
   onEdit: (student: StudentListItem) => void;
@@ -24,27 +25,16 @@ export function studentColumns({
     },
 
     {
-      id: "lastName",
-      accessorKey: "lastName",
-
+      id: "name",
+      accessorFn: (student) =>
+        formatFullName(
+          student.firstName,
+          student.middleName,
+          student.lastName,
+        ),
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Last Name" />
+        <DataTableColumnHeader column={column} title="Name" />
       ),
-    },
-
-    {
-      accessorKey: "firstName",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="First Name" />
-      ),
-    },
-
-    {
-      accessorKey: "middleName",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Middle Name" />
-      ),
-      cell: ({ row }) => row.original.middleName ?? "-",
     },
 
     {
@@ -57,7 +47,15 @@ export function studentColumns({
     },
 
     {
-      id: "gradeLevel",
+      id: "status",
+      accessorKey: "status",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Status" />
+      ),
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    },
+    {
+      id: "grade",
       accessorFn: (student) => student.currentSection?.gradeLevel ?? "",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Grade" />
@@ -75,15 +73,16 @@ export function studentColumns({
     },
 
     {
-      id: "status",
-      accessorKey: "status",
+      id: "createdAt",
+      accessorKey: "createdAt",
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Status" />
+        <DataTableColumnHeader column={column} title="Created Date" />
       ),
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      cell: ({ row }) => formatDate(row.original.createdAt),
     },
     {
       id: "actions",
+      enableSorting: false,
 
       cell: ({ row }) => {
         const student = row.original;

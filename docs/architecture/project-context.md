@@ -9,15 +9,15 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-No active implementation milestone. Enrollment Management Phase 10E is complete.
+No active implementation milestone. Student Module Modernization Phase 11A is complete.
 
 ### Current Objective
 
-No active implementation objective. Enrollment server-side search, filters, sorting, pagination, and reusable table infrastructure are complete.
+No active implementation objective. Student search, filters, sorting, pagination, and table state now use the reusable URL-driven server-table architecture.
 
 ### Completed Modules
 
-- Student CRUD, UI, import, and export
+- Student CRUD, UI, import, and URL-driven server-table UX
 - Teacher CRUD
 - Subject CRUD, identity correction, archive, and import
 - Shared CRUD toolbar and backward-compatible client/server DataTable infrastructure
@@ -33,6 +33,7 @@ No active implementation objective. Enrollment server-side search, filters, sort
 - [Phase 08: Subject Assignment](./milestones/phase-08-subject-assignment.md)
 - [Phase 09: Section Management](./milestones/phase-09-section-management.md)
 - [Phase 10: Enrollment Management](./milestones/phase-10-enrollment.md)
+- [Phase 11: Student Module Modernization](./milestones/phase-11-student-modernization.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -53,6 +54,7 @@ No active implementation objective. Enrollment server-side search, filters, sort
 - Enrollment is the operational lifecycle source of truth. Student status and current Section are synchronized summaries maintained transactionally by `EnrollmentService`.
 - Student current placement is normalized through nullable `currentSectionId`; grade, track/strand, shift, adviser, and other placement details are derived from Section.
 - Enrollment is the reference implementation for URL-driven server tables. Shared components provide generic state and controls while feature modules retain query schemas, filters, sort mapping, repositories, services, and authorization.
+- Student Management applies the same server-table architecture with Student-owned URL parameters, active-record search and filters, represented-value filter options, deterministic sorting, and server pagination.
 - Stable architectural principles are maintained in [`.ai/context/architecture.md`](../../.ai/context/architecture.md).
 
 ## Active Constraints
@@ -72,7 +74,7 @@ No active implementation objective. Enrollment server-side search, filters, sort
 
 ## Next Planned Milestone
 
-No next milestone is active or approved.
+No next milestone is active or approved. Complete filtered Student export remains deferred to a separately approved Export milestone.
 
 ## Technology Stack
 

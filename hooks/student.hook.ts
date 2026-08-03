@@ -1,12 +1,24 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
-import { getStudentsAction } from "@/actions/student.action";
+import {
+  getStudentFilterOptionsAction,
+  getStudentsAction,
+} from "@/actions/student.action";
+import type { StudentTableQueryInput } from "@/schemas";
 
-export function useStudents() {
+export function useStudents(query: StudentTableQueryInput) {
   return useQuery({
-    queryKey: ["students"],
-    queryFn: getStudentsAction,
+    queryKey: ["students", query],
+    queryFn: () => getStudentsAction(query),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useStudentFilterOptions() {
+  return useQuery({
+    queryKey: ["students", "filter-options"],
+    queryFn: getStudentFilterOptionsAction,
   });
 }

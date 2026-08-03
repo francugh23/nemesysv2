@@ -24,3 +24,8 @@
 - Parameterized list queries use a stable feature prefix such as `['enrollments', query]`.
 - Mutations invalidate the feature prefix so every cached page and filter variant refreshes.
 - Invalidate filter-option queries only when a mutation can change their values.
+- When filter options are derived from the same records and share the same invalidation lifecycle, place them under the feature prefix, such as `['students', 'filter-options']`.
+
+## Specialized Ordering
+- When a displayed numeric value is stored as a related string, use a parameterized raw query for the ordered page of record IDs only, then hydrate those records through Prisma and restore the returned ID order.
+- Keep raw-query filters identical to the count and ordinary list filters so pagination metadata and rows cannot diverge.

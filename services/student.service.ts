@@ -1,27 +1,154 @@
 import {
+  countNonArchivedStudents,
   createStudent,
   createStudents,
   findStudentByLRN,
+  findStudentFilterOptionValues,
   findStudentsByLRNs,
-  findStudents,
+  findNonArchivedStudents,
+  findNonArchivedStudentsByGrade,
   updateStudent,
   softDeleteStudent,
 } from "@/repositories/student.repository";
 import { createAuditLogs } from "@/repositories/audit.repository";
 
-import { CreateStudentSchema } from "@/schemas";
+import {
+  CreateStudentSchema,
+  type StudentTableQuery,
+} from "@/schemas";
 
 import { createAuditLog } from "@/services/audit.service";
 
 import prisma from "@/lib/prisma";
 import { Permissions, requirePermission } from "@/lib/authorization";
+import { Prisma } from "@/app/generated/prisma/client";
+import type { StudentFilterOptions, StudentPage } from "@/types/student";
 
 import { z } from "zod";
 
-export async function getStudents() {
+function getStudentOrderBy(
+  query: StudentTableQuery,
+): Prisma.StudentOrderByWithRelationInput[] {
+  const direction = query.direction ?? "asc";
+
+  switch (query.sort) {
+    case "lrn":
+      return [{ lrn: direction }, { id: "asc" }];
+    case "name":
+      return [
+        { lastName: direction },
+        { firstName: direction },
+        { middleName: direction },
+        { lrn: direction },
+        { id: "asc" },
+      ];
+    case "gender":
+      return [{ gender: direction }, { id: "asc" }];
+    case "status":
+      return [{ status: direction }, { id: "asc" }];
+    case "currentSection":
+      return [
+        { currentSection: { sectionName: direction } },
+        { id: "asc" },
+      ];
+    case "createdAt":
+      return [{ createdAt: direction }, { id: "asc" }];
+    default:
+      return [
+        { lastName: "asc" },
+        { firstName: "asc" },
+        { middleName: "asc" },
+        { lrn: "asc" },
+        { id: "asc" },
+      ];
+  }
+}
+
+export async function getStudents(
+  query: StudentTableQuery,
+): Promise<StudentPage> {
   await requirePermission(Permissions.STUDENTS);
 
-  return await findStudents();
+  const filters = {
+    search: query.q,
+    status: query.status,
+    gender: query.gender,
+    grade: query.grade,
+    sectionId: query.sectionId,
+  };
+  const totalCount = await countNonArchivedStudents(filters);
+  const pageCount = Math.ceil(totalCount / query.pageSize);
+  const page = Math.min(query.page, Math.max(pageCount, 1));
+  const pagination = {
+    skip: (page - 1) * query.pageSize,
+    take: query.pageSize,
+  };
+  const students =
+    query.sort === "grade"
+      ? await findNonArchivedStudentsByGrade(
+          filters,
+          pagination,
+          query.direction ?? "asc",
+        )
+      : await findNonArchivedStudents(
+          filters,
+          pagination,
+          getStudentOrderBy(query),
+        );
+
+  return {
+    items: students,
+    totalCount,
+    page,
+    pageSize: query.pageSize,
+    pageCount,
+  };
+}
+
+export async function getStudentFilterOptions(): Promise<StudentFilterOptions> {
+  await requirePermission(Permissions.STUDENTS);
+
+  const [statuses, genders, sections] = await findStudentFilterOptionValues();
+  const statusOrder = [
+    "UNENROLLED",
+    "ENROLLED",
+    "GRADUATED",
+    "TRANSFERRED",
+    "DROPPED",
+  ];
+  const genderOrder = ["MALE", "FEMALE"];
+  const sortedSections = sections.sort((first, second) => {
+    const gradeDifference = Number(first.gradeLevel) - Number(second.gradeLevel);
+
+    if (gradeDifference !== 0) {
+      return gradeDifference;
+    }
+
+    const trackDifference = (first.trackStrand ?? "").localeCompare(
+      second.trackStrand ?? "",
+    );
+
+    return trackDifference !== 0
+      ? trackDifference
+      : first.sectionName.localeCompare(second.sectionName);
+  });
+
+  return {
+    statuses: statuses
+      .map((value) => value.status)
+      .sort(
+        (first, second) =>
+          statusOrder.indexOf(first) - statusOrder.indexOf(second),
+      ),
+    genders: genders
+      .map((value) => value.gender)
+      .sort(
+        (first, second) =>
+          genderOrder.indexOf(first) - genderOrder.indexOf(second),
+      ),
+    gradeLevels: [...new Set(sortedSections.map((section) => section.gradeLevel))],
+    sections: sortedSections,
+  };
 }
 
 export async function createStudentService(

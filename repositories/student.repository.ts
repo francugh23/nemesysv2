@@ -2,44 +2,196 @@ import prisma from "@/lib/prisma";
 
 import { Prisma } from "@/app/generated/prisma/client";
 
-export async function findStudents() {
-  return prisma.student.findMany({
-    where: {
-      deletedAt: null,
-    },
-    include: {
-      currentSection: {
+export interface StudentListFilters {
+  search?: string;
+  status?: "UNENROLLED" | "ENROLLED" | "GRADUATED" | "TRANSFERRED" | "DROPPED";
+  gender?: "MALE" | "FEMALE";
+  grade?: string;
+  sectionId?: string;
+}
+
+const studentListInclude = {
+  currentSection: {
+    select: {
+      id: true,
+      gradeLevel: true,
+      trackStrand: true,
+      sectionName: true,
+      room: true,
+      shift: true,
+      adviser: {
         select: {
-          id: true,
-          gradeLevel: true,
-          trackStrand: true,
-          sectionName: true,
-          room: true,
-          shift: true,
-          adviser: {
+          user: {
             select: {
-              user: {
-                select: {
-                  firstName: true,
-                  middleName: true,
-                  lastName: true,
-                },
-              },
+              firstName: true,
+              middleName: true,
+              lastName: true,
             },
           },
         },
       },
     },
+  },
+} satisfies Prisma.StudentInclude;
 
-    orderBy: [
-      {
-        lastName: "asc",
-      },
-      {
-        firstName: "asc",
-      },
-    ],
+function getStudentListWhere(
+  filters: StudentListFilters,
+): Prisma.StudentWhereInput {
+  const searchTerms = filters.search?.split(/\s+/).filter(Boolean) ?? [];
+
+  return {
+    deletedAt: null,
+    status: filters.status,
+    gender: filters.gender,
+    currentSectionId: filters.sectionId,
+    currentSection: filters.grade
+      ? {
+          gradeLevel: filters.grade,
+        }
+      : undefined,
+    AND: searchTerms.map((term) => ({
+      OR: [
+        { lrn: { contains: term, mode: "insensitive" } },
+        { firstName: { contains: term, mode: "insensitive" } },
+        { middleName: { contains: term, mode: "insensitive" } },
+        { lastName: { contains: term, mode: "insensitive" } },
+      ],
+    })),
+  };
+}
+
+export async function countNonArchivedStudents(filters: StudentListFilters) {
+  return prisma.student.count({
+    where: getStudentListWhere(filters),
   });
+}
+
+export async function findNonArchivedStudents(
+  filters: StudentListFilters,
+  pagination: { skip: number; take: number },
+  orderBy: Prisma.StudentOrderByWithRelationInput[],
+) {
+  return prisma.student.findMany({
+    where: getStudentListWhere(filters),
+    include: studentListInclude,
+    orderBy,
+    skip: pagination.skip,
+    take: pagination.take,
+  });
+}
+
+function getStudentGradeSortConditions(filters: StudentListFilters) {
+  const conditions: Prisma.Sql[] = [
+    Prisma.sql`"student"."deletedAt" IS NULL`,
+  ];
+
+  if (filters.status) {
+    conditions.push(
+      Prisma.sql`"student"."status" = ${filters.status}::"StudentStatus"`,
+    );
+  }
+
+  if (filters.gender) {
+    conditions.push(
+      Prisma.sql`"student"."gender" = ${filters.gender}::"Gender"`,
+    );
+  }
+
+  if (filters.grade) {
+    conditions.push(Prisma.sql`"section"."gradeLevel" = ${filters.grade}`);
+  }
+
+  if (filters.sectionId) {
+    conditions.push(
+      Prisma.sql`"student"."currentSectionId" = ${filters.sectionId}`,
+    );
+  }
+
+  for (const term of filters.search?.split(/\s+/).filter(Boolean) ?? []) {
+    const pattern = `%${term}%`;
+    conditions.push(Prisma.sql`(
+      "student"."lrn" ILIKE ${pattern}
+      OR "student"."firstName" ILIKE ${pattern}
+      OR "student"."middleName" ILIKE ${pattern}
+      OR "student"."lastName" ILIKE ${pattern}
+    )`);
+  }
+
+  return conditions;
+}
+
+export async function findNonArchivedStudentsByGrade(
+  filters: StudentListFilters,
+  pagination: { skip: number; take: number },
+  direction: "asc" | "desc",
+) {
+  const gradeDirection =
+    direction === "desc" ? Prisma.sql`DESC` : Prisma.sql`ASC`;
+  const ids = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT "student"."id"
+    FROM "Student" AS "student"
+    LEFT JOIN "Section" AS "section"
+      ON "section"."id" = "student"."currentSectionId"
+    WHERE ${Prisma.join(getStudentGradeSortConditions(filters), " AND ")}
+    ORDER BY CASE
+      WHEN BTRIM("section"."gradeLevel") ~ '^[0-9]+$'
+        THEN BTRIM("section"."gradeLevel")::INTEGER
+      ELSE NULL
+    END ${gradeDirection} NULLS LAST, "student"."id" ASC
+    OFFSET ${pagination.skip}
+    LIMIT ${pagination.take}
+  `);
+
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const students = await prisma.student.findMany({
+    where: {
+      id: {
+        in: ids.map((student) => student.id),
+      },
+    },
+    include: studentListInclude,
+  });
+  const order = new Map(ids.map((student, index) => [student.id, index]));
+
+  return students.sort(
+    (first, second) =>
+      (order.get(first.id) ?? 0) - (order.get(second.id) ?? 0),
+  );
+}
+
+export async function findStudentFilterOptionValues() {
+  return Promise.all([
+    prisma.student.findMany({
+      where: { deletedAt: null },
+      distinct: ["status"],
+      select: { status: true },
+      orderBy: { status: "asc" },
+    }),
+    prisma.student.findMany({
+      where: { deletedAt: null },
+      distinct: ["gender"],
+      select: { gender: true },
+      orderBy: { gender: "asc" },
+    }),
+    prisma.section.findMany({
+      where: {
+        currentStudents: {
+          some: {
+            deletedAt: null,
+          },
+        },
+      },
+      select: {
+        id: true,
+        gradeLevel: true,
+        trackStrand: true,
+        sectionName: true,
+      },
+    }),
+  ]);
 }
 
 export async function findActiveStudentsForEnrollment() {

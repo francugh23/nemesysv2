@@ -23,3 +23,38 @@ export const CreateStudentSchema = z.object({
   guardianName: z.string().optional(),
   guardianContact: z.string().optional(),
 });
+
+export const StudentStatusSchema = z.enum([
+  "UNENROLLED",
+  "ENROLLED",
+  "GRADUATED",
+  "TRANSFERRED",
+  "DROPPED",
+]);
+
+export const StudentGenderSchema = z.enum(["MALE", "FEMALE"]);
+
+export const StudentSortFieldSchema = z.enum([
+  "lrn",
+  "name",
+  "gender",
+  "status",
+  "grade",
+  "currentSection",
+  "createdAt",
+]);
+
+export const StudentTableQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  status: StudentStatusSchema.optional(),
+  gender: StudentGenderSchema.optional(),
+  grade: z.string().trim().min(1).optional(),
+  sectionId: z.string().trim().min(1).optional(),
+  sort: StudentSortFieldSchema.optional(),
+  direction: z.enum(["asc", "desc"]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(10),
+});
+
+export type StudentTableQueryInput = z.input<typeof StudentTableQuerySchema>;
+export type StudentTableQuery = z.output<typeof StudentTableQuerySchema>;

@@ -1,4 +1,8 @@
-import type { Student } from "@/app/generated/prisma/client";
+import type {
+  Gender,
+  Student,
+  StudentStatus,
+} from "@/app/generated/prisma/client";
 
 export type StudentListItem = Student & {
   currentSection: {
@@ -17,3 +21,23 @@ export type StudentListItem = Student & {
     } | null;
   } | null;
 };
+
+export interface StudentPage {
+  items: StudentListItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  pageCount: number;
+}
+
+export interface StudentFilterOptions {
+  statuses: StudentStatus[];
+  genders: Gender[];
+  gradeLevels: string[];
+  sections: Array<{
+    id: string;
+    gradeLevel: string;
+    trackStrand: string | null;
+    sectionName: string;
+  }>;
+}
