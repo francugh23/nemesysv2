@@ -11,6 +11,7 @@ import {
   createUserAction,
   getUserFilterOptionsAction,
   getUsersAction,
+  updateUserAction,
 } from "@/actions/user.action";
 import type { UserTableQueryInput } from "@/schemas";
 
@@ -35,6 +36,25 @@ export function useCreateUser() {
   return useMutation({
     mutationFn: createUserAction,
     gcTime: 0,
+    onSuccess: async (result) => {
+      if (!result.error) {
+        await queryClient.invalidateQueries({ queryKey: ["users"] });
+      }
+    },
+  });
+}
+
+export function useUpdateUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      values,
+    }: {
+      id: string;
+      values: Parameters<typeof updateUserAction>[1];
+    }) => updateUserAction(id, values),
     onSuccess: async (result) => {
       if (!result.error) {
         await queryClient.invalidateQueries({ queryKey: ["users"] });

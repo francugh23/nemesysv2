@@ -15,6 +15,8 @@ export const CreateUserRoleSchema = z.enum([
   "PRINCIPAL",
 ]);
 
+export const UpdateUserRoleSchema = CreateUserRoleSchema;
+
 export const UserGenderSchema = z.enum(["MALE", "FEMALE"]);
 
 export const CreateUserSchema = z.object({
@@ -34,6 +36,11 @@ export const CreateUserSchema = z.object({
   lastName: z.string().trim().min(1, "Last name is required.").max(100),
   gender: UserGenderSchema,
   role: CreateUserRoleSchema,
+});
+
+export const UpdateUserSchema = CreateUserSchema.extend({
+  role: UpdateUserRoleSchema,
+  status: UserStatusSchema,
 });
 
 export const UserFirstLoginFilterSchema = z
@@ -69,14 +76,17 @@ export const UserListItemSchema = z.object({
   firstName: z.string(),
   middleName: z.string().nullable(),
   lastName: z.string(),
+  gender: UserGenderSchema,
   role: UserRoleSchema,
   status: UserStatusSchema,
   isFirstLogin: z.boolean(),
+  isTeacherOwned: z.boolean(),
   createdAt: z.date(),
 });
 
 export type UserListItem = z.infer<typeof UserListItemSchema>;
 export type CreateUserInput = z.infer<typeof CreateUserSchema>;
+export type UpdateUserInput = z.infer<typeof UpdateUserSchema>;
 export type UserTableQueryInput = z.input<typeof UserTableQuerySchema>;
 export type UserTableQuery = z.output<typeof UserTableQuerySchema>;
 

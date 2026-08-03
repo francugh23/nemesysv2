@@ -1,9 +1,11 @@
 import { verifyPassword } from "@/lib";
-import { findUserByUsername } from "../repositories/user.repository";
-import prisma from "../lib/prisma";
+import {
+  findUserCredentialsByUsername,
+  recordUserLogin,
+} from "@/repositories/user.repository";
 
 export async function authenticateUser(username: string, password: string) {
-  const user = await findUserByUsername(username);
+  const user = await findUserCredentialsByUsername(username);
 
   if (!user) {
     return null;
@@ -17,16 +19,14 @@ export async function authenticateUser(username: string, password: string) {
     return null;
   }
 
-  const validPassword = await verifyPassword(password, user.passwordHash);
+  const { passwordHash, ...authenticatedUser } = user;
+  const validPassword = await verifyPassword(password, passwordHash);
 
   if (!validPassword) {
     return null;
   }
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { lastLoginAt: new Date() },
-  });
+  await recordUserLogin(user.id, new Date());
 
-  return user;
+  return authenticatedUser;
 }

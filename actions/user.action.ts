@@ -1,10 +1,14 @@
 "use server";
 
+import { z } from "zod";
+
 import { Permissions, requirePermission } from "@/lib/authorization";
 import {
   CreateUserSchema,
+  UpdateUserSchema,
   UserTableQuerySchema,
   type CreateUserInput,
+  type UpdateUserInput,
   type UserTableQueryInput,
 } from "@/schemas";
 import {
@@ -12,6 +16,8 @@ import {
   getUserFilterOptions,
   getUsers,
   UserCreationError,
+  UserUpdateError,
+  updateUserService,
 } from "@/services/user.service";
 import type { ActionResponse } from "@/types/action-response";
 
@@ -60,6 +66,36 @@ export async function createUserAction(
     };
   } catch (error) {
     if (error instanceof UserCreationError) {
+      return { error: error.message };
+    }
+
+    return { error: "Something went wrong." };
+  }
+}
+
+export async function updateUserAction(
+  id: string,
+  values: UpdateUserInput,
+): Promise<ActionResponse> {
+  try {
+    await requirePermission(Permissions.USERS);
+  } catch {
+    return { error: "Unauthorized." };
+  }
+
+  const validatedId = z.string().min(1).safeParse(id);
+  const validatedFields = UpdateUserSchema.safeParse(values);
+
+  if (!validatedId.success || !validatedFields.success) {
+    return { error: "Invalid fields." };
+  }
+
+  try {
+    await updateUserService(validatedId.data, validatedFields.data);
+
+    return { success: "User updated successfully." };
+  } catch (error) {
+    if (error instanceof UserUpdateError) {
       return { error: error.message };
     }
 

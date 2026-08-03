@@ -17,8 +17,8 @@ User editing, activation/deactivation, password reset, deletion, archive/restore
 
 ## Credentials And Security
 
-- Temporary passwords are generated only on the server with Node.js cryptographic randomness.
-- Generated passwords contain 16 characters and guarantee lowercase, uppercase, digit, and symbol coverage while excluding visually ambiguous alphanumeric characters.
+- Temporary passwords are generated only on the server with Node.js cryptographic randomness through the shared credential utility.
+- Generated passwords contain eight uppercase alphanumeric characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789`, excluding `O`, `0`, `I`, `1`, and `L`.
 - Passwords are hashed through the existing bcrypt helper and its configured cost before persistence.
 - Neither the temporary password nor its hash is written to the audit log.
 - The plaintext temporary password is returned only in the successful create response and displayed until the success dialog closes.
@@ -53,7 +53,7 @@ User editing, activation/deactivation, password reset, deletion, archive/restore
 
 - The shadcn MCP was unavailable. Official shadcn Base UI Dialog and form documentation was used as the authoritative fallback, and existing generated primitives were reused unchanged.
 - TanStack Query MCP was unavailable. Official TanStack Query documentation confirmed mutation success invalidation, and installed package source confirmed mutation `gcTime` and `reset` behavior for one-time response cleanup.
-- Official Node.js crypto documentation confirmed `randomInt` as the cryptographic random source used by temporary-password generation.
+- Official Node.js crypto documentation confirmed `randomInt` as the cryptographic random source used by the reusable temporary-password generator.
 - Official Zod documentation confirmed trimmed string, email, enum, and object validation behavior.
 
 ## Verification

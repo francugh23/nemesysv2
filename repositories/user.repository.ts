@@ -16,10 +16,16 @@ const userListSelect = {
   firstName: true,
   middleName: true,
   lastName: true,
+  gender: true,
   role: true,
   status: true,
   isFirstLogin: true,
   createdAt: true,
+  teacher: {
+    select: {
+      id: true,
+    },
+  },
 } satisfies Prisma.UserSelect;
 
 function getUserListWhere(filters: UserListFilters): Prisma.UserWhereInput {
@@ -54,13 +60,18 @@ export async function findNonArchivedUsers(
   pagination: { skip: number; take: number },
   orderBy: Prisma.UserOrderByWithRelationInput[],
 ) {
-  return prisma.user.findMany({
+  const users = await prisma.user.findMany({
     where: getUserListWhere(filters),
     select: userListSelect,
     orderBy,
     skip: pagination.skip,
     take: pagination.take,
   });
+
+  return users.map(({ teacher, ...user }) => ({
+    ...user,
+    isTeacherOwned: teacher !== null,
+  }));
 }
 
 export async function findUserFilterOptionValues() {
@@ -77,17 +88,30 @@ export async function findUserFilterOptionValues() {
 export async function findUserByUsername(username: string) {
   return prisma.user.findUnique({
     where: {
-      username
-    }
-  })
+      username,
+    },
+    select: {
+      id: true,
+    },
+  });
 }
 
-export async function findUserById(id: string) {
+export async function findUserCredentialsByUsername(username: string) {
   return prisma.user.findUnique({
     where: {
-      id
-    }
-  })
+      username,
+    },
+    select: {
+      id: true,
+      username: true,
+      passwordHash: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+      status: true,
+      deletedAt: true,
+    },
+  });
 }
 
 export async function findActiveUserById(id: string) {
@@ -110,6 +134,9 @@ export async function findUserByEmail(email: string) {
     where: {
       email,
     },
+    select: {
+      id: true,
+    },
   });
 }
 
@@ -117,6 +144,63 @@ export async function findUserByEmployeeNumber(employeeNumber: string) {
   return prisma.user.findUnique({
     where: {
       employeeNumber,
+    },
+    select: {
+      id: true,
+    },
+  });
+}
+
+export async function findNonArchivedUserForUpdate(
+  id: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).user.findFirst({
+    where: {
+      id,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      employeeNumber: true,
+      username: true,
+      email: true,
+      firstName: true,
+      middleName: true,
+      lastName: true,
+      gender: true,
+      role: true,
+      status: true,
+      teacher: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+}
+
+export async function findUsersByIdentity(
+  identity: {
+    employeeNumber: string;
+    username: string;
+    email: string;
+  },
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).user.findMany({
+    where: {
+      OR: [
+        { employeeNumber: identity.employeeNumber },
+        { username: identity.username },
+        { email: identity.email },
+      ],
+    },
+    select: {
+      id: true,
+      employeeNumber: true,
+      username: true,
+      email: true,
     },
   });
 }
@@ -127,6 +211,12 @@ export async function createUser(
 ) {
   return (transaction ?? prisma).user.create({
     data,
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+    },
   });
 }
 
@@ -140,5 +230,25 @@ export async function updateUser(
       id,
     },
     data,
+    select: {
+      id: true,
+      employeeNumber: true,
+      username: true,
+      email: true,
+      firstName: true,
+      middleName: true,
+      lastName: true,
+      gender: true,
+      role: true,
+      status: true,
+    },
+  });
+}
+
+export async function recordUserLogin(id: string, lastLoginAt: Date) {
+  return prisma.user.update({
+    where: { id },
+    data: { lastLoginAt },
+    select: { id: true },
   });
 }

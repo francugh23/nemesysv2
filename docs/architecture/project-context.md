@@ -9,11 +9,11 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-No active implementation milestone. User Creation Phase 15B is complete.
+No active implementation milestone. User Account Editing Phase 15C is complete.
 
 ### Current Objective
 
-No active implementation objective. User Management now provides authorized server-driven listing and audited creation for non-Teacher administrative accounts.
+No active implementation objective. User Management now provides authorized server-driven listing plus audited creation and editing for non-Teacher administrative accounts.
 
 ### Completed Modules
 
@@ -24,7 +24,7 @@ No active implementation objective. User Management now provides authorized serv
 - Subject Assignment foundation, creation, view, edit, and archive
 - Section Management foundation, creation, view, edit, archive, and URL-driven server-table UX
 - Enrollment Management foundation, lifecycle completion, controlled correction, and URL-driven server-table UX
-- User Management authorized read path, URL-driven server-table UX, and audited administrative account creation
+- User Management authorized read path, URL-driven server-table UX, and audited administrative account creation and editing
 - Security Hardening Phase S1 centralized authorization architecture
 - Security Hardening Phase S2 active-account revalidation
 - Security Hardening Phase S3 immediate production security
@@ -40,6 +40,7 @@ No active implementation objective. User Management now provides authorized serv
 - [Phase 14: Section Module Modernization](./milestones/phase-14-section-modernization.md)
 - [Phase 15A: User Management Modernization](./milestones/phase-15a-user-management-modernization.md)
 - [Phase 15B: User Creation](./milestones/phase-15b-user-creation.md)
+- [Phase 15C: User Account Editing](./milestones/phase-15c-user-account-editing.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -62,8 +63,9 @@ No active implementation objective. User Management now provides authorized serv
 - Enrollment is the reference implementation for URL-driven server tables. Shared components provide generic state and controls while feature modules retain query schemas, filters, sort mapping, repositories, services, and authorization.
 - Student Management applies the same server-table architecture with Student-owned URL parameters, active-record search and filters, represented-value filter options, deterministic sorting, and server pagination.
 - Teacher, Subject, and Section Management apply the same architecture with feature-owned query contracts, represented-value filters, deterministic server ordering, and prefix-based query invalidation.
-- User Management applies the shared listing architecture to non-archived account metadata and supports audited creation of Super Admin, Registrar, and Principal accounts. Teacher account creation remains exclusively owned by Teacher Management.
-- User creation generates temporary passwords server-side, hashes them with the existing bcrypt configuration, persists active first-login accounts with the audit record in one transaction, and reveals the temporary credential only in the immediate success dialog.
+- User Management applies the shared listing architecture to non-archived account metadata and supports audited creation and editing of Super Admin, Registrar, and Principal accounts. Teacher account creation and editing remain exclusively owned by Teacher Management.
+- User creation generates eight-character temporary passwords through the shared cryptographic credential utility, hashes them with the existing bcrypt configuration, persists active first-login accounts with the audit record in one transaction, and reveals the temporary credential only in the immediate success dialog.
+- User editing limits updates to approved identity, role, and status fields; preserves uniqueness across archived rows; prevents self role/status changes; and commits changed-field audit metadata atomically with the account update.
 - Operational module headers own the primary Add or lifecycle action. Table toolbars contain search and filters on the left and only existing Import actions plus a disabled Export placeholder on the right.
 - Stable architectural principles are maintained in [`.ai/context/architecture.md`](../../.ai/context/architecture.md).
 
@@ -84,7 +86,7 @@ No active implementation objective. User Management now provides authorized serv
 
 ## Next Planned Milestone
 
-No next milestone is active or approved. User editing, account lifecycle operations, first-login/password management, and complete filtered exports remain deferred to separately approved milestones.
+No next milestone is active or approved. Password management, first-login completion, MFA, recovery, User archive/restore, last-active-administrator safeguards, and complete filtered exports remain deferred to separately approved milestones.
 
 ## Technology Stack
 

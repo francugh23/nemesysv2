@@ -1,61 +1,35 @@
-import { randomInt } from "node:crypto";
-
 import { Prisma } from "@/app/generated/prisma/client";
-import { hashPassword } from "@/lib";
+import { generateTemporaryPassword, hashPassword } from "@/lib";
 import { Permissions, requirePermission } from "@/lib/authorization";
 import prisma from "@/lib/prisma";
 import { createAuditLogs } from "@/repositories/audit.repository";
 import {
   countNonArchivedUsers,
   createUser,
+  findNonArchivedUserForUpdate,
   findNonArchivedUsers,
   findUserByEmail,
   findUserByEmployeeNumber,
   findUserFilterOptionValues,
   findUserByUsername,
+  findUsersByIdentity,
+  updateUser,
 } from "@/repositories/user.repository";
 import {
   CreateUserRoleSchema,
+  UpdateUserRoleSchema,
   type CreateUserInput,
+  type UpdateUserInput,
   type UserFilterOptions,
   type UserPage,
   type UserTableQuery,
 } from "@/schemas";
 
-const LOWERCASE = "abcdefghijkmnopqrstuvwxyz";
-const UPPERCASE = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-const DIGITS = "23456789";
-const SYMBOLS = "!@#$%&*+-_?";
-const PASSWORD_LENGTH = 16;
-
 export class UserCreationError extends Error {}
 
-function randomCharacter(characters: string) {
-  return characters[randomInt(characters.length)];
-}
+export class UserUpdateError extends Error {}
 
-function generateTemporaryPassword() {
-  const allCharacters = LOWERCASE + UPPERCASE + DIGITS + SYMBOLS;
-  const characters = [
-    randomCharacter(LOWERCASE),
-    randomCharacter(UPPERCASE),
-    randomCharacter(DIGITS),
-    randomCharacter(SYMBOLS),
-    ...Array.from({ length: PASSWORD_LENGTH - 4 }, () =>
-      randomCharacter(allCharacters),
-    ),
-  ];
-
-  for (let index = characters.length - 1; index > 0; index -= 1) {
-    const swapIndex = randomInt(index + 1);
-    [characters[index], characters[swapIndex]] = [
-      characters[swapIndex],
-      characters[index],
-    ];
-  }
-
-  return characters.join("");
-}
+type AuditChanges = Record<string, { from: string; to: string }>;
 
 function rethrowUserIdentityConflict(error: unknown): never {
   if (
@@ -68,6 +42,23 @@ function rethrowUserIdentityConflict(error: unknown): never {
   }
 
   throw error;
+}
+
+function rethrowUserUpdateIdentityConflict(error: unknown): never {
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  ) {
+    throw new UserUpdateError(
+      "Employee number, username, or email already exists.",
+    );
+  }
+
+  throw error;
+}
+
+function auditValue(value: string | null) {
+  return value ?? "NONE";
 }
 
 function nullableOrder(direction: "asc" | "desc") {
@@ -232,4 +223,122 @@ export async function createUserService(values: CreateUserInput) {
   }
 
   return temporaryPassword;
+}
+
+export async function updateUserService(id: string, values: UpdateUserInput) {
+  const session = await requirePermission(Permissions.USERS);
+  const role = UpdateUserRoleSchema.safeParse(values.role);
+
+  if (!role.success) {
+    throw new UserUpdateError(
+      "Teacher accounts must be edited through Teacher Management.",
+    );
+  }
+
+  try {
+    return await prisma.$transaction(async (transaction) => {
+      const user = await findNonArchivedUserForUpdate(id, transaction);
+
+      if (!user) {
+        throw new UserUpdateError("User not found.");
+      }
+
+      if (user.role === "TEACHER" || user.teacher) {
+        throw new UserUpdateError(
+          "Teacher accounts must be edited through Teacher Management.",
+        );
+      }
+
+      if (
+        user.id === session.user.id &&
+        (values.role !== user.role || values.status !== user.status)
+      ) {
+        throw new UserUpdateError(
+          "You cannot change your own role or status.",
+        );
+      }
+
+      const identities = await findUsersByIdentity(values, transaction);
+      const conflicts = identities.filter(
+        (identity) => identity.id !== user.id,
+      );
+
+      if (
+        conflicts.some(
+          ({ employeeNumber }) =>
+            employeeNumber === values.employeeNumber,
+        )
+      ) {
+        throw new UserUpdateError("Employee number already exists.");
+      }
+
+      if (conflicts.some(({ username }) => username === values.username)) {
+        throw new UserUpdateError("Username already exists.");
+      }
+
+      if (conflicts.some(({ email }) => email === values.email)) {
+        throw new UserUpdateError("Email already exists.");
+      }
+
+      const nextMiddleName = values.middleName || null;
+      const changes: AuditChanges = {};
+      const editableFields = {
+        firstName: values.firstName,
+        middleName: nextMiddleName,
+        lastName: values.lastName,
+        employeeNumber: values.employeeNumber,
+        username: values.username,
+        email: values.email,
+        gender: values.gender,
+        role: role.data,
+        status: values.status,
+      };
+
+      for (const [field, nextValue] of Object.entries(editableFields)) {
+        const previousValue = user[field as keyof typeof editableFields];
+
+        if (previousValue !== nextValue) {
+          changes[field] = {
+            from: auditValue(previousValue),
+            to: auditValue(nextValue),
+          };
+        }
+      }
+
+      const changedFields = Object.keys(changes);
+
+      if (changedFields.length === 0) {
+        throw new UserUpdateError("No changes to save.");
+      }
+
+      const updatedUser = await updateUser(
+        user.id,
+        editableFields,
+        transaction,
+      );
+
+      await createAuditLogs(
+        [
+          {
+            userId: session.user.id,
+            action: "UPDATE",
+            module: "User",
+            recordId: updatedUser.id,
+            recordName: `${updatedUser.lastName}, ${updatedUser.firstName}`,
+            description: `Updated user account fields: ${changedFields.join(", ")}`,
+            metadata: { changes },
+          },
+        ],
+        transaction,
+      );
+
+      return updatedUser.id;
+    });
+  } catch (error) {
+    if (error instanceof UserUpdateError) {
+      throw error;
+    }
+
+    rethrowUserUpdateIdentityConflict(error);
+  }
 }

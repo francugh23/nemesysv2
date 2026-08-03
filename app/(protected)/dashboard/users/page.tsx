@@ -1,7 +1,7 @@
 "use client";
 
 import { Download } from "lucide-react";
-import { Suspense, useEffect, useEffectEvent } from "react";
+import { Suspense, useEffect, useEffectEvent, useMemo, useState } from "react";
 
 import { CrudToolbar } from "@/components/common/crud-toolbar";
 import { DataTable } from "@/components/data-table";
@@ -15,10 +15,12 @@ import {
   UserRoleSchema,
   UserStatusSchema,
   type UserTableQueryInput,
+  type UserListItem,
 } from "@/schemas";
 
 import { userColumns } from "./components/user-columns";
 import { CreateUserDialog } from "./components/create-user-dialog";
+import { EditUserDialog } from "./components/edit-user-dialog";
 import { userFilterKeys, UserToolbar } from "./components/user-toolbar";
 
 const userSortFields = [
@@ -87,6 +89,22 @@ function UsersPageContent() {
     isFetching,
     isPlaceholderData,
   } = useUsers(query);
+  const [{ selectedUser, instanceId }, setEditState] = useState<{
+    selectedUser: UserListItem | null;
+    instanceId: number;
+  }>({ selectedUser: null, instanceId: 0 });
+  const columns = useMemo(
+    () =>
+      userColumns({
+        onEdit: (user) => {
+          setEditState((current) => ({
+            selectedUser: user,
+            instanceId: current.instanceId + 1,
+          }));
+        },
+      }),
+    [],
+  );
   const reconcilePage = useEffectEvent((page: number) => {
     tableState.onPaginationChange({
       ...tableState.pagination,
@@ -97,6 +115,14 @@ function UsersPageContent() {
     isPlaceholderData && data
       ? { pageIndex: data.page - 1, pageSize: data.pageSize }
       : tableState.pagination;
+
+  function closeEditDialog(closingInstanceId: number) {
+    setEditState((current) =>
+      current.instanceId === closingInstanceId
+        ? { ...current, selectedUser: null }
+        : current,
+    );
+  }
 
   useEffect(() => {
     normalizeUrl();
@@ -149,15 +175,13 @@ function UsersPageContent() {
           </p>
         </div>
 
-        <CrudToolbar
-          primaryAction={<CreateUserDialog />}
-        />
+        <CrudToolbar primaryAction={<CreateUserDialog />} />
       </div>
 
       <Card>
         <CardContent className="pt-6">
           <DataTable
-            columns={userColumns}
+            columns={columns}
             data={data?.items ?? []}
             toolbar={() => (
               <UserToolbar
@@ -208,6 +232,19 @@ function UsersPageContent() {
           />
         </CardContent>
       </Card>
+
+      {selectedUser && (
+        <EditUserDialog
+          key={instanceId}
+          user={selectedUser}
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              closeEditDialog(instanceId);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
