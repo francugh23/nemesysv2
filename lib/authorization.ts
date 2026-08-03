@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import type { UserRole } from "@/app/generated/prisma/enums";
 import { auth } from "@/auth";
 import {
@@ -7,6 +9,7 @@ import {
   type Permission,
   Permissions,
 } from "@/lib/permissions";
+import { findActiveUserById } from "@/repositories/user.repository";
 
 export { Permissions };
 
@@ -20,14 +23,31 @@ export class AuthorizationError extends Error {
   }
 }
 
-export async function requireAuthenticatedUser() {
+const getValidatedSession = cache(async () => {
   const session = await auth();
 
   if (!session?.user?.id) {
     throw new AuthorizationError("Unauthorized.", 401);
   }
 
-  return session;
+  const user = await findActiveUserById(session.user.id);
+
+  if (!user) {
+    throw new AuthorizationError("Unauthorized.", 401);
+  }
+
+  return {
+    ...session,
+    user: {
+      ...session.user,
+      id: user.id,
+      role: user.role,
+    },
+  };
+});
+
+export async function requireAuthenticatedUser() {
+  return getValidatedSession();
 }
 
 export async function requireRole(...roles: readonly UserRole[]) {

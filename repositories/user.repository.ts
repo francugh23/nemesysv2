@@ -17,6 +17,21 @@ export async function findUserById(id: string) {
   })
 }
 
+export async function findActiveUserById(id: string) {
+  return prisma.user.findFirst({
+    where: {
+      id,
+      deletedAt: null,
+      status: "ACTIVE",
+    },
+    select: {
+      id: true,
+      role: true,
+      status: true,
+    },
+  });
+}
+
 export async function findUserByEmail(email: string) {
   return prisma.user.findUnique({
     where: {

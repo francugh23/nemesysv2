@@ -9,11 +9,11 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-No active implementation milestone. Security Hardening Phase S1 is complete.
+No active implementation milestone. Security Hardening Phase S2 is complete.
 
 ### Current Objective
 
-No active implementation objective. The permanent centralized permission architecture is established across current modules.
+No active implementation objective. Protected operations now revalidate active account state and current role through centralized authorization.
 
 ### Completed Modules
 
@@ -23,8 +23,9 @@ No active implementation objective. The permanent centralized permission archite
 - Shared CRUD toolbar and DataTable sorting improvements
 - Subject Assignment foundation, creation, view, edit, and archive
 - Section Management foundation, creation, view, edit, and archive
-- Enrollment Management foundation, read path, and creation
+- Enrollment Management foundation, read path, creation, details, edit, and status lifecycle
 - Security Hardening Phase S1 centralized authorization architecture
+- Security Hardening Phase S2 active-account revalidation
 
 ### Milestone Records
 
@@ -32,6 +33,7 @@ No active implementation objective. The permanent centralized permission archite
 - [Phase 09: Section Management](./milestones/phase-09-section-management.md)
 - [Phase 10: Enrollment Management](./milestones/phase-10-enrollment.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
+- [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 
 ## Current Architecture
 
@@ -42,6 +44,7 @@ No active implementation objective. The permanent centralized permission archite
 - Repositories perform Prisma data access only; related writes and audit records commit or roll back together in service-owned transactions.
 - Hooks own TanStack Query integration and narrowly invalidate affected query keys.
 - Protected Server Actions and Services independently enforce centralized module permissions; repositories remain authorization-free.
+- Central authorization performs one request-scoped active-user lookup and evaluates permissions using the current database role.
 - Stable architectural principles are maintained in [`.ai/context/architecture.md`](../../.ai/context/architecture.md).
 
 ## Active Constraints

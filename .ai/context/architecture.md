@@ -26,6 +26,7 @@ Do not bypass a layer to save code.
 - Protected Server Actions perform boundary authorization before validation or service delegation.
 - Services independently perform final authorization before business rules or data access.
 - Permissions map to allowed roles in one central catalog; feature modules authorize by permission rather than hardcoded role checks.
+- Central authorization revalidates account existence, active status, soft-deletion state, and current role once per protected request.
 - Repositories never import authentication or authorization concerns.
 - Protected API routes authorize directly; proxy protection is defense in depth only.
 

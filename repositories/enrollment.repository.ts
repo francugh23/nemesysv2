@@ -18,6 +18,8 @@ export async function findNonArchivedEnrollments() {
       academicYear: true,
       semester: true,
       status: true,
+      createdAt: true,
+      updatedAt: true,
       student: {
         select: {
           lrn: true,
@@ -76,6 +78,52 @@ export async function createEnrollment(
   transaction?: Prisma.TransactionClient,
 ) {
   return (transaction ?? prisma).enrollment.create({
+    data,
+  });
+}
+
+export async function findActiveEnrollmentById(
+  id: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).enrollment.findFirst({
+    where: {
+      id,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      studentId: true,
+      sectionId: true,
+      academicYear: true,
+      semester: true,
+      status: true,
+      student: {
+        select: {
+          lrn: true,
+          firstName: true,
+          middleName: true,
+          lastName: true,
+        },
+      },
+      section: {
+        select: {
+          gradeLevel: true,
+          trackStrand: true,
+          sectionName: true,
+        },
+      },
+    },
+  });
+}
+
+export async function updateEnrollment(
+  where: Prisma.EnrollmentWhereInput,
+  data: Prisma.EnrollmentUncheckedUpdateInput,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).enrollment.updateMany({
+    where,
     data,
   });
 }

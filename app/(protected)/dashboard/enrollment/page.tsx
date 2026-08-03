@@ -6,12 +6,48 @@ import { EnrollmentTableSkeleton } from "@/components/skeletons/enrollment-table
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEnrollments } from "@/hooks/enrollment.hook";
+import type { EnrollmentListItem } from "@/schemas";
+import { useMemo, useState } from "react";
 
 import { enrollmentColumns } from "./components/enrollment-columns";
 import { CreateEnrollmentDialog } from "./components/create-enrollment-dialog";
+import {
+  EnrollmentDialogManager,
+  type EnrollmentDialogType,
+} from "./components/enrollment-dialog-manager";
 
 export default function EnrollmentPage() {
   const { data, isLoading, isError, refetch, isFetching } = useEnrollments();
+  const [{ selectedEnrollment, dialog, instanceId }, setDialogState] = useState<{
+    selectedEnrollment: EnrollmentListItem | null;
+    dialog: EnrollmentDialogType;
+    instanceId: number;
+  }>({
+    selectedEnrollment: null,
+    dialog: null,
+    instanceId: 0,
+  });
+  const columns = useMemo(
+    () =>
+      enrollmentColumns({
+        onEdit: (enrollment) => {
+          setDialogState((current) => ({
+            selectedEnrollment: enrollment,
+            dialog: "edit",
+            instanceId: current.instanceId + 1,
+          }));
+        },
+      }),
+    [],
+  );
+
+  function closeDialog(closingInstanceId: number) {
+    setDialogState((current) =>
+      current.instanceId === closingInstanceId
+        ? { ...current, selectedEnrollment: null, dialog: null }
+        : current,
+    );
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -47,8 +83,24 @@ export default function EnrollmentPage() {
               </Button>
             </div>
           ) : (
-            <DataTable columns={enrollmentColumns} data={data ?? []} />
+            <DataTable
+              columns={columns}
+              data={data ?? []}
+              onRowClick={(enrollment) => {
+                setDialogState((current) => ({
+                  selectedEnrollment: enrollment,
+                  dialog: "view",
+                  instanceId: current.instanceId + 1,
+                }));
+              }}
+            />
           )}
+          <EnrollmentDialogManager
+            enrollment={selectedEnrollment}
+            dialog={dialog}
+            instanceId={instanceId}
+            onClose={closeDialog}
+          />
         </CardContent>
       </Card>
     </div>

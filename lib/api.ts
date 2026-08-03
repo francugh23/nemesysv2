@@ -17,6 +17,14 @@ async function request<T>(input: string, init?: RequestInit): Promise<T> {
     ...init,
   });
 
+  if (response.status === 401 && typeof window !== "undefined") {
+    await fetch("/api/auth/session-invalid", {
+      method: "POST",
+      credentials: "include",
+    });
+    window.location.assign("/auth/login");
+  }
+
   if (!response.ok) {
     const error = await response
       .json()

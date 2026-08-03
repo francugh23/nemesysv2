@@ -23,3 +23,15 @@ export function formatFullName(
 export function displayValue(value?: string | null) {
   return value?.trim() || "—";
 }
+
+export function formatDateTime(date?: Date | string | null): string {
+  if (!date) return "—";
+
+  return new Intl.DateTimeFormat("en-PH", {
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(date));
+}

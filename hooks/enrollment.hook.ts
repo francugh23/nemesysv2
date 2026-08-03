@@ -6,6 +6,7 @@ import {
   createEnrollmentAction,
   getEnrollmentFormOptionsAction,
   getEnrollmentsAction,
+  updateEnrollmentAction,
 } from "@/actions/enrollment.action";
 
 export function useEnrollments() {
@@ -38,6 +39,27 @@ export function useCreateEnrollment() {
           queryKey: ["enrollment-form-options"],
         }),
       ]);
+    },
+  });
+}
+
+export function useUpdateEnrollment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      values,
+    }: {
+      id: string;
+      values: Parameters<typeof updateEnrollmentAction>[1];
+    }) => updateEnrollmentAction(id, values),
+    onSuccess: async (result) => {
+      if (result.error) {
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["enrollments"] });
     },
   });
 }

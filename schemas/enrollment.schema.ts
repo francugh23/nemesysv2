@@ -9,6 +9,21 @@ export const CreateEnrollmentSchema = z.object({
 
 export type CreateEnrollmentInput = z.infer<typeof CreateEnrollmentSchema>;
 
+export const EnrollmentStatusSchema = z.enum([
+  "ACTIVE",
+  "COMPLETED",
+  "DROPPED",
+  "TRANSFERRED",
+]);
+
+export const UpdateEnrollmentSchema = z.object({
+  sectionId: z.string().min(1, "Section is required."),
+  semester: z.enum(["FIRST", "SECOND"]).optional(),
+  status: EnrollmentStatusSchema,
+});
+
+export type UpdateEnrollmentInput = z.infer<typeof UpdateEnrollmentSchema>;
+
 export const EnrollmentListItemSchema = z.object({
   id: z.string(),
   studentId: z.string(),
@@ -22,7 +37,9 @@ export const EnrollmentListItemSchema = z.object({
   sectionName: z.string(),
   academicYear: z.string(),
   semester: z.enum(["FIRST", "SECOND"]).nullable(),
-  status: z.enum(["ACTIVE", "COMPLETED", "DROPPED", "TRANSFERRED"]),
+  status: EnrollmentStatusSchema,
+  createdAt: z.date(),
+  updatedAt: z.date(),
 });
 
 export type EnrollmentListItem = z.infer<typeof EnrollmentListItemSchema>;

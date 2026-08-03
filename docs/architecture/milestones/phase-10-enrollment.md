@@ -2,12 +2,13 @@
 
 ## Scope And Outcome
 
-Phase 10A delivered the Enrollment module foundation and read path at `/dashboard/enrollment`. Phase 10B added placement-based Enrollment creation.
+Phase 10A delivered the Enrollment module foundation and read path at `/dashboard/enrollment`. Phase 10B added placement-based Enrollment creation. Phase 10C added details, placement editing, and status transitions.
 
 Completed subphases:
 
 - Phase 10A: Enrollment Module Foundation and Read Path
 - Phase 10B: Enrollment Creation
+- Phase 10C: Enrollment Details, Edit, and Status Lifecycle
 
 ## Read Model Decisions
 
@@ -53,21 +54,45 @@ Completed subphases:
 - A dedicated table skeleton is used by both the route fallback and query loading state.
 - Enrollment status uses the existing Badge primitive. The Student-specific status badge was not broadened to cover a separate domain enum.
 
+## Details And Update Decisions
+
+- Row selection opens a read-only details dialog containing Student identity, Section identity, academic year, semester, status, and Enrollment timestamps.
+- Enrollment identity is immutable. Student and academic year are displayed as context in the edit dialog but are not part of `UpdateEnrollmentSchema` and cannot be updated.
+- Only Section, semester, and status are editable, and only while the Enrollment is `ACTIVE`.
+- Section changes require a non-archived destination Section with the same grade level and compatible track/strand. Compatibility follows the Subject Assignment rule: a non-null source track/strand must equal the destination track/strand.
+- Status follows an explicit state machine: `ACTIVE` may transition to `COMPLETED`, `DROPPED`, or `TRANSFERRED`; all three resulting statuses are terminal. Reopening is not supported.
+- The Server Action and service independently enforce `Permissions.ENROLLMENT`. The service revalidates the active Enrollment and destination Section inside its transaction.
+- The Enrollment update and one `UPDATE` AuditLog commit or roll back together. Audit metadata records changed Section, semester, and status values when applicable.
+- Successful updates invalidate only `['enrollments']`. Form options and unrelated domain queries are unchanged.
+- No Prisma schema or migration change was required.
+
 ## Verification
 
-- Targeted ESLint passed for all Phase 10B TypeScript and TSX files.
+- Targeted ESLint passed for all Phase 10C TypeScript and TSX files.
 - `npx prisma validate` passed.
 - `git diff --check` passed with LF-to-CRLF workspace warnings.
 - `npm run build` passed and includes `/dashboard/enrollment`.
 - Browser and database-backed behavioral verification were not run.
 
+## Manual Verification Checklist
+
+- Confirm row selection opens details with identity, placement, status, and timestamps.
+- Confirm only active Enrollment rows expose Edit and identity fields are read-only context.
+- Confirm Section and semester updates succeed without changing Student or academic year.
+- Confirm archived, grade-mismatched, and track/strand-incompatible Sections are rejected.
+- Confirm `ACTIVE` can transition to `COMPLETED`, `DROPPED`, or `TRANSFERRED`.
+- Confirm terminal Enrollment records cannot be edited or reopened.
+- Confirm each successful update creates exactly one transactional `UPDATE` Enrollment audit record with changed-field metadata.
+- Confirm Student status and all deferred subject, grade, archive, import, and academic-year workflows remain unchanged.
+- Confirm successful updates refresh only the `['enrollments']` query.
+
 ## Deferred Work
 
-- Enrollment view and edit workflows.
-- Enrollment status transitions, archive and restore behavior, and related Student status policy.
+- Enrollment archive and restore behavior, and related Student status policy.
 - Subject enrollment and automatic materialization of Section Subject Assignments into per-student Enrollment Subjects.
 - SHS irregular and transferee workflows.
 - Bulk enrollment, import/export, and academic-year governance.
+- Grade-aware completion and placement-change policy.
 
 ## Dependencies
 
