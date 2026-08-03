@@ -186,6 +186,7 @@ export function AuditLogToolbar({
         value={filters.action}
         options={actionOptions}
         onValueChange={(value) => onFilterChange("action", value)}
+        multiple
         disabled={isLoading || isError}
       />
       <DataTableFacetedFilter

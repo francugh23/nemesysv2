@@ -5,7 +5,7 @@ import { Prisma } from "@/app/generated/prisma/client";
 export interface AuditLogListFilters {
   search?: string;
   module?: string;
-  action?: string;
+  actions?: string[];
   actorId?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -51,7 +51,7 @@ function getAuditLogListWhere(
 
   return {
     module: filters.module,
-    action: filters.action,
+    action: filters.actions ? { in: filters.actions } : undefined,
     userId: filters.actorId,
     createdAt:
       createdAt.gte || createdAt.lte

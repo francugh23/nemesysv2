@@ -33,6 +33,7 @@ interface DataTableFacetedFilterProps {
   value: string;
   options: DataTableFilterOption[];
   onValueChange: (value: string) => void;
+  multiple?: boolean;
   disabled?: boolean;
   className?: string;
 }
@@ -45,15 +46,34 @@ export function DataTableFacetedFilter({
   value,
   options,
   onValueChange,
+  multiple = false,
   disabled,
   className,
 }: DataTableFacetedFilterProps) {
   const [open, setOpen] = useState(false);
-  const selectedOption = options.find((option) => option.value === value);
+  const selectedValues = new Set(value.split(",").filter(Boolean));
+  const selectedOptions = options.filter((option) => selectedValues.has(option.value));
 
   function selectValue(nextValue: string) {
-    onValueChange(nextValue);
-    setOpen(false);
+    if (!multiple) {
+      onValueChange(nextValue);
+      setOpen(false);
+      return;
+    }
+
+    const nextValues = new Set(selectedValues);
+
+    if (nextValue) {
+      if (nextValues.has(nextValue)) {
+        nextValues.delete(nextValue);
+      } else {
+        nextValues.add(nextValue);
+      }
+    } else {
+      nextValues.clear();
+    }
+
+    onValueChange([...nextValues].sort().join(","));
   }
 
   return (
@@ -61,7 +81,9 @@ export function DataTableFacetedFilter({
       <PopoverTrigger
         disabled={disabled}
         aria-label={
-          selectedOption ? `${label}: ${selectedOption.label}` : label
+          selectedOptions.length
+            ? `${label}: ${selectedOptions.map((option) => option.label).join(", ")}`
+            : label
         }
         render={
           <Button
@@ -74,12 +96,16 @@ export function DataTableFacetedFilter({
           />
         }
       >
-        {selectedOption ? (
+        {selectedOptions.length ? (
           <Badge
             variant="secondary"
             className="max-w-40 border-0 bg-muted px-1.5 font-normal"
           >
-            <span className="truncate">{selectedOption.label}</span>
+            <span className="truncate">
+              {selectedOptions.length === 1
+                ? selectedOptions[0].label
+                : `${selectedOptions.length} selected`}
+            </span>
           </Badge>
         ) : (
           <span className="text-muted-foreground">{label}</span>
@@ -96,22 +122,22 @@ export function DataTableFacetedFilter({
             <CommandEmpty>{emptyMessage}</CommandEmpty>
             <CommandItem
               value={allLabel}
-              data-checked={!value}
+              data-checked={selectedValues.size === 0}
               onSelect={() => selectValue("")}
             >
               {allLabel}
-              {!value && <span className="sr-only">Current selection</span>}
+              {selectedValues.size === 0 && <span className="sr-only">Current selection</span>}
             </CommandItem>
             <CommandSeparator />
             {options.map((option) => (
               <CommandItem
                 key={option.value}
                 value={`${option.label} ${option.value}`}
-                data-checked={value === option.value}
+                data-checked={selectedValues.has(option.value)}
                 onSelect={() => selectValue(option.value)}
               >
                 <span className="truncate">{option.label}</span>
-                {value === option.value && (
+                {selectedValues.has(option.value) && (
                   <span className="sr-only">Current selection</span>
                 )}
               </CommandItem>

@@ -11,6 +11,7 @@ import { useAuditLogs } from "@/hooks/audit.hook";
 import { useTableUrlState } from "@/hooks/use-table-url-state.hook";
 import {
   AuditLogDateSchema,
+  parseAuditLogActionFilter,
   type AuditLogTableQueryInput,
 } from "@/schemas";
 
@@ -48,10 +49,11 @@ function AuditLogsPageContent() {
     dateTo.success &&
     dateFrom.data <= dateTo.data;
   const search = tableState.query.q?.trim().slice(0, 100);
+  const actions = parseAuditLogActionFilter(tableState.filters.action);
   const normalizedQuery: AuditLogTableQueryInput = {
     q: search || undefined,
     module: tableState.filters.module.trim() || undefined,
-    action: tableState.filters.action.trim() || undefined,
+    action: actions.join(",") || undefined,
     actor: tableState.filters.actor.trim() || undefined,
     dateFrom:
       dateFrom.success && (!tableState.filters.dateTo || hasValidDateRange)
@@ -82,6 +84,10 @@ function AuditLogsPageContent() {
 
     if (tableState.query.q !== search) {
       tableState.setSearch(search ?? "");
+    }
+
+    if (tableState.filters.action !== actions.join(",")) {
+      tableState.setFilter("action", actions.join(","));
     }
   });
   const {
@@ -115,6 +121,7 @@ function AuditLogsPageContent() {
     search,
     tableState.filters.dateFrom,
     tableState.filters.dateTo,
+    tableState.filters.action,
     tableState.query.q,
   ]);
 

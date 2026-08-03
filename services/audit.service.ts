@@ -123,7 +123,7 @@ export async function getAuditLogs(
   const filters = {
     search: query.q,
     module: query.module,
-    action: query.action,
+    actions: query.action,
     actorId: query.actor,
     dateFrom: query.dateFrom,
     dateTo: query.dateTo,

@@ -25,11 +25,22 @@ export const AuditLogSortFieldSchema = z.enum([
   "description",
 ]);
 
+export function parseAuditLogActionFilter(value: string) {
+  return [...new Set(value.split(",").map((action) => action.trim()).filter(Boolean))].sort();
+}
+
+const AuditLogActionFilterSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(100)
+  .transform(parseAuditLogActionFilter);
+
 export const AuditLogTableQuerySchema = z
   .object({
     q: z.string().trim().max(100).optional(),
     module: z.string().trim().min(1).max(100).optional(),
-    action: z.string().trim().min(1).max(100).optional(),
+    action: AuditLogActionFilterSchema.optional(),
     actor: z.string().trim().min(1).optional(),
     dateFrom: AuditLogDateSchema.optional(),
     dateTo: AuditLogDateSchema.optional(),
