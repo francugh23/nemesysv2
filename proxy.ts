@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import authConfig from "@/auth.config";
 import { NextResponse } from "next/server";
 
+import type { UserRole } from "@/app/generated/prisma/enums";
 import {
   apiAuthPrefix,
   authRoutes,
@@ -12,11 +13,28 @@ import { hasPermission, Permissions } from "@/lib/permissions";
 
 const { auth } = NextAuth(authConfig);
 
+const userRoles = new Set<UserRole>([
+  "SUPER_ADMIN",
+  "REGISTRAR",
+  "PRINCIPAL",
+  "TEACHER",
+]);
+
+function isUserRole(value: unknown): value is UserRole {
+  return typeof value === "string" && userRoles.has(value as UserRole);
+}
+
 export default auth((req) => {
   const { nextUrl } = req;
 
-  const isLoggedIn = !!req.auth;
-  const role = req.auth?.user?.role;
+  const sessionUser = req.auth?.user;
+  const authenticatedUser =
+    typeof sessionUser?.id === "string" &&
+    sessionUser.id.trim().length > 0 &&
+    isUserRole(sessionUser.role)
+      ? { id: sessionUser.id, role: sessionUser.role }
+      : null;
+  const isLoggedIn = authenticatedUser !== null;
 
   const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
@@ -29,9 +47,9 @@ export default auth((req) => {
 
   // Prevent logged-in users from going back to /auth/login
   if (isAuthRoute) {
-    if (isLoggedIn) {
+    if (authenticatedUser) {
       return NextResponse.redirect(
-        new URL(DEFAULT_LOGIN_REDIRECT(role!), nextUrl),
+        new URL(DEFAULT_LOGIN_REDIRECT(authenticatedUser.role), nextUrl),
       );
     }
 
@@ -44,12 +62,12 @@ export default auth((req) => {
   }
 
   if (
-    isLoggedIn &&
+    authenticatedUser &&
     nextUrl.pathname.startsWith("/dashboard") &&
-    !hasPermission(role, Permissions.DASHBOARD)
+    !hasPermission(authenticatedUser.role, Permissions.DASHBOARD)
   ) {
     return NextResponse.redirect(
-      new URL(role ? DEFAULT_LOGIN_REDIRECT(role) : "/auth/login", nextUrl),
+      new URL(DEFAULT_LOGIN_REDIRECT(authenticatedUser.role), nextUrl),
     );
   }
 

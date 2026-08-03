@@ -16,11 +16,19 @@ async function main() {
   });
 
   if (existingAdmin) {
-    console.log("✅ SUPER_ADMIN already exists.");
+    console.log("SUPER_ADMIN already exists.");
     return;
   }
 
-  const passwordHash = await hashPassword("Admin@123");
+  const bootstrapPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD;
+
+  if (!bootstrapPassword) {
+    throw new Error(
+      "BOOTSTRAP_ADMIN_PASSWORD is required to create the initial SUPER_ADMIN.",
+    );
+  }
+
+  const passwordHash = await hashPassword(bootstrapPassword);
 
   await prisma.user.create({
     data: {

@@ -7,6 +7,11 @@ import { authenticateUser } from "@/services/auth.service";
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
 
+  session: {
+    strategy: "jwt",
+    maxAge: 28_800,
+  },
+
   providers: [
     Credentials({
       name: "Credentials",

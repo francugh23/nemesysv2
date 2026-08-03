@@ -9,11 +9,11 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-No active implementation milestone. Security Hardening Phase S2 is complete.
+No active implementation milestone. Security Hardening Phase S3 is complete.
 
 ### Current Objective
 
-No active implementation objective. Protected operations now revalidate active account state and current role through centralized authorization.
+No active implementation objective. Immediate production HTTP, session, configuration, bootstrap, invalidation-route, proxy, and dependency hardening is complete.
 
 ### Completed Modules
 
@@ -26,6 +26,7 @@ No active implementation objective. Protected operations now revalidate active a
 - Enrollment Management foundation, read path, creation, details, edit, and status lifecycle
 - Security Hardening Phase S1 centralized authorization architecture
 - Security Hardening Phase S2 active-account revalidation
+- Security Hardening Phase S3 immediate production security
 
 ### Milestone Records
 
@@ -34,6 +35,7 @@ No active implementation objective. Protected operations now revalidate active a
 - [Phase 10: Enrollment Management](./milestones/phase-10-enrollment.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
+- [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
 
 ## Current Architecture
 
@@ -45,6 +47,9 @@ No active implementation objective. Protected operations now revalidate active a
 - Hooks own TanStack Query integration and narrowly invalidate affected query keys.
 - Protected Server Actions and Services independently enforce centralized module permissions; repositories remain authorization-free.
 - Central authorization performs one request-scoped active-user lookup and evaluates permissions using the current database role.
+- Production responses apply standard browser security headers; authenticated route families and APIs are private and non-cacheable.
+- Auth.js retains encrypted JWT sessions with an explicit 8-hour maximum age and default secure cookie behavior.
+- Production startup validates required secrets, database configuration, and any configured canonical Auth.js URL.
 - Stable architectural principles are maintained in [`.ai/context/architecture.md`](../../.ai/context/architecture.md).
 
 ## Active Constraints
