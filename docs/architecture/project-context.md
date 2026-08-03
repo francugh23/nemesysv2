@@ -9,11 +9,11 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-No active implementation milestone. User Account Administration Phase 15D is complete.
+No active implementation milestone. Audit Log Modernization Phase 16A is complete.
 
 ### Current Objective
 
-No active implementation objective. User Management now provides authorized server-driven listing plus audited creation, editing, password reset, account status, and role administration for non-Teacher administrative accounts.
+No active implementation objective. Audit Log Management now provides authorized read-only server-driven listing of immutable audit history.
 
 ### Completed Modules
 
@@ -25,6 +25,7 @@ No active implementation objective. User Management now provides authorized serv
 - Section Management foundation, creation, view, edit, archive, and URL-driven server-table UX
 - Enrollment Management foundation, lifecycle completion, controlled correction, and URL-driven server-table UX
 - User Management authorized read path, URL-driven server-table UX, and audited administrative account creation, editing, password reset, status, and role administration
+- Audit Log Management read-only URL-driven server-table UX with represented filters and immutable historical actor visibility
 - Security Hardening Phase S1 centralized authorization architecture
 - Security Hardening Phase S2 active-account revalidation
 - Security Hardening Phase S3 immediate production security
@@ -42,6 +43,7 @@ No active implementation objective. User Management now provides authorized serv
 - [Phase 15B: User Creation](./milestones/phase-15b-user-creation.md)
 - [Phase 15C: User Account Editing](./milestones/phase-15c-user-account-editing.md)
 - [Phase 15D: User Account Administration](./milestones/phase-15d-user-account-administration.md)
+- [Phase 16A: Audit Log Modernization](./milestones/phase-16a-audit-log-modernization.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -68,6 +70,7 @@ No active implementation objective. User Management now provides authorized serv
 - User creation generates eight-character temporary passwords through the shared cryptographic credential utility, hashes them with the existing bcrypt configuration, persists active first-login accounts with the audit record in one transaction, and reveals the temporary credential only in the immediate success dialog.
 - User editing limits updates to approved identity and demographic fields, preserves uniqueness across archived rows, and commits changed-field audit metadata atomically with the account update.
 - User administration uses dedicated transactional operations for password reset, role change, and activation/deactivation; Teacher-owned accounts remain excluded, actors cannot change their own role/status, and active Super Admin continuity is protected before role/status reductions.
+- Audit Log Management applies the shared server-table architecture to immutable audit history. Reads preserve actor relationships even after User soft deletion, filter inclusive Philippine calendar dates, and never expose audit metadata or secret-bearing fields in list projections.
 - Operational module headers own the primary Add or lifecycle action. Table toolbars contain search and filters on the left and only existing Import actions plus a disabled Export placeholder on the right.
 - Stable architectural principles are maintained in [`.ai/context/architecture.md`](../../.ai/context/architecture.md).
 

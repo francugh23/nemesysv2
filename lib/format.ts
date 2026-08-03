@@ -28,6 +28,7 @@ export function formatDateTime(date?: Date | string | null): string {
   if (!date) return "—";
 
   return new Intl.DateTimeFormat("en-PH", {
+    timeZone: "Asia/Manila",
     year: "numeric",
     month: "long",
     day: "2-digit",
