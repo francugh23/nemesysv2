@@ -9,11 +9,15 @@ import {
 
 import {
   createUserAction,
+  changeUserRoleAction,
+  changeUserStatusAction,
   getUserFilterOptionsAction,
   getUsersAction,
   updateUserAction,
+  resetUserPasswordAction,
 } from "@/actions/user.action";
 import type { UserTableQueryInput } from "@/schemas";
+import type { ActionResponse } from "@/types/action-response";
 
 export function useUsers(query: UserTableQueryInput) {
   return useQuery({
@@ -61,4 +65,47 @@ export function useUpdateUser() {
       }
     },
   });
+}
+
+function useUserAdministrationMutation<TVariables>(
+  mutationFn: (variables: TVariables) => Promise<ActionResponse>,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn,
+    onSuccess: async (result) => {
+      if (!result.error) {
+        await queryClient.invalidateQueries({ queryKey: ["users"] });
+      }
+    },
+  });
+}
+
+export function useResetUserPassword() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: resetUserPasswordAction,
+    gcTime: 0,
+    onSuccess: async (result) => {
+      if (!result.error) {
+        await queryClient.invalidateQueries({ queryKey: ["users"] });
+      }
+    },
+  });
+}
+
+export function useChangeUserStatus() {
+  return useUserAdministrationMutation(
+    ({ id, status }: { id: string; status: "ACTIVE" | "INACTIVE" }) =>
+      changeUserStatusAction(id, status),
+  );
+}
+
+export function useChangeUserRole() {
+  return useUserAdministrationMutation(
+    ({ id, role }: { id: string; role: "SUPER_ADMIN" | "REGISTRAR" | "PRINCIPAL" }) =>
+      changeUserRoleAction(id, role),
+  );
 }

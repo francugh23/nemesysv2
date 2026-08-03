@@ -21,6 +21,9 @@ import {
 import { userColumns } from "./components/user-columns";
 import { CreateUserDialog } from "./components/create-user-dialog";
 import { EditUserDialog } from "./components/edit-user-dialog";
+import { ResetUserPasswordDialog } from "./components/reset-user-password-dialog";
+import { ChangeUserStatusDialog } from "./components/change-user-status-dialog";
+import { ChangeUserRoleDialog } from "./components/change-user-role-dialog";
 import { userFilterKeys, UserToolbar } from "./components/user-toolbar";
 
 const userSortFields = [
@@ -89,18 +92,29 @@ function UsersPageContent() {
     isFetching,
     isPlaceholderData,
   } = useUsers(query);
-  const [{ selectedUser, instanceId }, setEditState] = useState<{
+  const [{ selectedUser, dialog, instanceId }, setDialogState] = useState<{
     selectedUser: UserListItem | null;
+    dialog: "edit" | "reset-password" | "status" | "role" | null;
     instanceId: number;
-  }>({ selectedUser: null, instanceId: 0 });
+  }>({ selectedUser: null, dialog: null, instanceId: 0 });
   const columns = useMemo(
     () =>
       userColumns({
         onEdit: (user) => {
-          setEditState((current) => ({
+          setDialogState((current) => ({
             selectedUser: user,
+            dialog: "edit",
             instanceId: current.instanceId + 1,
           }));
+        },
+        onResetPassword: (user) => {
+          setDialogState((current) => ({ selectedUser: user, dialog: "reset-password", instanceId: current.instanceId + 1 }));
+        },
+        onChangeStatus: (user) => {
+          setDialogState((current) => ({ selectedUser: user, dialog: "status", instanceId: current.instanceId + 1 }));
+        },
+        onChangeRole: (user) => {
+          setDialogState((current) => ({ selectedUser: user, dialog: "role", instanceId: current.instanceId + 1 }));
         },
       }),
     [],
@@ -116,10 +130,10 @@ function UsersPageContent() {
       ? { pageIndex: data.page - 1, pageSize: data.pageSize }
       : tableState.pagination;
 
-  function closeEditDialog(closingInstanceId: number) {
-    setEditState((current) =>
+  function closeDialog(closingInstanceId: number) {
+    setDialogState((current) =>
       current.instanceId === closingInstanceId
-        ? { ...current, selectedUser: null }
+        ? { ...current, selectedUser: null, dialog: null }
         : current,
     );
   }
@@ -233,17 +247,26 @@ function UsersPageContent() {
         </CardContent>
       </Card>
 
-      {selectedUser && (
+      {selectedUser && dialog === "edit" && (
         <EditUserDialog
           key={instanceId}
           user={selectedUser}
           open
           onOpenChange={(open) => {
             if (!open) {
-              closeEditDialog(instanceId);
+              closeDialog(instanceId);
             }
           }}
         />
+      )}
+      {selectedUser && dialog === "reset-password" && (
+        <ResetUserPasswordDialog key={instanceId} user={selectedUser} open onOpenChange={(open) => { if (!open) closeDialog(instanceId); }} />
+      )}
+      {selectedUser && dialog === "status" && (
+        <ChangeUserStatusDialog key={instanceId} user={selectedUser} open onOpenChange={(open) => { if (!open) closeDialog(instanceId); }} />
+      )}
+      {selectedUser && dialog === "role" && (
+        <ChangeUserRoleDialog key={instanceId} user={selectedUser} open onOpenChange={(open) => { if (!open) closeDialog(instanceId); }} />
       )}
     </div>
   );

@@ -5,6 +5,8 @@ import { z } from "zod";
 import { Permissions, requirePermission } from "@/lib/authorization";
 import {
   CreateUserSchema,
+  ChangeUserRoleSchema,
+  ChangeUserStatusSchema,
   UpdateUserSchema,
   UserTableQuerySchema,
   type CreateUserInput,
@@ -17,6 +19,10 @@ import {
   getUsers,
   UserCreationError,
   UserUpdateError,
+  UserAdministrationError,
+  changeUserRoleService,
+  changeUserStatusService,
+  resetUserPasswordService,
   updateUserService,
 } from "@/services/user.service";
 import type { ActionResponse } from "@/types/action-response";
@@ -96,6 +102,92 @@ export async function updateUserAction(
     return { success: "User updated successfully." };
   } catch (error) {
     if (error instanceof UserUpdateError) {
+      return { error: error.message };
+    }
+
+    return { error: "Something went wrong." };
+  }
+}
+
+export async function resetUserPasswordAction(
+  id: string,
+): Promise<CreateUserActionResponse> {
+  try {
+    await requirePermission(Permissions.USERS);
+  } catch {
+    return { error: "Unauthorized." };
+  }
+
+  if (!z.string().min(1).safeParse(id).success) {
+    return { error: "Invalid user." };
+  }
+
+  try {
+    const temporaryPassword = await resetUserPasswordService(id);
+
+    return { success: "Password reset successfully.", temporaryPassword };
+  } catch (error) {
+    if (error instanceof UserAdministrationError) {
+      return { error: error.message };
+    }
+
+    return { error: "Something went wrong." };
+  }
+}
+
+export async function changeUserStatusAction(
+  id: string,
+  status: unknown,
+): Promise<ActionResponse> {
+  try {
+    await requirePermission(Permissions.USERS);
+  } catch {
+    return { error: "Unauthorized." };
+  }
+
+  const validatedId = z.string().min(1).safeParse(id);
+  const validatedFields = ChangeUserStatusSchema.safeParse({ status });
+
+  if (!validatedId.success || !validatedFields.success) {
+    return { error: "Invalid fields." };
+  }
+
+  try {
+    await changeUserStatusService(validatedId.data, validatedFields.data.status);
+
+    return { success: `User ${validatedFields.data.status.toLowerCase()}.` };
+  } catch (error) {
+    if (error instanceof UserAdministrationError) {
+      return { error: error.message };
+    }
+
+    return { error: "Something went wrong." };
+  }
+}
+
+export async function changeUserRoleAction(
+  id: string,
+  role: unknown,
+): Promise<ActionResponse> {
+  try {
+    await requirePermission(Permissions.USERS);
+  } catch {
+    return { error: "Unauthorized." };
+  }
+
+  const validatedId = z.string().min(1).safeParse(id);
+  const validatedFields = ChangeUserRoleSchema.safeParse({ role });
+
+  if (!validatedId.success || !validatedFields.success) {
+    return { error: "Invalid fields." };
+  }
+
+  try {
+    await changeUserRoleService(validatedId.data, validatedFields.data.role);
+
+    return { success: "User role updated successfully." };
+  } catch (error) {
+    if (error instanceof UserAdministrationError) {
       return { error: error.message };
     }
 

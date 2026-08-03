@@ -14,9 +14,18 @@ import type { UserListItem } from "@/schemas";
 interface UserActionsProps {
   user: UserListItem;
   onEdit: (user: UserListItem) => void;
+  onResetPassword: (user: UserListItem) => void;
+  onChangeStatus: (user: UserListItem) => void;
+  onChangeRole: (user: UserListItem) => void;
 }
 
-export function UserActions({ user, onEdit }: UserActionsProps) {
+export function UserActions({
+  user,
+  onEdit,
+  onResetPassword,
+  onChangeStatus,
+  onChangeRole,
+}: UserActionsProps) {
   const isTeacher = user.isTeacherOwned || user.role === "TEACHER";
   const teacherHelpId = `teacher-edit-help-${user.id}`;
 
@@ -47,6 +56,45 @@ export function UserActions({ user, onEdit }: UserActionsProps) {
           }}
         >
           Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={isTeacher}
+          aria-describedby={isTeacher ? teacherHelpId : undefined}
+          onClick={(event) => {
+            event.stopPropagation();
+
+            if (!isTeacher) {
+              onChangeRole(user);
+            }
+          }}
+        >
+          Change Role
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={isTeacher}
+          aria-describedby={isTeacher ? teacherHelpId : undefined}
+          onClick={(event) => {
+            event.stopPropagation();
+
+            if (!isTeacher) {
+              onChangeStatus(user);
+            }
+          }}
+        >
+          {user.status === "ACTIVE" ? "Deactivate" : "Activate"}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={isTeacher}
+          aria-describedby={isTeacher ? teacherHelpId : undefined}
+          onClick={(event) => {
+            event.stopPropagation();
+
+            if (!isTeacher) {
+              onResetPassword(user);
+            }
+          }}
+        >
+          Reset Password
         </DropdownMenuItem>
         {isTeacher && (
           <p

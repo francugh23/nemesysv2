@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useSession } from "next-auth/react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -9,7 +8,6 @@ import { FormDialog } from "@/components/common/dialogs/form-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldLabel,
 } from "@/components/ui/field";
@@ -39,9 +37,7 @@ export function EditUserDialog({
   open,
   onOpenChange,
 }: EditUserDialogProps) {
-  const { data: session } = useSession();
   const updateUser = useUpdateUser();
-  const isSelf = session?.user?.id === user.id;
   const form = useForm<UpdateUserInput>({
     resolver: zodResolver(UpdateUserSchema),
     defaultValues: {
@@ -52,8 +48,6 @@ export function EditUserDialog({
       username: user.username,
       email: user.email,
       gender: user.gender,
-      role: user.role as UpdateUserInput["role"],
-      status: user.status,
     },
   });
 
@@ -148,92 +142,6 @@ export function EditUserDialog({
               </FieldError>
             </Field>
 
-            <Field data-invalid={!!form.formState.errors.role}>
-              <FieldLabel htmlFor="edit-user-role">Role</FieldLabel>
-              <Controller
-                name="role"
-                control={form.control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    disabled={isSelf}
-                  >
-                    <SelectTrigger
-                      id="edit-user-role"
-                      ref={field.ref}
-                      onBlur={field.onBlur}
-                      aria-invalid={!!form.formState.errors.role}
-                      aria-describedby={
-                        isSelf
-                          ? "edit-user-role-description"
-                          : form.formState.errors.role
-                            ? "edit-user-role-error"
-                            : undefined
-                      }
-                    >
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
-                      <SelectItem value="REGISTRAR">Registrar</SelectItem>
-                      <SelectItem value="PRINCIPAL">Principal</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {isSelf && (
-                <FieldDescription id="edit-user-role-description">
-                  You cannot change your own role.
-                </FieldDescription>
-              )}
-              <FieldError id="edit-user-role-error">
-                {form.formState.errors.role?.message}
-              </FieldError>
-            </Field>
-
-            <Field data-invalid={!!form.formState.errors.status}>
-              <FieldLabel htmlFor="edit-user-status">Status</FieldLabel>
-              <Controller
-                name="status"
-                control={form.control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    disabled={isSelf}
-                  >
-                    <SelectTrigger
-                      id="edit-user-status"
-                      ref={field.ref}
-                      onBlur={field.onBlur}
-                      aria-invalid={!!form.formState.errors.status}
-                      aria-describedby={
-                        isSelf
-                          ? "edit-user-status-description"
-                          : form.formState.errors.status
-                            ? "edit-user-status-error"
-                            : undefined
-                      }
-                    >
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ACTIVE">Active</SelectItem>
-                      <SelectItem value="INACTIVE">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {isSelf && (
-                <FieldDescription id="edit-user-status-description">
-                  You cannot change your own status.
-                </FieldDescription>
-              )}
-              <FieldError id="edit-user-status-error">
-                {form.formState.errors.status?.message}
-              </FieldError>
-            </Field>
           </div>
         </section>
 

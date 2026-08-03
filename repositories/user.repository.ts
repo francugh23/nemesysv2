@@ -180,6 +180,18 @@ export async function findNonArchivedUserForUpdate(
   });
 }
 
+export async function countActiveSuperAdmins(
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).user.count({
+    where: {
+      deletedAt: null,
+      role: "SUPER_ADMIN",
+      status: "ACTIVE",
+    },
+  });
+}
+
 export async function findUsersByIdentity(
   identity: {
     employeeNumber: string;

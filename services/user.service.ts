@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { createAuditLogs } from "@/repositories/audit.repository";
 import {
   countNonArchivedUsers,
+  countActiveSuperAdmins,
   createUser,
   findNonArchivedUserForUpdate,
   findNonArchivedUsers,
@@ -17,7 +18,6 @@ import {
 } from "@/repositories/user.repository";
 import {
   CreateUserRoleSchema,
-  UpdateUserRoleSchema,
   type CreateUserInput,
   type UpdateUserInput,
   type UserFilterOptions,
@@ -28,6 +28,8 @@ import {
 export class UserCreationError extends Error {}
 
 export class UserUpdateError extends Error {}
+
+export class UserAdministrationError extends Error {}
 
 type AuditChanges = Record<string, { from: string; to: string }>;
 
@@ -227,13 +229,6 @@ export async function createUserService(values: CreateUserInput) {
 
 export async function updateUserService(id: string, values: UpdateUserInput) {
   const session = await requirePermission(Permissions.USERS);
-  const role = UpdateUserRoleSchema.safeParse(values.role);
-
-  if (!role.success) {
-    throw new UserUpdateError(
-      "Teacher accounts must be edited through Teacher Management.",
-    );
-  }
 
   try {
     return await prisma.$transaction(async (transaction) => {
@@ -246,15 +241,6 @@ export async function updateUserService(id: string, values: UpdateUserInput) {
       if (user.role === "TEACHER" || user.teacher) {
         throw new UserUpdateError(
           "Teacher accounts must be edited through Teacher Management.",
-        );
-      }
-
-      if (
-        user.id === session.user.id &&
-        (values.role !== user.role || values.status !== user.status)
-      ) {
-        throw new UserUpdateError(
-          "You cannot change your own role or status.",
         );
       }
 
@@ -290,8 +276,6 @@ export async function updateUserService(id: string, values: UpdateUserInput) {
         username: values.username,
         email: values.email,
         gender: values.gender,
-        role: role.data,
-        status: values.status,
       };
 
       for (const [field, nextValue] of Object.entries(editableFields)) {
@@ -341,4 +325,165 @@ export async function updateUserService(id: string, values: UpdateUserInput) {
 
     rethrowUserUpdateIdentityConflict(error);
   }
+}
+
+function assertAdministrativeUser(
+  user: Awaited<ReturnType<typeof findNonArchivedUserForUpdate>>,
+): asserts user is NonNullable<
+  Awaited<ReturnType<typeof findNonArchivedUserForUpdate>>
+> {
+  if (!user) {
+    throw new UserAdministrationError("User not found.");
+  }
+
+  if (user.role === "TEACHER" || user.teacher) {
+    throw new UserAdministrationError(
+      "Teacher accounts must be managed through Teacher Management.",
+    );
+  }
+}
+
+async function assertActiveSuperAdminRemains(
+  user: { role: string; status: string },
+  removesSuperAdmin: boolean,
+  transaction: Prisma.TransactionClient,
+) {
+  if (
+    removesSuperAdmin &&
+    user.role === "SUPER_ADMIN" &&
+    user.status === "ACTIVE" &&
+    (await countActiveSuperAdmins(transaction)) <= 1
+  ) {
+    throw new UserAdministrationError(
+      "At least one active Super Admin account must remain.",
+    );
+  }
+}
+
+export async function resetUserPasswordService(id: string) {
+  const session = await requirePermission(Permissions.USERS);
+
+  return await prisma.$transaction(async (transaction) => {
+    const user = await findNonArchivedUserForUpdate(id, transaction);
+    assertAdministrativeUser(user);
+
+    const temporaryPassword = generateTemporaryPassword();
+    const passwordHash = await hashPassword(temporaryPassword);
+    const updatedUser = await updateUser(
+      user.id,
+      { passwordHash, isFirstLogin: true, lastLoginAt: null },
+      transaction,
+    );
+
+    await createAuditLogs(
+      [
+        {
+          userId: session.user.id,
+          action: "PASSWORD_RESET",
+          module: "User",
+          recordId: updatedUser.id,
+          recordName: `${updatedUser.lastName}, ${updatedUser.firstName}`,
+          description: "Reset user account password and required first login.",
+        },
+      ],
+      transaction,
+    );
+
+    return temporaryPassword;
+  });
+}
+
+export async function changeUserStatusService(
+  id: string,
+  status: "ACTIVE" | "INACTIVE",
+) {
+  const session = await requirePermission(Permissions.USERS);
+
+  return await prisma.$transaction(async (transaction) => {
+    const user = await findNonArchivedUserForUpdate(id, transaction);
+    assertAdministrativeUser(user);
+
+    if (user.id === session.user.id) {
+      throw new UserAdministrationError("You cannot change your own status.");
+    }
+
+    if (user.status === status) {
+      throw new UserAdministrationError(`User is already ${status.toLowerCase()}.`);
+    }
+
+    await assertActiveSuperAdminRemains(user, status === "INACTIVE", transaction);
+
+    const updatedUser = await updateUser(user.id, { status }, transaction);
+    const action = status === "ACTIVE" ? "ACTIVATE" : "DEACTIVATE";
+
+    await createAuditLogs(
+      [
+        {
+          userId: session.user.id,
+          action,
+          module: "User",
+          recordId: updatedUser.id,
+          recordName: `${updatedUser.lastName}, ${updatedUser.firstName}`,
+          description: `${action === "ACTIVATE" ? "Activated" : "Deactivated"} user account.`,
+          metadata: {
+            changes: {
+              status: { from: user.status, to: status },
+            },
+          },
+        },
+      ],
+      transaction,
+    );
+
+    return updatedUser.id;
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+}
+
+export async function changeUserRoleService(
+  id: string,
+  role: "SUPER_ADMIN" | "REGISTRAR" | "PRINCIPAL",
+) {
+  const session = await requirePermission(Permissions.USERS);
+
+  return await prisma.$transaction(async (transaction) => {
+    const user = await findNonArchivedUserForUpdate(id, transaction);
+    assertAdministrativeUser(user);
+
+    if (user.id === session.user.id) {
+      throw new UserAdministrationError("You cannot change your own role.");
+    }
+
+    if (user.role === role) {
+      throw new UserAdministrationError("User already has this role.");
+    }
+
+    await assertActiveSuperAdminRemains(
+      user,
+      role !== "SUPER_ADMIN",
+      transaction,
+    );
+
+    const updatedUser = await updateUser(user.id, { role }, transaction);
+
+    await createAuditLogs(
+      [
+        {
+          userId: session.user.id,
+          action: "ROLE_CHANGE",
+          module: "User",
+          recordId: updatedUser.id,
+          recordName: `${updatedUser.lastName}, ${updatedUser.firstName}`,
+          description: `Changed user account role from ${user.role} to ${role}.`,
+          metadata: {
+            changes: {
+              role: { from: user.role, to: role },
+            },
+          },
+        },
+      ],
+      transaction,
+    );
+
+    return updatedUser.id;
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }

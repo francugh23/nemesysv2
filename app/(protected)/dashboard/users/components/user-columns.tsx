@@ -12,10 +12,16 @@ import { UserActions } from "./user-actions";
 
 interface UserColumnProps {
   onEdit: (user: UserListItem) => void;
+  onResetPassword: (user: UserListItem) => void;
+  onChangeStatus: (user: UserListItem) => void;
+  onChangeRole: (user: UserListItem) => void;
 }
 
 export function userColumns({
   onEdit,
+  onResetPassword,
+  onChangeStatus,
+  onChangeRole,
 }: UserColumnProps): ColumnDef<UserListItem>[] {
   return [
     {
@@ -94,7 +100,13 @@ export function userColumns({
       id: "actions",
       enableSorting: false,
       cell: ({ row }) => (
-        <UserActions user={row.original} onEdit={onEdit} />
+        <UserActions
+          user={row.original}
+          onEdit={onEdit}
+          onResetPassword={onResetPassword}
+          onChangeStatus={onChangeStatus}
+          onChangeRole={onChangeRole}
+        />
       ),
     },
   ];

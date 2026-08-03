@@ -38,8 +38,13 @@ export const CreateUserSchema = z.object({
   role: CreateUserRoleSchema,
 });
 
-export const UpdateUserSchema = CreateUserSchema.extend({
+export const UpdateUserSchema = CreateUserSchema.omit({ role: true });
+
+export const ChangeUserRoleSchema = z.object({
   role: UpdateUserRoleSchema,
+});
+
+export const ChangeUserStatusSchema = z.object({
   status: UserStatusSchema,
 });
 
@@ -87,6 +92,8 @@ export const UserListItemSchema = z.object({
 export type UserListItem = z.infer<typeof UserListItemSchema>;
 export type CreateUserInput = z.infer<typeof CreateUserSchema>;
 export type UpdateUserInput = z.infer<typeof UpdateUserSchema>;
+export type ChangeUserRoleInput = z.infer<typeof ChangeUserRoleSchema>;
+export type ChangeUserStatusInput = z.infer<typeof ChangeUserStatusSchema>;
 export type UserTableQueryInput = z.input<typeof UserTableQuerySchema>;
 export type UserTableQuery = z.output<typeof UserTableQuerySchema>;
 
