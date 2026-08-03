@@ -9,6 +9,33 @@ export const UserRoleSchema = z.enum([
 
 export const UserStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);
 
+export const CreateUserRoleSchema = z.enum([
+  "SUPER_ADMIN",
+  "REGISTRAR",
+  "PRINCIPAL",
+]);
+
+export const UserGenderSchema = z.enum(["MALE", "FEMALE"]);
+
+export const CreateUserSchema = z.object({
+  employeeNumber: z
+    .string()
+    .trim()
+    .min(1, "Employee number is required.")
+    .max(100),
+  username: z.string().trim().min(1, "Username is required.").max(100),
+  email: z
+    .string()
+    .trim()
+    .email("A valid email address is required.")
+    .max(254),
+  firstName: z.string().trim().min(1, "First name is required.").max(100),
+  middleName: z.string().trim().max(100).optional(),
+  lastName: z.string().trim().min(1, "Last name is required.").max(100),
+  gender: UserGenderSchema,
+  role: CreateUserRoleSchema,
+});
+
 export const UserFirstLoginFilterSchema = z
   .enum(["true", "false"])
   .transform((value) => value === "true");
@@ -49,6 +76,7 @@ export const UserListItemSchema = z.object({
 });
 
 export type UserListItem = z.infer<typeof UserListItemSchema>;
+export type CreateUserInput = z.infer<typeof CreateUserSchema>;
 export type UserTableQueryInput = z.input<typeof UserTableQuerySchema>;
 export type UserTableQuery = z.output<typeof UserTableQuerySchema>;
 

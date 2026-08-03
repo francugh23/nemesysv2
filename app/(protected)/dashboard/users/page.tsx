@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Plus } from "lucide-react";
+import { Download } from "lucide-react";
 import { Suspense, useEffect, useEffectEvent } from "react";
 
 import { CrudToolbar } from "@/components/common/crud-toolbar";
@@ -18,6 +18,7 @@ import {
 } from "@/schemas";
 
 import { userColumns } from "./components/user-columns";
+import { CreateUserDialog } from "./components/create-user-dialog";
 import { userFilterKeys, UserToolbar } from "./components/user-toolbar";
 
 const userSortFields = [
@@ -149,12 +150,7 @@ function UsersPageContent() {
         </div>
 
         <CrudToolbar
-          primaryAction={
-            <Button disabled>
-              <Plus />
-              Add User
-            </Button>
-          }
+          primaryAction={<CreateUserDialog />}
         />
       </div>
 
