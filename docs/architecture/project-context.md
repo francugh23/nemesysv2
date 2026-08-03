@@ -9,11 +9,11 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-No active implementation milestone. Audit Log Modernization Phase 16A is complete.
+No active implementation milestone. Audit Log Modernization Phase 16B is complete.
 
 ### Current Objective
 
-No active implementation objective. Audit Log Management now provides authorized read-only server-driven listing of immutable audit history.
+No active implementation objective. Audit Log Management now provides authorized read-only server-driven listing and details of immutable audit history, with validated query reuse prepared for future export work.
 
 ### Completed Modules
 
@@ -25,7 +25,7 @@ No active implementation objective. Audit Log Management now provides authorized
 - Section Management foundation, creation, view, edit, archive, and URL-driven server-table UX
 - Enrollment Management foundation, lifecycle completion, controlled correction, and URL-driven server-table UX
 - User Management authorized read path, URL-driven server-table UX, and audited administrative account creation, editing, password reset, status, and role administration
-- Audit Log Management read-only URL-driven server-table UX with represented filters and immutable historical actor visibility
+- Audit Log Management read-only URL-driven server-table UX, authorized details, represented filters, immutable historical actor visibility, and export-ready validated query reuse
 - Security Hardening Phase S1 centralized authorization architecture
 - Security Hardening Phase S2 active-account revalidation
 - Security Hardening Phase S3 immediate production security
@@ -44,6 +44,7 @@ No active implementation objective. Audit Log Management now provides authorized
 - [Phase 15C: User Account Editing](./milestones/phase-15c-user-account-editing.md)
 - [Phase 15D: User Account Administration](./milestones/phase-15d-user-account-administration.md)
 - [Phase 16A: Audit Log Modernization](./milestones/phase-16a-audit-log-modernization.md)
+- [Phase 16B: Audit Log Details And Export Preparation](./milestones/phase-16b-audit-log-details.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -71,6 +72,7 @@ No active implementation objective. Audit Log Management now provides authorized
 - User editing limits updates to approved identity and demographic fields, preserves uniqueness across archived rows, and commits changed-field audit metadata atomically with the account update.
 - User administration uses dedicated transactional operations for password reset, role change, and activation/deactivation; Teacher-owned accounts remain excluded, actors cannot change their own role/status, and active Super Admin continuity is protected before role/status reductions.
 - Audit Log Management applies the shared server-table architecture to immutable audit history. Reads preserve actor relationships even after User soft deletion, filter inclusive Philippine calendar dates, and never expose audit metadata or secret-bearing fields in list projections.
+- Audit Log details use a separate authorized read path to load immutable metadata only when requested. Metadata is displayed structurally, changed fields are distinct when available, and the shared validated list-query parser is available to a future export action while Export remains disabled.
 - Operational module headers own the primary Add or lifecycle action. Table toolbars contain search and filters on the left and only existing Import actions plus a disabled Export placeholder on the right.
 - Stable architectural principles are maintained in [`.ai/context/architecture.md`](../../.ai/context/architecture.md).
 

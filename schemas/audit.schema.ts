@@ -14,6 +14,8 @@ export const AuditLogDateSchema = z
     );
   }, "Invalid date.");
 
+export const AuditLogIdSchema = z.string().cuid();
+
 export const AuditLogSortFieldSchema = z.enum([
   "createdAt",
   "actor",
@@ -42,6 +44,10 @@ export const AuditLogTableQuerySchema = z
     { message: "The start date must not be after the end date.", path: ["dateTo"] },
   );
 
+export function validateAuditLogTableQuery(query: unknown) {
+  return AuditLogTableQuerySchema.safeParse(query);
+}
+
 export const AuditLogListItemSchema = z.object({
   id: z.string(),
   action: z.string(),
@@ -61,6 +67,12 @@ export const AuditLogListItemSchema = z.object({
 export type AuditLogListItem = z.infer<typeof AuditLogListItemSchema>;
 export type AuditLogTableQueryInput = z.input<typeof AuditLogTableQuerySchema>;
 export type AuditLogTableQuery = z.output<typeof AuditLogTableQuerySchema>;
+
+export const AuditLogDetailSchema = AuditLogListItemSchema.extend({
+  metadata: z.unknown().nullable(),
+});
+
+export type AuditLogDetail = z.infer<typeof AuditLogDetailSchema>;
 
 export interface AuditLogPage {
   items: AuditLogListItem[];

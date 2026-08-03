@@ -31,6 +31,11 @@ const auditLogListSelect = {
   },
 } satisfies Prisma.AuditLogSelect;
 
+const auditLogDetailSelect = {
+  ...auditLogListSelect,
+  metadata: true,
+} satisfies Prisma.AuditLogSelect;
+
 function getPhilippineDateRange(dateFrom?: string, dateTo?: string) {
   return {
     gte: dateFrom ? new Date(`${dateFrom}T00:00:00.000+08:00`) : undefined,
@@ -107,6 +112,13 @@ export async function findAuditLogs(
     orderBy,
     skip: pagination.skip,
     take: pagination.take,
+  });
+}
+
+export async function findAuditLogById(id: string) {
+  return prisma.auditLog.findUnique({
+    where: { id },
+    select: auditLogDetailSelect,
   });
 }
 

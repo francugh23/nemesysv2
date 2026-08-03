@@ -1,7 +1,7 @@
 "use client";
 
 import { Download } from "lucide-react";
-import { Suspense, useEffect, useEffectEvent } from "react";
+import { Suspense, useEffect, useEffectEvent, useState } from "react";
 
 import { DataTable } from "@/components/data-table";
 import { AuditLogTableSkeleton } from "@/components/skeletons/audit-log-table-skeleton";
@@ -15,6 +15,7 @@ import {
 } from "@/schemas";
 
 import { auditLogColumns } from "./components/audit-log-columns";
+import { AuditLogDetailsDialog } from "./components/audit-log-details-dialog";
 import { auditLogFilterKeys, AuditLogToolbar } from "./components/audit-log-toolbar";
 
 const auditLogSortFields = [
@@ -35,6 +36,7 @@ export default function AuditLogsPage() {
 }
 
 function AuditLogsPageContent() {
+  const [selectedAuditLogId, setSelectedAuditLogId] = useState<string | null>(null);
   const tableState = useTableUrlState({
     filterKeys: auditLogFilterKeys,
     sortableColumns: auditLogSortFields,
@@ -100,6 +102,9 @@ function AuditLogsPageContent() {
     isPlaceholderData && data
       ? { pageIndex: data.page - 1, pageSize: data.pageSize }
       : tableState.pagination;
+  const columns = auditLogColumns({
+    onViewDetails: (auditLog) => setSelectedAuditLogId(auditLog.id),
+  });
 
   useEffect(() => {
     normalizeUrl();
@@ -148,7 +153,7 @@ function AuditLogsPageContent() {
       <Card>
         <CardContent className="pt-6">
           <DataTable
-            columns={auditLogColumns}
+            columns={columns}
             data={data?.items ?? []}
             toolbar={() => (
               <AuditLogToolbar
@@ -192,6 +197,15 @@ function AuditLogsPageContent() {
           />
         </CardContent>
       </Card>
+      <AuditLogDetailsDialog
+        auditLogId={selectedAuditLogId}
+        open={selectedAuditLogId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedAuditLogId(null);
+          }
+        }}
+      />
     </div>
   );
 }

@@ -4,11 +4,13 @@ import { Permissions, requirePermission } from "@/lib/authorization";
 import {
   countAuditLogs,
   createAuditLog as createAuditLogRepository,
+  findAuditLogById,
   findAuditLogFilterOptionValues,
   findAuditLogs,
 } from "@/repositories/audit.repository";
 import type {
   AuditLogFilterOptions,
+  AuditLogDetail,
   AuditLogListItem,
   AuditLogPage,
   AuditLogTableQuery,
@@ -54,6 +56,15 @@ export async function createAuditLog(data: AuditLogInput) {
       },
     },
   });
+}
+
+function toAuditLogDetail(
+  auditLog: NonNullable<Awaited<ReturnType<typeof findAuditLogById>>>,
+): AuditLogDetail {
+  return {
+    ...toAuditLogListItem(auditLog),
+    metadata: auditLog.metadata,
+  };
 }
 
 function getAuditLogOrderBy(
@@ -133,6 +144,18 @@ export async function getAuditLogs(
     pageSize: query.pageSize,
     pageCount,
   };
+}
+
+export async function getAuditLogDetail(id: string): Promise<AuditLogDetail> {
+  await requirePermission(Permissions.AUDIT_LOGS);
+
+  const auditLog = await findAuditLogById(id);
+
+  if (!auditLog) {
+    throw new Error("Audit log not found.");
+  }
+
+  return toAuditLogDetail(auditLog);
 }
 
 export async function getAuditLogFilterOptions(): Promise<AuditLogFilterOptions> {
