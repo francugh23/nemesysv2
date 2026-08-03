@@ -46,7 +46,7 @@ The Add Student, Edit Student, View Student, delete, and import dialogs retain t
 - Filters use the shared accessible shadcn/Base UI Popover and Command composition.
 - The table presents LRN, Name, Gender, Status, Grade, Current Section, Created Date, and row actions.
 - Initial loading uses the Student table skeleton. Errors are retryable, prior rows remain visible during query transitions, and empty copy distinguishes an empty module from no filtered matches.
-- Add Student and Import Student remain available in the toolbar actions slot.
+- Add Student remains in the page header. Import Student remains in the toolbar actions slot.
 - Export is intentionally a disabled UI placeholder. No current-page or partial export is performed. Complete filtered export is deferred to a future approved Export milestone.
 
 ## Third-Party Verification

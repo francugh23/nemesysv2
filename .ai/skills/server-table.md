@@ -19,6 +19,8 @@
 - Distinguish an empty module from a filtered query with no matches.
 - Use stable secondary ordering so records do not drift between pages.
 - Preserve client-mode DataTable defaults until a module explicitly adopts server mode.
+- Keep the module's primary Add or lifecycle action in the page header. Reserve the table toolbar for Search, primary lifecycle/status filter when applicable, domain filters, and Reset on the left, with existing Import actions and a disabled Export placeholder on the right.
+- Do not invent a string sentinel for nullable filters when it can collide with valid domain data. Expose represented non-null values unless the feature defines an explicit collision-safe nullable-filter contract.
 
 ## Invalidation
 - Parameterized list queries use a stable feature prefix such as `['enrollments', query]`.

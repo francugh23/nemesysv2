@@ -3,20 +3,37 @@
 import * as z from "zod";
 
 import { Permissions, requirePermission } from "@/lib/authorization";
-import { CreateSectionSchema, UpdateSectionSchema } from "@/schemas";
+import {
+  CreateSectionSchema,
+  SectionTableQuerySchema,
+  type SectionTableQueryInput,
+  UpdateSectionSchema,
+} from "@/schemas";
 import {
   archiveSectionService,
   createSectionService,
+  getSectionFilterOptions,
   getSectionFormOptions,
   getSections,
   updateSectionService,
 } from "@/services/section.service";
 import { ActionResponse } from "@/types/action-response";
 
-export async function getSectionsAction() {
+export async function getSectionsAction(query: SectionTableQueryInput) {
+  await requirePermission(Permissions.SECTIONS);
+  const validatedQuery = SectionTableQuerySchema.safeParse(query);
+
+  if (!validatedQuery.success) {
+    throw new Error("Invalid section query.");
+  }
+
+  return await getSections(validatedQuery.data);
+}
+
+export async function getSectionFilterOptionsAction() {
   await requirePermission(Permissions.SECTIONS);
 
-  return await getSections();
+  return await getSectionFilterOptions();
 }
 
 export async function getSectionFormOptionsAction() {

@@ -173,11 +173,15 @@ function StudentsPageContent() {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">Student Records</h1>
-        <p className="text-sm text-muted-foreground">
-          Search, filter and manage students.
-        </p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold">Student Records</h1>
+          <p className="text-sm text-muted-foreground">
+            Search, filter and manage students.
+          </p>
+        </div>
+
+        <CrudToolbar primaryAction={<CreateStudentDialog />} />
       </div>
 
       <Card>
@@ -200,22 +204,17 @@ function StudentsPageContent() {
                 isFetching={isFetching && !isLoading}
                 searchResetKey={tableState.resetKey}
                 actions={
-                  <CrudToolbar
-                    primaryAction={<CreateStudentDialog />}
-                    actions={
-                      <>
-                        <StudentImportDialog
-                          trigger={
-                            <Button variant="outline">Import Student</Button>
-                          }
-                        />
-                        <Button variant="outline" disabled>
-                          <Download />
-                          Export
-                        </Button>
-                      </>
-                    }
-                  />
+                  <>
+                    <StudentImportDialog
+                      trigger={
+                        <Button variant="outline">Import Student</Button>
+                      }
+                    />
+                    <Button variant="outline" disabled>
+                      <Download />
+                      Export
+                    </Button>
+                  </>
                 }
               />
             )}

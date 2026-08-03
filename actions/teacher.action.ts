@@ -3,19 +3,36 @@
 import * as z from "zod";
 
 import { Permissions, requirePermission } from "@/lib/authorization";
-import { CreateTeacherSchema, UpdateTeacherSchema } from "@/schemas";
+import {
+  CreateTeacherSchema,
+  TeacherTableQuerySchema,
+  type TeacherTableQueryInput,
+  UpdateTeacherSchema,
+} from "@/schemas";
 import {
   createTeacherService,
   deactivateTeacherService,
+  getTeacherFilterOptions,
   getTeachers,
   updateTeacherService,
 } from "@/services/teacher.service";
 import { ActionResponse } from "@/types/action-response";
 
-export async function getTeachersAction() {
+export async function getTeachersAction(query: TeacherTableQueryInput) {
+  await requirePermission(Permissions.TEACHERS);
+  const validatedQuery = TeacherTableQuerySchema.safeParse(query);
+
+  if (!validatedQuery.success) {
+    throw new Error("Invalid teacher query.");
+  }
+
+  return await getTeachers(validatedQuery.data);
+}
+
+export async function getTeacherFilterOptionsAction() {
   await requirePermission(Permissions.TEACHERS);
 
-  return await getTeachers();
+  return await getTeacherFilterOptions();
 }
 
 export async function createTeacherAction(

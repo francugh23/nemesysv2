@@ -27,11 +27,39 @@ export const UpdateTeacherSchema = z.object({
   major: z.string().trim().optional(),
 });
 
+export const TeacherStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);
+
+export const TeacherGenderSchema = z.enum(["MALE", "FEMALE"]);
+
+export const TeacherSortFieldSchema = z.enum([
+  "employeeNumber",
+  "lastName",
+  "firstName",
+  "middleName",
+  "gender",
+  "degree",
+  "major",
+  "isAdviser",
+  "status",
+  "createdAt",
+]);
+
+export const TeacherTableQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  status: TeacherStatusSchema.optional(),
+  gender: TeacherGenderSchema.optional(),
+  sort: TeacherSortFieldSchema.optional(),
+  direction: z.enum(["asc", "desc"]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(10),
+});
+
 export const TeacherListItemSchema = z.object({
   id: z.string(),
   degree: z.string().nullable(),
   major: z.string().nullable(),
   isAdviser: z.boolean(),
+  createdAt: z.date(),
   user: z.object({
     employeeNumber: z.string().nullable(),
     username: z.string(),
@@ -45,3 +73,18 @@ export const TeacherListItemSchema = z.object({
 });
 
 export type TeacherListItem = z.infer<typeof TeacherListItemSchema>;
+export type TeacherTableQueryInput = z.input<typeof TeacherTableQuerySchema>;
+export type TeacherTableQuery = z.output<typeof TeacherTableQuerySchema>;
+
+export interface TeacherPage {
+  items: TeacherListItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  pageCount: number;
+}
+
+export interface TeacherFilterOptions {
+  statuses: Array<z.infer<typeof TeacherStatusSchema>>;
+  genders: Array<z.infer<typeof TeacherGenderSchema>>;
+}

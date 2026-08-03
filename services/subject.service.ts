@@ -8,23 +8,103 @@ import {
 import { createAuditLogs } from "@/repositories/audit.repository";
 import {
   createSubject,
+  countNonArchivedSubjects,
   countSubjectGrades,
   findActiveSubjectById,
   findSubjectById,
   findSubjectByIdentity,
-  findSubjects,
+  findNonArchivedSubjects,
+  findNonArchivedSubjectsByGrade,
+  findSubjectFilterOptionValues,
   findActiveSubjectsByIdentities,
   hasActiveSubjectAssignments,
   archiveSubject,
   updateSubject,
 } from "@/repositories/subject.repository";
-import { CreateSubjectSchema, UpdateSubjectSchema } from "@/schemas";
+import {
+  CreateSubjectSchema,
+  type SubjectTableQuery,
+  UpdateSubjectSchema,
+} from "@/schemas";
+import type { SubjectFilterOptions, SubjectPage } from "@/types/subject";
 import { z } from "zod";
 
-export async function getSubjects() {
+function getSubjectOrderBy(
+  query: SubjectTableQuery,
+): Prisma.SubjectOrderByWithRelationInput[] {
+  const direction = query.direction ?? "asc";
+
+  switch (query.sort) {
+    case "code":
+      return [{ code: direction }, { id: "asc" }];
+    case "description":
+      return [{ description: direction }, { id: "asc" }];
+    case "trackStrand":
+      return [{ trackStrand: direction }, { id: "asc" }];
+    case "semester":
+      return [{ semester: direction }, { id: "asc" }];
+    default:
+      return [{ id: "asc" }];
+  }
+}
+
+export async function getSubjects(
+  query: SubjectTableQuery,
+): Promise<SubjectPage> {
   await requirePermission(Permissions.SUBJECTS);
 
-  return await findSubjects();
+  const filters = {
+    search: query.q,
+    grade: query.grade,
+    trackStrand: query.trackStrand,
+    semester: query.semester,
+  };
+  const totalCount = await countNonArchivedSubjects(filters);
+  const pageCount = Math.ceil(totalCount / query.pageSize);
+  const page = Math.min(query.page, Math.max(pageCount, 1));
+  const pagination = {
+    skip: (page - 1) * query.pageSize,
+    take: query.pageSize,
+  };
+  const subjects =
+    !query.sort || query.sort === "gradeLevel"
+      ? await findNonArchivedSubjectsByGrade(
+          filters,
+          pagination,
+          query.sort === "gradeLevel" ? query.direction ?? "asc" : "asc",
+        )
+      : await findNonArchivedSubjects(
+          filters,
+          pagination,
+          getSubjectOrderBy(query),
+        );
+
+  return {
+    items: subjects,
+    totalCount,
+    page,
+    pageSize: query.pageSize,
+    pageCount,
+  };
+}
+
+export async function getSubjectFilterOptions(): Promise<SubjectFilterOptions> {
+  await requirePermission(Permissions.SUBJECTS);
+
+  const [gradeLevels, trackStrands, semesters] =
+    await findSubjectFilterOptionValues();
+
+  return {
+    gradeLevels: gradeLevels
+      .map((value) => value.gradeLevel)
+      .sort((first, second) => Number(first) - Number(second)),
+    trackStrands: trackStrands.flatMap((value) =>
+      value.trackStrand ? [value.trackStrand] : [],
+    ),
+    semesters: semesters.flatMap((value) =>
+      value.semester ? [value.semester] : [],
+    ),
+  };
 }
 
 async function ensureSubjectIdentityAvailable(

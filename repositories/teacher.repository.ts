@@ -1,41 +1,95 @@
 import prisma from "@/lib/prisma";
 import { Prisma } from "@/app/generated/prisma/client";
 
-export async function findTeachers() {
+export interface TeacherListFilters {
+  search?: string;
+  status?: "ACTIVE" | "INACTIVE";
+  gender?: "MALE" | "FEMALE";
+}
+
+const teacherListSelect = {
+  id: true,
+  degree: true,
+  major: true,
+  isAdviser: true,
+  createdAt: true,
+  user: {
+    select: {
+      employeeNumber: true,
+      username: true,
+      email: true,
+      firstName: true,
+      middleName: true,
+      lastName: true,
+      gender: true,
+      status: true,
+    },
+  },
+} satisfies Prisma.TeacherSelect;
+
+function getTeacherListWhere(
+  filters: TeacherListFilters,
+): Prisma.TeacherWhereInput {
+  const searchTerms = filters.search?.split(/\s+/).filter(Boolean) ?? [];
+
+  return {
+    deletedAt: null,
+    user: {
+      is: {
+        deletedAt: null,
+        status: filters.status,
+        gender: filters.gender,
+        AND: searchTerms.map((term) => ({
+          OR: [
+            { employeeNumber: { contains: term, mode: "insensitive" } },
+            { firstName: { contains: term, mode: "insensitive" } },
+            { middleName: { contains: term, mode: "insensitive" } },
+            { lastName: { contains: term, mode: "insensitive" } },
+          ],
+        })),
+      },
+    },
+  };
+}
+
+export async function countNonArchivedTeachers(filters: TeacherListFilters) {
+  return prisma.teacher.count({
+    where: getTeacherListWhere(filters),
+  });
+}
+
+export async function findNonArchivedTeachers(
+  filters: TeacherListFilters,
+  pagination: { skip: number; take: number },
+  orderBy: Prisma.TeacherOrderByWithRelationInput[],
+) {
+  return prisma.teacher.findMany({
+    where: getTeacherListWhere(filters),
+    select: teacherListSelect,
+    orderBy,
+    skip: pagination.skip,
+    take: pagination.take,
+  });
+}
+
+export async function findTeacherFilterOptionValues() {
   return prisma.teacher.findMany({
     where: {
       deletedAt: null,
+      user: {
+        is: {
+          deletedAt: null,
+        },
+      },
     },
     select: {
-      id: true,
-      degree: true,
-      major: true,
-      isAdviser: true,
       user: {
         select: {
-          employeeNumber: true,
-          username: true,
-          email: true,
-          firstName: true,
-          middleName: true,
-          lastName: true,
-          gender: true,
           status: true,
+          gender: true,
         },
       },
     },
-    orderBy: [
-      {
-        user: {
-          lastName: "asc",
-        },
-      },
-      {
-        user: {
-          firstName: "asc",
-        },
-      },
-    ],
   });
 }
 

@@ -1,13 +1,14 @@
 import { SectionTableSkeleton } from "@/components/skeletons/section-table-skeleton";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Loading() {
   return (
     <div className="space-y-6 p-6">
-      <div className="space-y-2">
-        <Skeleton className="h-8 w-52" />
-        <Skeleton className="h-5 w-80 max-w-full" />
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold">Section Records</h1>
+        <p className="text-sm text-muted-foreground">
+          Search, filter and manage active sections.
+        </p>
       </div>
 
       <Card>

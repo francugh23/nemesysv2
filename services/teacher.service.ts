@@ -3,9 +3,11 @@ import { Permissions, requirePermission } from "@/lib/authorization";
 import prisma from "@/lib/prisma";
 import { createAuditLogs } from "@/repositories/audit.repository";
 import {
+  countNonArchivedTeachers,
   createTeacher,
+  findNonArchivedTeachers,
   findTeacherById,
-  findTeachers,
+  findTeacherFilterOptionValues,
   softDeleteTeacher,
   updateTeacher,
 } from "@/repositories/teacher.repository";
@@ -16,13 +18,103 @@ import {
   findUserByUsername,
   updateUser,
 } from "@/repositories/user.repository";
-import { CreateTeacherSchema, UpdateTeacherSchema } from "@/schemas";
+import {
+  CreateTeacherSchema,
+  type TeacherFilterOptions,
+  type TeacherPage,
+  type TeacherTableQuery,
+  UpdateTeacherSchema,
+} from "@/schemas";
+import { Prisma } from "@/app/generated/prisma/client";
 import { z } from "zod";
 
-export async function getTeachers() {
+function getTeacherOrderBy(
+  query: TeacherTableQuery,
+): Prisma.TeacherOrderByWithRelationInput[] {
+  const direction = query.direction ?? "asc";
+
+  switch (query.sort) {
+    case "employeeNumber":
+      return [{ user: { employeeNumber: direction } }, { id: "asc" }];
+    case "lastName":
+      return [{ user: { lastName: direction } }, { id: "asc" }];
+    case "firstName":
+      return [{ user: { firstName: direction } }, { id: "asc" }];
+    case "middleName":
+      return [{ user: { middleName: direction } }, { id: "asc" }];
+    case "gender":
+      return [{ user: { gender: direction } }, { id: "asc" }];
+    case "degree":
+      return [{ degree: direction }, { id: "asc" }];
+    case "major":
+      return [{ major: direction }, { id: "asc" }];
+    case "isAdviser":
+      return [{ isAdviser: direction }, { id: "asc" }];
+    case "status":
+      return [{ user: { status: direction } }, { id: "asc" }];
+    case "createdAt":
+      return [{ createdAt: direction }, { id: "asc" }];
+    default:
+      return [
+        { user: { lastName: "asc" } },
+        { user: { firstName: "asc" } },
+        { user: { middleName: "asc" } },
+        { user: { employeeNumber: "asc" } },
+        { id: "asc" },
+      ];
+  }
+}
+
+export async function getTeachers(
+  query: TeacherTableQuery,
+): Promise<TeacherPage> {
   await requirePermission(Permissions.TEACHERS);
 
-  return await findTeachers();
+  const filters = {
+    search: query.q,
+    status: query.status,
+    gender: query.gender,
+  };
+  const totalCount = await countNonArchivedTeachers(filters);
+  const pageCount = Math.ceil(totalCount / query.pageSize);
+  const page = Math.min(query.page, Math.max(pageCount, 1));
+  const teachers = await findNonArchivedTeachers(
+    filters,
+    {
+      skip: (page - 1) * query.pageSize,
+      take: query.pageSize,
+    },
+    getTeacherOrderBy(query),
+  );
+
+  return {
+    items: teachers,
+    totalCount,
+    page,
+    pageSize: query.pageSize,
+    pageCount,
+  };
+}
+
+export async function getTeacherFilterOptions(): Promise<TeacherFilterOptions> {
+  await requirePermission(Permissions.TEACHERS);
+
+  const values = await findTeacherFilterOptionValues();
+  const statuses = [...new Set(values.map(({ user }) => user.status))];
+  const genders = [...new Set(values.map(({ user }) => user.gender))];
+
+  return {
+    statuses: statuses.sort(
+      (first, second) =>
+        ["ACTIVE", "INACTIVE"].indexOf(first) -
+        ["ACTIVE", "INACTIVE"].indexOf(second),
+    ),
+    genders: genders.sort(
+      (first, second) =>
+        ["MALE", "FEMALE"].indexOf(first) -
+        ["MALE", "FEMALE"].indexOf(second),
+    ),
+  };
 }
 
 export async function createTeacherService(

@@ -35,6 +35,7 @@ export function subjectColumns({
     ),
   },
   {
+    id: "gradeLevel",
     accessorKey: "gradeLevel",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Grade Level" />
@@ -56,6 +57,7 @@ export function subjectColumns({
   },
     {
       id: "actions",
+      enableSorting: false,
       cell: ({ row }) => (
         <SubjectActions
           subject={row.original}

@@ -1,12 +1,24 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
-import { getSubjectsAction } from "@/actions/subject.action";
+import {
+  getSubjectFilterOptionsAction,
+  getSubjectsAction,
+} from "@/actions/subject.action";
+import type { SubjectTableQueryInput } from "@/schemas";
 
-export function useSubjects() {
+export function useSubjects(query: SubjectTableQueryInput) {
   return useQuery({
-    queryKey: ["subjects"],
-    queryFn: getSubjectsAction,
+    queryKey: ["subjects", query],
+    queryFn: () => getSubjectsAction(query),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useSubjectFilterOptions() {
+  return useQuery({
+    queryKey: ["subjects", "filter-options"],
+    queryFn: getSubjectFilterOptionsAction,
   });
 }

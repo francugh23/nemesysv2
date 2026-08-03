@@ -3,19 +3,36 @@
 import * as z from "zod";
 
 import { Permissions, requirePermission } from "@/lib/authorization";
-import { CreateSubjectSchema, UpdateSubjectSchema } from "@/schemas";
+import {
+  CreateSubjectSchema,
+  SubjectTableQuerySchema,
+  type SubjectTableQueryInput,
+  UpdateSubjectSchema,
+} from "@/schemas";
 import {
   archiveSubjectService,
   createSubjectService,
+  getSubjectFilterOptions,
   getSubjects,
   updateSubjectService,
 } from "@/services/subject.service";
 import { ActionResponse } from "@/types/action-response";
 
-export async function getSubjectsAction() {
+export async function getSubjectsAction(query: SubjectTableQueryInput) {
+  await requirePermission(Permissions.SUBJECTS);
+  const validatedQuery = SubjectTableQuerySchema.safeParse(query);
+
+  if (!validatedQuery.success) {
+    throw new Error("Invalid subject query.");
+  }
+
+  return await getSubjects(validatedQuery.data);
+}
+
+export async function getSubjectFilterOptionsAction() {
   await requirePermission(Permissions.SUBJECTS);
 
-  return await getSubjects();
+  return await getSubjectFilterOptions();
 }
 
 export async function createSubjectAction(

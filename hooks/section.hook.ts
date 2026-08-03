@@ -1,14 +1,21 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import {
   archiveSectionAction,
   createSectionAction,
+  getSectionFilterOptionsAction,
   getSectionFormOptionsAction,
   getSectionsAction,
   updateSectionAction,
 } from "@/actions/section.action";
+import type { SectionTableQueryInput } from "@/schemas";
 
 function useInvalidateSectionQueries() {
   const queryClient = useQueryClient();
@@ -27,10 +34,18 @@ function useInvalidateSectionQueries() {
   };
 }
 
-export function useSections() {
+export function useSections(query: SectionTableQueryInput) {
   return useQuery({
-    queryKey: ["sections"],
-    queryFn: getSectionsAction,
+    queryKey: ["sections", query],
+    queryFn: () => getSectionsAction(query),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useSectionFilterOptions() {
+  return useQuery({
+    queryKey: ["sections", "filter-options"],
+    queryFn: getSectionFilterOptionsAction,
   });
 }
 

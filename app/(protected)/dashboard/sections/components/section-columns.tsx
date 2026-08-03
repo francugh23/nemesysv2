@@ -19,6 +19,7 @@ export function sectionColumns({
 }: SectionColumnProps): ColumnDef<SectionListItem>[] {
   return [
     {
+      id: "grade",
       accessorKey: "gradeLevel",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Grade" />
@@ -38,6 +39,7 @@ export function sectionColumns({
       ),
     },
     {
+      id: "adviser",
       accessorKey: "adviserLastName",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Adviser" />
@@ -78,6 +80,7 @@ export function sectionColumns({
     },
     {
       id: "actions",
+      enableSorting: false,
       cell: ({ row }) => (
         <SectionActions
           section={row.original}

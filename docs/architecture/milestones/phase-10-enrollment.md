@@ -43,7 +43,7 @@ Completed subphases:
 
 ## Creation UI
 
-- The Enrollment toolbar opens a shared form dialog containing React Hook Form fields validated by Zod.
+- The Enrollment page header opens a shared form dialog containing React Hook Form fields validated by Zod.
 - Student and Section use the shared SearchableSelect with non-archived form options; Academic Year uses a text input and Semester is optional.
 - The Enrollment hook owns the options query and create mutation. Successful creation invalidates the Enrollment query family, form options, filter options, and synchronized Student data.
 - The form reports structured action errors, resets only after success, and closes its dialog after the successful invalidations complete.
@@ -54,6 +54,7 @@ Completed subphases:
 - Sortable columns present LRN, Student, Grade, Track / Strand, Section, Academic Year, Semester, and Status.
 - The page provides loading, empty, error, retry, sorting, and pagination states.
 - A dedicated table skeleton is used by both the route fallback and query loading state.
+- The table toolbar contains a disabled Export placeholder and performs no partial export.
 - Enrollment status uses the existing Badge primitive. The Student-specific status badge was not broadened to cover a separate domain enum.
 
 ## Server Table Architecture

@@ -7,6 +7,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { Download } from "lucide-react";
 
 import { CrudToolbar } from "@/components/common/crud-toolbar";
 import { DataTable } from "@/components/data-table";
@@ -232,6 +233,12 @@ function EnrollmentPageContent() {
                 onReset={tableState.reset}
                 isFetching={isFetching && !isLoading}
                 searchResetKey={tableState.resetKey}
+                actions={
+                  <Button variant="outline" disabled>
+                    <Download />
+                    Export
+                  </Button>
+                }
               />
             )}
             server={{

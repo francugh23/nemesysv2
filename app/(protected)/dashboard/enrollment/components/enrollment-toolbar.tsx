@@ -7,6 +7,7 @@ import {
 } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { useEnrollmentFilterOptions } from "@/hooks/enrollment.hook";
+import type { ReactNode } from "react";
 
 export const enrollmentFilterKeys = [
   "status",
@@ -27,6 +28,7 @@ interface EnrollmentToolbarProps {
   onReset: () => void;
   isFetching: boolean;
   searchResetKey: number;
+  actions?: ReactNode;
 }
 
 const statusOptions: DataTableFilterOption[] = [
@@ -51,6 +53,7 @@ export function EnrollmentToolbar({
   onReset,
   isFetching,
   searchResetKey,
+  actions,
 }: EnrollmentToolbarProps) {
   const {
     data: options,
@@ -86,6 +89,7 @@ export function EnrollmentToolbar({
       canReset={canReset && hasSearchOrFilters}
       onReset={onReset}
       isFetching={isFetching}
+      actions={actions}
     >
       <DataTableFacetedFilter
         label="Status"

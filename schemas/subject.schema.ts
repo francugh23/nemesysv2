@@ -1,13 +1,16 @@
 import * as z from "zod";
 import { isJhsGradeLevel, SUBJECT_GRADE_LEVELS } from "@/lib/subject-identity";
 
+export const SubjectGradeLevelSchema = z.enum(SUBJECT_GRADE_LEVELS);
+export const SubjectSemesterSchema = z.enum(["FIRST", "SECOND"]);
+
 const SubjectFieldsSchema = z
   .object({
   code: z.string().trim().min(1, "Subject code is required."),
   description: z.string().trim().min(1, "Description is required."),
-  gradeLevel: z.enum(SUBJECT_GRADE_LEVELS),
+  gradeLevel: SubjectGradeLevelSchema,
   trackStrand: z.string().trim().optional(),
-  semester: z.enum(["FIRST", "SECOND"]).optional(),
+  semester: SubjectSemesterSchema.optional(),
   })
   .superRefine((values, context) => {
     if (isJhsGradeLevel(values.gradeLevel) && values.trackStrand) {
@@ -22,13 +25,35 @@ const SubjectFieldsSchema = z
 export const CreateSubjectSchema = SubjectFieldsSchema;
 export const UpdateSubjectSchema = SubjectFieldsSchema;
 
+export const SubjectSortFieldSchema = z.enum([
+  "code",
+  "description",
+  "gradeLevel",
+  "trackStrand",
+  "semester",
+]);
+
+export const SubjectTableQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  grade: SubjectGradeLevelSchema.optional(),
+  trackStrand: z.string().trim().min(1).max(100).optional(),
+  semester: SubjectSemesterSchema.optional(),
+  sort: SubjectSortFieldSchema.optional(),
+  direction: z.enum(["asc", "desc"]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(10),
+});
+
+export type SubjectTableQueryInput = z.input<typeof SubjectTableQuerySchema>;
+export type SubjectTableQuery = z.output<typeof SubjectTableQuerySchema>;
+
 export const SubjectListItemSchema = z.object({
   id: z.string(),
   code: z.string(),
   description: z.string(),
   gradeLevel: z.string(),
   trackStrand: z.string().nullable(),
-  semester: z.enum(["FIRST", "SECOND"]).nullable(),
+  semester: SubjectSemesterSchema.nullable(),
 });
 
 export type SubjectListItem = z.infer<typeof SubjectListItemSchema>;

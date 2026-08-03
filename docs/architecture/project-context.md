@@ -9,20 +9,20 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-No active implementation milestone. Student Module Modernization Phase 11A is complete.
+No active implementation milestone. Teacher, Subject, and Section Modernization Phases 12-14 are complete.
 
 ### Current Objective
 
-No active implementation objective. Student search, filters, sorting, pagination, and table state now use the reusable URL-driven server-table architecture.
+No active implementation objective. Enrollment, Student, Teacher, Subject, and Section now use the reusable URL-driven server-table architecture.
 
 ### Completed Modules
 
 - Student CRUD, UI, import, and URL-driven server-table UX
-- Teacher CRUD
-- Subject CRUD, identity correction, archive, and import
+- Teacher CRUD and URL-driven server-table UX
+- Subject CRUD, identity correction, archive, import, and URL-driven server-table UX
 - Shared CRUD toolbar and backward-compatible client/server DataTable infrastructure
 - Subject Assignment foundation, creation, view, edit, and archive
-- Section Management foundation, creation, view, edit, and archive
+- Section Management foundation, creation, view, edit, archive, and URL-driven server-table UX
 - Enrollment Management foundation, lifecycle completion, controlled correction, and URL-driven server-table UX
 - Security Hardening Phase S1 centralized authorization architecture
 - Security Hardening Phase S2 active-account revalidation
@@ -34,6 +34,9 @@ No active implementation objective. Student search, filters, sorting, pagination
 - [Phase 09: Section Management](./milestones/phase-09-section-management.md)
 - [Phase 10: Enrollment Management](./milestones/phase-10-enrollment.md)
 - [Phase 11: Student Module Modernization](./milestones/phase-11-student-modernization.md)
+- [Phase 12: Teacher Module Modernization](./milestones/phase-12-teacher-modernization.md)
+- [Phase 13: Subject Module Modernization](./milestones/phase-13-subject-modernization.md)
+- [Phase 14: Section Module Modernization](./milestones/phase-14-section-modernization.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -55,6 +58,8 @@ No active implementation objective. Student search, filters, sorting, pagination
 - Student current placement is normalized through nullable `currentSectionId`; grade, track/strand, shift, adviser, and other placement details are derived from Section.
 - Enrollment is the reference implementation for URL-driven server tables. Shared components provide generic state and controls while feature modules retain query schemas, filters, sort mapping, repositories, services, and authorization.
 - Student Management applies the same server-table architecture with Student-owned URL parameters, active-record search and filters, represented-value filter options, deterministic sorting, and server pagination.
+- Teacher, Subject, and Section Management apply the same architecture with feature-owned query contracts, represented-value filters, deterministic server ordering, and prefix-based query invalidation.
+- Operational module headers own the primary Add or lifecycle action. Table toolbars contain search and filters on the left and only existing Import actions plus a disabled Export placeholder on the right.
 - Stable architectural principles are maintained in [`.ai/context/architecture.md`](../../.ai/context/architecture.md).
 
 ## Active Constraints
@@ -74,7 +79,7 @@ No active implementation objective. Student search, filters, sorting, pagination
 
 ## Next Planned Milestone
 
-No next milestone is active or approved. Complete filtered Student export remains deferred to a separately approved Export milestone.
+No next milestone is active or approved. Complete filtered exports remain deferred to a separately approved Export milestone.
 
 ## Technology Stack
 

@@ -4,10 +4,13 @@ import prisma from "@/lib/prisma";
 import { createAuditLogs } from "@/repositories/audit.repository";
 import {
   archiveSection,
+  countActiveSections,
   createSection,
   findActiveSectionById,
   findActiveSectionByIdentity,
   findActiveSections,
+  findActiveSectionsByGrade,
+  findSectionFilterOptionValues,
   hasActiveSectionEnrollments,
   hasActiveSectionSubjectAssignments,
   updateSection,
@@ -18,17 +21,44 @@ import {
 } from "@/repositories/teacher.repository";
 import {
   CreateSectionSchema,
+  type SectionFilterOptions,
   type SectionListItem,
+  type SectionPage,
+  type SectionTableQuery,
   UpdateSectionSchema,
 } from "@/schemas";
 import { z } from "zod";
 
-export async function getSections(): Promise<SectionListItem[]> {
-  await requirePermission(Permissions.SECTIONS);
+function getSectionOrderBy(
+  query: SectionTableQuery,
+): Prisma.SectionOrderByWithRelationInput[] {
+  const direction = query.direction ?? "asc";
 
-  const sections = await findActiveSections();
+  switch (query.sort) {
+    case "trackStrand":
+      return [{ trackStrand: direction }, { id: "asc" }];
+    case "sectionName":
+      return [{ sectionName: direction }, { id: "asc" }];
+    case "adviser":
+      return [
+        { adviser: { user: { lastName: direction } } },
+        { adviser: { user: { firstName: direction } } },
+        { adviser: { user: { middleName: direction } } },
+        { id: "asc" },
+      ];
+    case "room":
+      return [{ room: direction }, { id: "asc" }];
+    case "shift":
+      return [{ shift: direction }, { id: "asc" }];
+    default:
+      return [{ id: "asc" }];
+  }
+}
 
-  return sections.map((section) => ({
+function toSectionListItem(
+  section: Awaited<ReturnType<typeof findActiveSections>>[number],
+): SectionListItem {
+  return {
     id: section.id,
     gradeLevel: section.gradeLevel,
     trackStrand: section.trackStrand,
@@ -39,7 +69,81 @@ export async function getSections(): Promise<SectionListItem[]> {
     adviserLastName: section.adviser?.user.lastName ?? null,
     room: section.room,
     shift: section.shift,
-  }));
+  };
+}
+
+export async function getSections(
+  query: SectionTableQuery,
+): Promise<SectionPage> {
+  await requirePermission(Permissions.SECTIONS);
+
+  const filters = {
+    search: query.q,
+    grade: query.grade,
+    trackStrand: query.trackStrand,
+    shift: query.shift,
+    adviserId: query.adviserId,
+  };
+  const totalCount = await countActiveSections(filters);
+  const pageCount = Math.ceil(totalCount / query.pageSize);
+  const page = Math.min(query.page, Math.max(pageCount, 1));
+  const pagination = {
+    skip: (page - 1) * query.pageSize,
+    take: query.pageSize,
+  };
+  const sections =
+    !query.sort || query.sort === "grade"
+      ? await findActiveSectionsByGrade(
+          filters,
+          pagination,
+          query.sort === "grade" ? (query.direction ?? "asc") : "asc",
+          !query.sort,
+        )
+      : await findActiveSections(filters, pagination, getSectionOrderBy(query));
+
+  return {
+    items: sections.map(toSectionListItem),
+    totalCount,
+    page,
+    pageSize: query.pageSize,
+    pageCount,
+  };
+}
+
+export async function getSectionFilterOptions(): Promise<SectionFilterOptions> {
+  await requirePermission(Permissions.SECTIONS);
+
+  const [grades, trackStrands, shifts, advisers] =
+    await findSectionFilterOptionValues();
+
+  return {
+    gradeLevels: grades
+      .map((value) => value.gradeLevel)
+      .sort((first, second) => Number(first) - Number(second)),
+    trackStrands: trackStrands.flatMap((value) =>
+      value.trackStrand ? [value.trackStrand] : [],
+    ),
+    shifts: shifts.flatMap((value) => (value.shift ? [value.shift] : [])),
+    advisers: advisers
+      .flatMap((value) =>
+        value.adviserId && value.adviser
+          ? [
+              {
+                id: value.adviserId,
+                firstName: value.adviser.user.firstName,
+                middleName: value.adviser.user.middleName,
+                lastName: value.adviser.user.lastName,
+              },
+            ]
+          : [],
+      )
+      .sort(
+        (first, second) =>
+          first.lastName.localeCompare(second.lastName) ||
+          first.firstName.localeCompare(second.firstName) ||
+          (first.middleName ?? "").localeCompare(second.middleName ?? ""),
+      ),
+  };
 }
 
 function normalizeSectionValues(
