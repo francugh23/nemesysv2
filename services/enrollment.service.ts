@@ -1,5 +1,5 @@
 import { Prisma } from "@/app/generated/prisma/client";
-import { auth } from "@/auth";
+import { Permissions, requirePermission } from "@/lib/authorization";
 import prisma from "@/lib/prisma";
 import { createAuditLogs } from "@/repositories/audit.repository";
 import {
@@ -19,18 +19,8 @@ import type { CreateEnrollmentInput, EnrollmentListItem } from "@/schemas";
 
 export class EnrollmentServiceError extends Error {}
 
-async function requireSuperAdmin() {
-  const session = await auth();
-
-  if (!session?.user?.id || session.user.role !== "SUPER_ADMIN") {
-    throw new Error("Unauthorized.");
-  }
-
-  return session;
-}
-
 export async function getEnrollments(): Promise<EnrollmentListItem[]> {
-  await requireSuperAdmin();
+  await requirePermission(Permissions.ENROLLMENT);
 
   const enrollments = await findNonArchivedEnrollments();
 
@@ -52,7 +42,7 @@ export async function getEnrollments(): Promise<EnrollmentListItem[]> {
 }
 
 export async function getEnrollmentFormOptions() {
-  await requireSuperAdmin();
+  await requirePermission(Permissions.ENROLLMENT);
 
   const [students, sections] = await Promise.all([
     findActiveStudentsForEnrollment(),
@@ -89,7 +79,7 @@ function getStudentName(student: {
 }
 
 export async function createEnrollmentService(values: CreateEnrollmentInput) {
-  const session = await requireSuperAdmin();
+  const session = await requirePermission(Permissions.ENROLLMENT);
   const academicYear = values.academicYear.trim();
 
   try {

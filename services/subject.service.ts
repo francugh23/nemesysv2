@@ -1,5 +1,5 @@
-import { auth } from "@/auth";
 import { Prisma } from "@/app/generated/prisma/client";
+import { Permissions, requirePermission } from "@/lib/authorization";
 import prisma from "@/lib/prisma";
 import {
   getSubjectIdentityKey,
@@ -22,6 +22,8 @@ import { CreateSubjectSchema, UpdateSubjectSchema } from "@/schemas";
 import { z } from "zod";
 
 export async function getSubjects() {
+  await requirePermission(Permissions.SUBJECTS);
+
   return await findSubjects();
 }
 
@@ -54,11 +56,7 @@ function rethrowSubjectIdentityConflict(error: unknown): never {
 export async function createSubjectService(
   values: z.infer<typeof CreateSubjectSchema>,
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized.");
-  }
+  const session = await requirePermission(Permissions.SUBJECTS);
 
   const identity = normalizeSubjectIdentity(values);
 
@@ -101,11 +99,7 @@ export async function updateSubjectService(
   id: string,
   values: z.infer<typeof UpdateSubjectSchema>,
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized.");
-  }
+  const session = await requirePermission(Permissions.SUBJECTS);
 
   const subject = await findSubjectById(id);
 
@@ -153,11 +147,7 @@ export async function updateSubjectService(
 export async function importSubjectsService(
   values: z.infer<typeof CreateSubjectSchema>[],
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized.");
-  }
+  const session = await requirePermission(Permissions.SUBJECTS);
 
   const identities = values.map((subject) => normalizeSubjectIdentity(subject));
   const identityKeys = new Set<string>();
@@ -236,15 +226,7 @@ export async function importSubjectsService(
 }
 
 export async function archiveSubjectService(id: string) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized.");
-  }
-
-  if (session.user.role !== "SUPER_ADMIN") {
-    throw new Error("Forbidden.");
-  }
+  const session = await requirePermission(Permissions.SUBJECTS);
 
   return prisma.$transaction(async (transaction) => {
     const subject = await findActiveSubjectById(id, transaction);

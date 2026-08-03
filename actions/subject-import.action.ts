@@ -1,6 +1,7 @@
 "use server";
 
 import { getSubjectIdentityKey, normalizeSubjectIdentity } from "@/lib/subject-identity";
+import { Permissions, requirePermission } from "@/lib/authorization";
 import { CreateSubjectSchema } from "@/schemas";
 import { importSubjectsService } from "@/services/subject.service";
 import type { ActionResponse } from "@/types/action-response";
@@ -14,6 +15,14 @@ type SubjectImportActionResponse = ActionResponse & {
 export async function importSubjectsAction(
   values: unknown,
 ): Promise<SubjectImportActionResponse> {
+  try {
+    await requirePermission(Permissions.SUBJECTS);
+  } catch {
+    return {
+      error: "Unauthorized.",
+    };
+  }
+
   if (!Array.isArray(values)) {
     return {
       error: "Invalid import data.",

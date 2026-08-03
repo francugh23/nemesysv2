@@ -1,5 +1,5 @@
-import { auth } from "@/auth";
 import { hashPassword } from "@/lib";
+import { Permissions, requirePermission } from "@/lib/authorization";
 import prisma from "@/lib/prisma";
 import { createAuditLogs } from "@/repositories/audit.repository";
 import {
@@ -20,17 +20,15 @@ import { CreateTeacherSchema, UpdateTeacherSchema } from "@/schemas";
 import { z } from "zod";
 
 export async function getTeachers() {
+  await requirePermission(Permissions.TEACHERS);
+
   return await findTeachers();
 }
 
 export async function createTeacherService(
   values: z.infer<typeof CreateTeacherSchema>,
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized.");
-  }
+  const session = await requirePermission(Permissions.TEACHERS);
 
   const [existingEmployeeNumber, existingUsername, existingEmail] =
     await Promise.all([
@@ -102,11 +100,7 @@ export async function updateTeacherService(
   id: string,
   values: z.infer<typeof UpdateTeacherSchema>,
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized.");
-  }
+  const session = await requirePermission(Permissions.TEACHERS);
 
   const teacher = await findTeacherById(id);
 
@@ -176,11 +170,7 @@ export async function updateTeacherService(
 }
 
 export async function deactivateTeacherService(id: string) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized.");
-  }
+  const session = await requirePermission(Permissions.TEACHERS);
 
   const teacher = await findTeacherById(id);
 

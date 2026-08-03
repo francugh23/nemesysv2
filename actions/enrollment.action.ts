@@ -2,7 +2,7 @@
 
 import * as z from "zod";
 
-import { auth } from "@/auth";
+import { Permissions, requirePermission } from "@/lib/authorization";
 import { CreateEnrollmentSchema } from "@/schemas";
 import {
   createEnrollmentService,
@@ -12,22 +12,14 @@ import {
 } from "@/services/enrollment.service";
 import type { ActionResponse } from "@/types/action-response";
 
-async function requireSuperAdmin() {
-  const session = await auth();
-
-  if (!session?.user?.id || session.user.role !== "SUPER_ADMIN") {
-    throw new Error("Unauthorized.");
-  }
-}
-
 export async function getEnrollmentsAction() {
-  await requireSuperAdmin();
+  await requirePermission(Permissions.ENROLLMENT);
 
   return await getEnrollments();
 }
 
 export async function getEnrollmentFormOptionsAction() {
-  await requireSuperAdmin();
+  await requirePermission(Permissions.ENROLLMENT);
 
   return await getEnrollmentFormOptions();
 }
@@ -36,7 +28,7 @@ export async function createEnrollmentAction(
   values: z.infer<typeof CreateEnrollmentSchema>,
 ): Promise<ActionResponse> {
   try {
-    await requireSuperAdmin();
+    await requirePermission(Permissions.ENROLLMENT);
   } catch {
     return {
       error: "Unauthorized.",

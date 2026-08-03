@@ -1,5 +1,3 @@
-import { auth } from "@/auth";
-
 import {
   createStudent,
   createStudents,
@@ -16,21 +14,20 @@ import { CreateStudentSchema } from "@/schemas";
 import { createAuditLog } from "@/services/audit.service";
 
 import prisma from "@/lib/prisma";
+import { Permissions, requirePermission } from "@/lib/authorization";
 
 import { z } from "zod";
 
 export async function getStudents() {
+  await requirePermission(Permissions.STUDENTS);
+
   return await findStudents();
 }
 
 export async function createStudentService(
   values: z.infer<typeof CreateStudentSchema>,
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized.");
-  }
+  const session = await requirePermission(Permissions.STUDENTS);
 
   const existingStudent = await findStudentByLRN(values.lrn);
 
@@ -64,11 +61,7 @@ export async function createStudentService(
 export async function importStudentsService(
   values: z.infer<typeof CreateStudentSchema>[],
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized.");
-  }
+  const session = await requirePermission(Permissions.STUDENTS);
 
   const existingStudents = await findStudentsByLRNs(
     values.map((student) => student.lrn),
@@ -119,11 +112,7 @@ export async function updateStudentService(
   id: string,
   values: z.infer<typeof CreateStudentSchema>,
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized.");
-  }
+  await requirePermission(Permissions.STUDENTS);
 
   const student = await updateStudent(id, {
     ...values,
@@ -141,11 +130,7 @@ export async function updateStudentService(
 }
 
 export async function deleteStudentService(id: string) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized.");
-  }
+  await requirePermission(Permissions.STUDENTS);
 
   const student = await softDeleteStudent(id);
 

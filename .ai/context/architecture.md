@@ -22,6 +22,13 @@ Do not bypass a layer to save code.
 - All writes required for one business operation must commit or roll back together.
 - Repository methods participating in a transaction accept and use the provided transaction client.
 
+## Authorization
+- Protected Server Actions perform boundary authorization before validation or service delegation.
+- Services independently perform final authorization before business rules or data access.
+- Permissions map to allowed roles in one central catalog; feature modules authorize by permission rather than hardcoded role checks.
+- Repositories never import authentication or authorization concerns.
+- Protected API routes authorize directly; proxy protection is defense in depth only.
+
 ## Record Lifecycle
 - Domain records with history use soft deletion through `deletedAt`.
 - Active reads explicitly filter archived records.

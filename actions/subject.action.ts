@@ -2,6 +2,7 @@
 
 import * as z from "zod";
 
+import { Permissions, requirePermission } from "@/lib/authorization";
 import { CreateSubjectSchema, UpdateSubjectSchema } from "@/schemas";
 import {
   archiveSubjectService,
@@ -12,12 +13,22 @@ import {
 import { ActionResponse } from "@/types/action-response";
 
 export async function getSubjectsAction() {
+  await requirePermission(Permissions.SUBJECTS);
+
   return await getSubjects();
 }
 
 export async function createSubjectAction(
   values: z.infer<typeof CreateSubjectSchema>,
 ): Promise<ActionResponse> {
+  try {
+    await requirePermission(Permissions.SUBJECTS);
+  } catch {
+    return {
+      error: "Unauthorized.",
+    };
+  }
+
   const validatedFields = CreateSubjectSchema.safeParse(values);
 
   if (!validatedFields.success) {
@@ -49,6 +60,14 @@ export async function updateSubjectAction(
   id: string,
   values: z.infer<typeof UpdateSubjectSchema>,
 ): Promise<ActionResponse> {
+  try {
+    await requirePermission(Permissions.SUBJECTS);
+  } catch {
+    return {
+      error: "Unauthorized.",
+    };
+  }
+
   const validatedFields = UpdateSubjectSchema.safeParse(values);
 
   if (!validatedFields.success) {
@@ -77,6 +96,14 @@ export async function updateSubjectAction(
 }
 
 export async function archiveSubjectAction(id: string): Promise<ActionResponse> {
+  try {
+    await requirePermission(Permissions.SUBJECTS);
+  } catch {
+    return {
+      error: "Unauthorized.",
+    };
+  }
+
   try {
     await archiveSubjectService(id);
 

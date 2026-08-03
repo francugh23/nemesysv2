@@ -2,7 +2,7 @@
 
 import * as z from "zod";
 
-import { auth } from "@/auth";
+import { Permissions, requirePermission } from "@/lib/authorization";
 import { CreateSectionSchema, UpdateSectionSchema } from "@/schemas";
 import {
   archiveSectionService,
@@ -13,22 +13,14 @@ import {
 } from "@/services/section.service";
 import { ActionResponse } from "@/types/action-response";
 
-async function requireSuperAdmin() {
-  const session = await auth();
-
-  if (!session?.user?.id || session.user.role !== "SUPER_ADMIN") {
-    throw new Error("Unauthorized.");
-  }
-}
-
 export async function getSectionsAction() {
-  await requireSuperAdmin();
+  await requirePermission(Permissions.SECTIONS);
 
   return await getSections();
 }
 
 export async function getSectionFormOptionsAction() {
-  await requireSuperAdmin();
+  await requirePermission(Permissions.SECTIONS);
 
   return await getSectionFormOptions();
 }
@@ -37,7 +29,7 @@ export async function createSectionAction(
   values: z.infer<typeof CreateSectionSchema>,
 ): Promise<ActionResponse> {
   try {
-    await requireSuperAdmin();
+    await requirePermission(Permissions.SECTIONS);
   } catch {
     return {
       error: "Unauthorized.",
@@ -76,7 +68,7 @@ export async function updateSectionAction(
   values: z.infer<typeof UpdateSectionSchema>,
 ): Promise<ActionResponse> {
   try {
-    await requireSuperAdmin();
+    await requirePermission(Permissions.SECTIONS);
   } catch {
     return {
       error: "Unauthorized.",
@@ -115,7 +107,7 @@ export async function archiveSectionAction(
   id: string,
 ): Promise<ActionResponse> {
   try {
-    await requireSuperAdmin();
+    await requirePermission(Permissions.SECTIONS);
   } catch {
     return {
       error: "Unauthorized.",

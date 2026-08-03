@@ -1,5 +1,5 @@
 import { Prisma } from "@/app/generated/prisma/client";
-import { auth } from "@/auth";
+import { Permissions, requirePermission } from "@/lib/authorization";
 import prisma from "@/lib/prisma";
 import { createAuditLogs } from "@/repositories/audit.repository";
 import {
@@ -23,18 +23,8 @@ import {
 } from "@/schemas";
 import { z } from "zod";
 
-async function requireSuperAdmin() {
-  const session = await auth();
-
-  if (!session?.user?.id || session.user.role !== "SUPER_ADMIN") {
-    throw new Error("Unauthorized.");
-  }
-
-  return session;
-}
-
 export async function getSections(): Promise<SectionListItem[]> {
-  await requireSuperAdmin();
+  await requirePermission(Permissions.SECTIONS);
 
   const sections = await findActiveSections();
 
@@ -76,7 +66,7 @@ function getSectionIdentity(section: {
 }
 
 export async function getSectionFormOptions() {
-  await requireSuperAdmin();
+  await requirePermission(Permissions.SECTIONS);
 
   const teachers = await findActiveTeachersForSection();
 
@@ -107,7 +97,7 @@ function rethrowSectionIdentityConflict(error: unknown): never {
 export async function createSectionService(
   values: z.infer<typeof CreateSectionSchema>,
 ) {
-  const session = await requireSuperAdmin();
+  const session = await requirePermission(Permissions.SECTIONS);
   const { identity, adviserId, room, shift } = normalizeSectionValues(values);
 
   try {
@@ -172,7 +162,7 @@ export async function updateSectionService(
   id: string,
   values: z.infer<typeof UpdateSectionSchema>,
 ) {
-  const session = await requireSuperAdmin();
+  const session = await requirePermission(Permissions.SECTIONS);
   const { identity, adviserId, room, shift } = normalizeSectionValues(values);
 
   try {
@@ -238,7 +228,7 @@ export async function updateSectionService(
 }
 
 export async function archiveSectionService(id: string) {
-  const session = await requireSuperAdmin();
+  const session = await requirePermission(Permissions.SECTIONS);
 
   return prisma.$transaction(async (transaction) => {
     const section = await findActiveSectionById(id, transaction);

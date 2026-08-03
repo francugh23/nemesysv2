@@ -1,5 +1,5 @@
 import { Prisma } from "@/app/generated/prisma/client";
-import { auth } from "@/auth";
+import { Permissions, requirePermission } from "@/lib/authorization";
 import prisma from "@/lib/prisma";
 import { formatFullName } from "@/lib/format";
 import { createAuditLogs } from "@/repositories/audit.repository";
@@ -34,6 +34,8 @@ import { z } from "zod";
 export async function getSubjectAssignments(): Promise<
   SubjectAssignmentListItem[]
 > {
+  await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+
   const assignments = await findAllSubjectAssignments();
 
   return assignments.map((assignment) => ({
@@ -55,6 +57,8 @@ export async function getSubjectAssignments(): Promise<
 }
 
 export async function getSubjectAssignmentOptions() {
+  await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+
   const [teachers, subjects, sections] = await Promise.all([
     findActiveTeachersForAssignment(),
     findSubjects(),
@@ -90,11 +94,7 @@ function rethrowSubjectAssignmentConflict(error: unknown): never {
 export async function createSubjectAssignmentService(
   values: z.infer<typeof CreateSubjectAssignmentSchema>,
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized.");
-  }
+  const session = await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
 
   try {
     return await prisma.$transaction(async (transaction) => {
@@ -162,11 +162,7 @@ export async function updateSubjectAssignmentService(
   id: string,
   values: z.infer<typeof UpdateSubjectAssignmentSchema>,
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized.");
-  }
+  const session = await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
 
   try {
     return await prisma.$transaction(async (transaction) => {
@@ -244,11 +240,7 @@ export async function updateSubjectAssignmentService(
 }
 
 export async function archiveSubjectAssignmentService(id: string) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized.");
-  }
+  const session = await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
 
   return prisma.$transaction(async (transaction) => {
     const assignment = await findActiveSubjectAssignmentById(id, transaction);

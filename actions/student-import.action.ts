@@ -1,5 +1,6 @@
 "use server";
 
+import { Permissions, requirePermission } from "@/lib/authorization";
 import { CreateStudentSchema } from "@/schemas";
 import { importStudentsService } from "@/services/student.service";
 import type { ActionResponse } from "@/types/action-response";
@@ -12,6 +13,14 @@ type StudentImportActionResponse = ActionResponse & {
 export async function importStudentsAction(
   values: unknown,
 ): Promise<StudentImportActionResponse> {
+  try {
+    await requirePermission(Permissions.STUDENTS);
+  } catch {
+    return {
+      error: "Unauthorized.",
+    };
+  }
+
   const validatedFields = CreateStudentSchema.array().safeParse(values);
 
   if (!validatedFields.success) {

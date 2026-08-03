@@ -9,11 +9,11 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-No active implementation milestone. Phase 10B: Enrollment Creation is complete.
+No active implementation milestone. Security Hardening Phase S1 is complete.
 
 ### Current Objective
 
-No active implementation objective. Enrollment creation is complete and its remaining workflows stay deferred.
+No active implementation objective. The permanent centralized permission architecture is established across current modules.
 
 ### Completed Modules
 
@@ -24,12 +24,14 @@ No active implementation objective. Enrollment creation is complete and its rema
 - Subject Assignment foundation, creation, view, edit, and archive
 - Section Management foundation, creation, view, edit, and archive
 - Enrollment Management foundation, read path, and creation
+- Security Hardening Phase S1 centralized authorization architecture
 
 ### Milestone Records
 
 - [Phase 08: Subject Assignment](./milestones/phase-08-subject-assignment.md)
 - [Phase 09: Section Management](./milestones/phase-09-section-management.md)
 - [Phase 10: Enrollment Management](./milestones/phase-10-enrollment.md)
+- [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 
 ## Current Architecture
 
@@ -39,6 +41,7 @@ No active implementation objective. Enrollment creation is complete and its rema
 - Services own business rules, authorization orchestration, transactions, and audit coordination.
 - Repositories perform Prisma data access only; related writes and audit records commit or roll back together in service-owned transactions.
 - Hooks own TanStack Query integration and narrowly invalidate affected query keys.
+- Protected Server Actions and Services independently enforce centralized module permissions; repositories remain authorization-free.
 - Stable architectural principles are maintained in [`.ai/context/architecture.md`](../../.ai/context/architecture.md).
 
 ## Active Constraints

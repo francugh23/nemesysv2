@@ -2,6 +2,7 @@
 
 import * as z from "zod";
 
+import { Permissions, requirePermission } from "@/lib/authorization";
 import { CreateTeacherSchema, UpdateTeacherSchema } from "@/schemas";
 import {
   createTeacherService,
@@ -12,12 +13,22 @@ import {
 import { ActionResponse } from "@/types/action-response";
 
 export async function getTeachersAction() {
+  await requirePermission(Permissions.TEACHERS);
+
   return await getTeachers();
 }
 
 export async function createTeacherAction(
   values: z.infer<typeof CreateTeacherSchema>,
 ): Promise<ActionResponse> {
+  try {
+    await requirePermission(Permissions.TEACHERS);
+  } catch {
+    return {
+      error: "Unauthorized.",
+    };
+  }
+
   const validatedFields = CreateTeacherSchema.safeParse(values);
 
   if (!validatedFields.success) {
@@ -49,6 +60,14 @@ export async function updateTeacherAction(
   id: string,
   values: z.infer<typeof UpdateTeacherSchema>,
 ): Promise<ActionResponse> {
+  try {
+    await requirePermission(Permissions.TEACHERS);
+  } catch {
+    return {
+      error: "Unauthorized.",
+    };
+  }
+
   const validatedFields = UpdateTeacherSchema.safeParse(values);
 
   if (!validatedFields.success) {
@@ -79,6 +98,14 @@ export async function updateTeacherAction(
 export async function deactivateTeacherAction(
   id: string,
 ): Promise<ActionResponse> {
+  try {
+    await requirePermission(Permissions.TEACHERS);
+  } catch {
+    return {
+      error: "Unauthorized.",
+    };
+  }
+
   try {
     await deactivateTeacherService(id);
 

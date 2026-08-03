@@ -2,7 +2,7 @@
 
 import * as z from "zod";
 
-import { auth } from "@/auth";
+import { Permissions, requirePermission } from "@/lib/authorization";
 import {
   CreateSubjectAssignmentSchema,
   UpdateSubjectAssignmentSchema,
@@ -17,16 +17,28 @@ import {
 import { ActionResponse } from "@/types/action-response";
 
 export async function getSubjectAssignmentsAction() {
+  await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+
   return await getSubjectAssignments();
 }
 
 export async function getSubjectAssignmentOptionsAction() {
+  await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+
   return await getSubjectAssignmentOptions();
 }
 
 export async function createSubjectAssignmentAction(
   values: z.infer<typeof CreateSubjectAssignmentSchema>,
 ): Promise<ActionResponse> {
+  try {
+    await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  } catch {
+    return {
+      error: "Unauthorized.",
+    };
+  }
+
   const validatedFields = CreateSubjectAssignmentSchema.safeParse(values);
 
   if (!validatedFields.success) {
@@ -58,9 +70,9 @@ export async function updateSubjectAssignmentAction(
   id: string,
   values: z.infer<typeof UpdateSubjectAssignmentSchema>,
 ): Promise<ActionResponse> {
-  const session = await auth();
-
-  if (!session?.user?.id) {
+  try {
+    await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  } catch {
     return {
       error: "Unauthorized.",
     };
@@ -97,9 +109,9 @@ export async function updateSubjectAssignmentAction(
 export async function archiveSubjectAssignmentAction(
   id: string,
 ): Promise<ActionResponse> {
-  const session = await auth();
-
-  if (!session?.user?.id) {
+  try {
+    await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  } catch {
     return {
       error: "Unauthorized.",
     };

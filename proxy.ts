@@ -8,6 +8,7 @@ import {
   publicRoutes,
   DEFAULT_LOGIN_REDIRECT,
 } from "@/routes";
+import { hasPermission, Permissions } from "@/lib/permissions";
 
 const { auth } = NextAuth(authConfig);
 
@@ -15,6 +16,7 @@ export default auth((req) => {
   const { nextUrl } = req;
 
   const isLoggedIn = !!req.auth;
+  const role = req.auth?.user?.role;
 
   const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
@@ -28,8 +30,6 @@ export default auth((req) => {
   // Prevent logged-in users from going back to /auth/login
   if (isAuthRoute) {
     if (isLoggedIn) {
-      const role = req.auth?.user?.role;
-
       return NextResponse.redirect(
         new URL(DEFAULT_LOGIN_REDIRECT(role!), nextUrl),
       );
@@ -41,6 +41,16 @@ export default auth((req) => {
   // Protect all private pages
   if (!isLoggedIn && !isPublicRoute) {
     return NextResponse.redirect(new URL("/auth/login", nextUrl));
+  }
+
+  if (
+    isLoggedIn &&
+    nextUrl.pathname.startsWith("/dashboard") &&
+    !hasPermission(role, Permissions.DASHBOARD)
+  ) {
+    return NextResponse.redirect(
+      new URL(role ? DEFAULT_LOGIN_REDIRECT(role) : "/auth/login", nextUrl),
+    );
   }
 
   return NextResponse.next();
