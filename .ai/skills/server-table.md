@@ -7,6 +7,7 @@
 
 ## Query Flow
 - Parse URL state into a feature query object.
+- Validate boolean URL filters as explicit `"true"` and `"false"` literals before transforming them; do not use boolean coercion for query-string values.
 - Include the normalized query in the feature-specific TanStack Query key.
 - Validate the query in the Server Action before service delegation.
 - Map public sort fields to Prisma ordering in the service; never pass arbitrary fields through.

@@ -9,11 +9,11 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-No active implementation milestone. Teacher, Subject, and Section Modernization Phases 12-14 are complete.
+No active implementation milestone. User Management Modernization Phase 15A is complete.
 
 ### Current Objective
 
-No active implementation objective. Enrollment, Student, Teacher, Subject, and Section now use the reusable URL-driven server-table architecture.
+No active implementation objective. User Management now provides the same authorized URL-driven server-table read experience as the other modernized operational modules.
 
 ### Completed Modules
 
@@ -24,6 +24,7 @@ No active implementation objective. Enrollment, Student, Teacher, Subject, and S
 - Subject Assignment foundation, creation, view, edit, and archive
 - Section Management foundation, creation, view, edit, archive, and URL-driven server-table UX
 - Enrollment Management foundation, lifecycle completion, controlled correction, and URL-driven server-table UX
+- User Management authorized read path and URL-driven server-table UX
 - Security Hardening Phase S1 centralized authorization architecture
 - Security Hardening Phase S2 active-account revalidation
 - Security Hardening Phase S3 immediate production security
@@ -37,6 +38,7 @@ No active implementation objective. Enrollment, Student, Teacher, Subject, and S
 - [Phase 12: Teacher Module Modernization](./milestones/phase-12-teacher-modernization.md)
 - [Phase 13: Subject Module Modernization](./milestones/phase-13-subject-modernization.md)
 - [Phase 14: Section Module Modernization](./milestones/phase-14-section-modernization.md)
+- [Phase 15A: User Management Modernization](./milestones/phase-15a-user-management-modernization.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -59,6 +61,7 @@ No active implementation objective. Enrollment, Student, Teacher, Subject, and S
 - Enrollment is the reference implementation for URL-driven server tables. Shared components provide generic state and controls while feature modules retain query schemas, filters, sort mapping, repositories, services, and authorization.
 - Student Management applies the same server-table architecture with Student-owned URL parameters, active-record search and filters, represented-value filter options, deterministic sorting, and server pagination.
 - Teacher, Subject, and Section Management apply the same architecture with feature-owned query contracts, represented-value filters, deterministic server ordering, and prefix-based query invalidation.
+- User Management is listing-only and applies the same architecture to non-archived account metadata without exposing credentials, authentication secrets, or session data.
 - Operational module headers own the primary Add or lifecycle action. Table toolbars contain search and filters on the left and only existing Import actions plus a disabled Export placeholder on the right.
 - Stable architectural principles are maintained in [`.ai/context/architecture.md`](../../.ai/context/architecture.md).
 
