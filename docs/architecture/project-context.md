@@ -9,15 +9,15 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-No active implementation milestone. Audit Log Modernization Phase 16C is complete.
+No active implementation milestone. Shared Export Infrastructure Phase 17A is complete.
 
 ### Current Objective
 
-No active implementation objective. Audit Log Management now provides authorized read-only server-driven listing, details, advanced action filtering, and supported-module navigation for immutable audit history.
+No active implementation objective. Shared authorized export infrastructure now provides complete filtered Student CSV and XLSX downloads and is ready for future feature integrations.
 
 ### Completed Modules
 
-- Student CRUD, UI, import, and URL-driven server-table UX
+- Student CRUD, UI, import, URL-driven server-table UX, and complete filtered CSV/XLSX export
 - Teacher CRUD and URL-driven server-table UX
 - Subject CRUD, identity correction, archive, import, and URL-driven server-table UX
 - Shared CRUD toolbar and backward-compatible client/server DataTable infrastructure
@@ -46,6 +46,7 @@ No active implementation objective. Audit Log Management now provides authorized
 - [Phase 16A: Audit Log Modernization](./milestones/phase-16a-audit-log-modernization.md)
 - [Phase 16B: Audit Log Details And Export Preparation](./milestones/phase-16b-audit-log-details.md)
 - [Phase 16C: Audit Log Advanced Filtering And Navigation](./milestones/phase-16c-audit-log-navigation.md)
+- [Phase 17A: Shared Export Infrastructure](./milestones/phase-17a-export-architecture.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -74,8 +75,10 @@ No active implementation objective. Audit Log Management now provides authorized
 - User administration uses dedicated transactional operations for password reset, role change, and activation/deactivation; Teacher-owned accounts remain excluded, actors cannot change their own role/status, and active Super Admin continuity is protected before role/status reductions.
 - Audit Log Management applies the shared server-table architecture to immutable audit history. Reads preserve actor relationships even after User soft deletion, filter inclusive Philippine calendar dates, and never expose audit metadata or secret-bearing fields in list projections.
 - Audit Log details use a separate authorized read path to load immutable metadata only when requested. Metadata is displayed structurally, changed fields are distinct when available, and the shared validated list-query parser is available to a future export action while Export remains disabled.
-- Audit Log action filters support canonical comma-separated URL values and Prisma `in` filtering. Quick actions and represented action selections share this URL state; supported record modules navigate through a fixed route whitelist, while unsupported historical modules remain plain text.
-- Operational module headers own the primary Add or lifecycle action. Table toolbars contain search and filters on the left and only existing Import actions plus a disabled Export placeholder on the right.
+- Audit Log action filters support canonical comma-separated URL values and Prisma `in` filtering through the represented Action selector; supported record modules navigate through a fixed route whitelist, while unsupported historical modules remain plain text.
+- Shared export infrastructure generates authorized UTF-8 CSV and XLSX artifacts from validated feature table queries. Feature Services own orchestration, feature repositories return explicit projections in deterministic batches, and the shared engine enforces row and file-size limits.
+- Student export reuses the complete filtered table query while ignoring query pagination and exposes only the seven visible data columns. Other operational modules retain disabled Export placeholders until separately approved integrations.
+- Operational module headers own the primary Add or lifecycle action. Table toolbars contain search and filters on the left and only existing Import actions plus approved or disabled Export controls on the right.
 - Stable architectural principles are maintained in [`.ai/context/architecture.md`](../../.ai/context/architecture.md).
 
 ## Active Constraints
@@ -95,7 +98,7 @@ No active implementation objective. Audit Log Management now provides authorized
 
 ## Next Planned Milestone
 
-No next milestone is active or approved. Password change and first-login completion workflows, MFA, recovery, User archive/restore, and complete filtered exports remain deferred to separately approved milestones.
+No next milestone is active or approved. Shared Import Template Infrastructure is deferred to Phase 17B. Teacher, Subject, Section, User, and Audit Log export integrations, password change and first-login completion workflows, MFA, recovery, and User archive/restore remain deferred to separately approved milestones.
 
 ## Technology Stack
 

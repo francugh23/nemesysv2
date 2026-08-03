@@ -1,11 +1,11 @@
 "use client";
 
 import { Suspense, useEffect, useEffectEvent, useMemo, useState } from "react";
-import { Download } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/data-table";
 import { CrudToolbar } from "@/components/common/crud-toolbar";
+import { ExportButton } from "@/components/common/export/export-button";
 import { Button } from "@/components/ui/button";
 
 import { useStudents } from "@/hooks/student.hook";
@@ -29,6 +29,7 @@ import {
   studentFilterKeys,
   StudentToolbar,
 } from "./components/student-toolbar";
+import { exportStudentsAction } from "@/actions/student.action";
 
 const studentSortFields = [
   "lrn",
@@ -210,10 +211,12 @@ function StudentsPageContent() {
                         <Button variant="outline">Import Student</Button>
                       }
                     />
-                    <Button variant="outline" disabled>
-                      <Download />
-                      Export
-                    </Button>
+                    <ExportButton
+                      exportAction={(format) =>
+                        exportStudentsAction(query, format)
+                      }
+                      disabled={isLoading || isError}
+                    />
                   </>
                 }
               />

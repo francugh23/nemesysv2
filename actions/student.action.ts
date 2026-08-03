@@ -5,8 +5,9 @@ import * as z from "zod";
 import { Permissions, requirePermission } from "@/lib/authorization";
 import {
   CreateStudentSchema,
-  StudentTableQuerySchema,
+  ExportFormatSchema,
   type StudentTableQueryInput,
+  validateStudentTableQuery,
 } from "@/schemas";
 import {
   createStudentService,
@@ -14,18 +15,52 @@ import {
   getStudents,
   updateStudentService,
   deleteStudentService,
+  exportStudents,
 } from "@/services/student.service";
 import { ActionResponse } from "@/types/action-response";
+import type { ExportActionResult, ExportFormat } from "@/types/export";
+import { ExportError } from "@/services/export.service";
 
 export async function getStudentsAction(query: StudentTableQueryInput) {
   await requirePermission(Permissions.STUDENTS);
-  const validatedQuery = StudentTableQuerySchema.safeParse(query);
+  const validatedQuery = validateStudentTableQuery(query);
 
   if (!validatedQuery.success) {
     throw new Error("Invalid student query.");
   }
 
   return await getStudents(validatedQuery.data);
+}
+
+export async function exportStudentsAction(
+  query: StudentTableQueryInput,
+  format: ExportFormat,
+): Promise<ExportActionResult> {
+  try {
+    await requirePermission(Permissions.STUDENTS);
+  } catch {
+    return { error: "Unauthorized." };
+  }
+
+  const validatedQuery = validateStudentTableQuery(query);
+  const validatedFormat = ExportFormatSchema.safeParse(format);
+
+  if (!validatedQuery.success || !validatedFormat.success) {
+    return { error: "Invalid export request." };
+  }
+
+  try {
+    return {
+      file: await exportStudents(validatedQuery.data, validatedFormat.data),
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof ExportError
+          ? error.message
+          : "Unable to export student records.",
+    };
+  }
 }
 
 export async function getStudentFilterOptionsAction() {

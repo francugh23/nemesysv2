@@ -56,5 +56,9 @@ export const StudentTableQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(50).default(10),
 });
 
+export function validateStudentTableQuery(query: unknown) {
+  return StudentTableQuerySchema.safeParse(query);
+}
+
 export type StudentTableQueryInput = z.input<typeof StudentTableQuerySchema>;
 export type StudentTableQuery = z.output<typeof StudentTableQuerySchema>;

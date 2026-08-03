@@ -34,6 +34,27 @@ const studentListInclude = {
   },
 } satisfies Prisma.StudentInclude;
 
+const studentExportSelect = {
+  id: true,
+  lrn: true,
+  firstName: true,
+  middleName: true,
+  lastName: true,
+  gender: true,
+  status: true,
+  createdAt: true,
+  currentSection: {
+    select: {
+      gradeLevel: true,
+      sectionName: true,
+    },
+  },
+} satisfies Prisma.StudentSelect;
+
+export type StudentExportProjection = Prisma.StudentGetPayload<{
+  select: typeof studentExportSelect;
+}>;
+
 function getStudentListWhere(
   filters: StudentListFilters,
 ): Prisma.StudentWhereInput {
@@ -60,8 +81,11 @@ function getStudentListWhere(
   };
 }
 
-export async function countNonArchivedStudents(filters: StudentListFilters) {
-  return prisma.student.count({
+export async function countNonArchivedStudents(
+  filters: StudentListFilters,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).student.count({
     where: getStudentListWhere(filters),
   });
 }
@@ -120,41 +144,98 @@ function getStudentGradeSortConditions(filters: StudentListFilters) {
   return conditions;
 }
 
+async function findNonArchivedStudentIdsByGrade(
+  filters: StudentListFilters,
+  pagination: { skip: number; take: number },
+  direction: "asc" | "desc",
+  transaction?: Prisma.TransactionClient,
+) {
+  const gradeDirection =
+    direction === "desc" ? Prisma.sql`DESC` : Prisma.sql`ASC`;
+  const ids = await (transaction ?? prisma).$queryRaw<Array<{ id: string }>>(
+    Prisma.sql`
+      SELECT "student"."id"
+      FROM "Student" AS "student"
+      LEFT JOIN "Section" AS "section"
+        ON "section"."id" = "student"."currentSectionId"
+      WHERE ${Prisma.join(getStudentGradeSortConditions(filters), " AND ")}
+      ORDER BY CASE
+        WHEN BTRIM("section"."gradeLevel") ~ '^[0-9]+$'
+          THEN BTRIM("section"."gradeLevel")::INTEGER
+        ELSE NULL
+      END ${gradeDirection} NULLS LAST, "student"."id" ASC
+      OFFSET ${pagination.skip}
+      LIMIT ${pagination.take}
+    `,
+  );
+
+  return ids.map((student) => student.id);
+}
+
 export async function findNonArchivedStudentsByGrade(
   filters: StudentListFilters,
   pagination: { skip: number; take: number },
   direction: "asc" | "desc",
 ) {
-  const gradeDirection =
-    direction === "desc" ? Prisma.sql`DESC` : Prisma.sql`ASC`;
-  const ids = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
-    SELECT "student"."id"
-    FROM "Student" AS "student"
-    LEFT JOIN "Section" AS "section"
-      ON "section"."id" = "student"."currentSectionId"
-    WHERE ${Prisma.join(getStudentGradeSortConditions(filters), " AND ")}
-    ORDER BY CASE
-      WHEN BTRIM("section"."gradeLevel") ~ '^[0-9]+$'
-        THEN BTRIM("section"."gradeLevel")::INTEGER
-      ELSE NULL
-    END ${gradeDirection} NULLS LAST, "student"."id" ASC
-    OFFSET ${pagination.skip}
-    LIMIT ${pagination.take}
-  `);
+  const ids = await findNonArchivedStudentIdsByGrade(
+    filters,
+    pagination,
+    direction,
+  );
 
-  if (ids.length === 0) {
-    return [];
-  }
+  if (ids.length === 0) return [];
 
   const students = await prisma.student.findMany({
     where: {
       id: {
-        in: ids.map((student) => student.id),
+        in: ids,
       },
     },
     include: studentListInclude,
   });
-  const order = new Map(ids.map((student, index) => [student.id, index]));
+  const order = new Map(ids.map((id, index) => [id, index]));
+
+  return students.sort(
+    (first, second) =>
+      (order.get(first.id) ?? 0) - (order.get(second.id) ?? 0),
+  );
+}
+
+export async function findNonArchivedStudentsForExport(
+  filters: StudentListFilters,
+  pagination: { skip: number; take: number },
+  orderBy: Prisma.StudentOrderByWithRelationInput[],
+  transaction?: Prisma.TransactionClient,
+): Promise<StudentExportProjection[]> {
+  return (transaction ?? prisma).student.findMany({
+    where: getStudentListWhere(filters),
+    select: studentExportSelect,
+    orderBy,
+    skip: pagination.skip,
+    take: pagination.take,
+  });
+}
+
+export async function findNonArchivedStudentsForExportByGrade(
+  filters: StudentListFilters,
+  pagination: { skip: number; take: number },
+  direction: "asc" | "desc",
+  transaction?: Prisma.TransactionClient,
+): Promise<StudentExportProjection[]> {
+  const ids = await findNonArchivedStudentIdsByGrade(
+    filters,
+    pagination,
+    direction,
+    transaction,
+  );
+
+  if (ids.length === 0) return [];
+
+  const students = await (transaction ?? prisma).student.findMany({
+    where: { id: { in: ids } },
+    select: studentExportSelect,
+  });
+  const order = new Map(ids.map((id, index) => [id, index]));
 
   return students.sort(
     (first, second) =>

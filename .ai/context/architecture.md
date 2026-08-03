@@ -41,6 +41,13 @@ Do not bypass a layer to save code.
 - Audit creation belongs in the same transaction as the mutation.
 - Logs identify the actor, operation, module, record, and human-readable outcome without storing secrets.
 
+## Exports
+- Complete filtered exports reuse the feature's validated server-table query rather than exporting loaded page rows.
+- Feature Server Actions and Services independently enforce the existing module permission before export data access.
+- Services own export orchestration and pass explicit ordered projections to shared format generators.
+- Repositories apply feature-owned filtering and deterministic ordering and select only approved export fields.
+- Client-controlled export columns and direct persistence access are prohibited.
+
 ## General Conventions
 - PostgreSQL is the system of record; Prisma is the only application database access layer.
 - Zod validates external input at boundaries.

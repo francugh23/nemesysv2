@@ -7,8 +7,11 @@ import {
   findStudentsByLRNs,
   findNonArchivedStudents,
   findNonArchivedStudentsByGrade,
+  findNonArchivedStudentsForExport,
+  findNonArchivedStudentsForExportByGrade,
   updateStudent,
   softDeleteStudent,
+  type StudentExportProjection,
 } from "@/repositories/student.repository";
 import { createAuditLogs } from "@/repositories/audit.repository";
 
@@ -21,8 +24,19 @@ import { createAuditLog } from "@/services/audit.service";
 
 import prisma from "@/lib/prisma";
 import { Permissions, requirePermission } from "@/lib/authorization";
+import {
+  formatExportDate,
+  formatExportEnum,
+} from "@/lib/export/format";
+import { formatFullName } from "@/lib/format";
 import { Prisma } from "@/app/generated/prisma/client";
 import type { StudentFilterOptions, StudentPage } from "@/types/student";
+import type {
+  DownloadableFile,
+  ExportDefinition,
+  ExportFormat,
+} from "@/types/export";
+import { generateExport } from "@/services/export.service";
 
 import { z } from "zod";
 
@@ -64,18 +78,22 @@ function getStudentOrderBy(
   }
 }
 
-export async function getStudents(
-  query: StudentTableQuery,
-): Promise<StudentPage> {
-  await requirePermission(Permissions.STUDENTS);
-
-  const filters = {
+function getStudentListFilters(query: StudentTableQuery) {
+  return {
     search: query.q,
     status: query.status,
     gender: query.gender,
     grade: query.grade,
     sectionId: query.sectionId,
   };
+}
+
+export async function getStudents(
+  query: StudentTableQuery,
+): Promise<StudentPage> {
+  await requirePermission(Permissions.STUDENTS);
+
+  const filters = getStudentListFilters(query);
   const totalCount = await countNonArchivedStudents(filters);
   const pageCount = Math.ceil(totalCount / query.pageSize);
   const page = Math.min(query.page, Math.max(pageCount, 1));
@@ -103,6 +121,76 @@ export async function getStudents(
     pageSize: query.pageSize,
     pageCount,
   };
+}
+
+function getStudentExportDefinition(
+  transaction: Prisma.TransactionClient,
+): ExportDefinition<StudentTableQuery, StudentExportProjection> {
+  return {
+    fileSlug: "students",
+    sheetName: "Students",
+    columns: [
+      { header: "LRN" },
+      { header: "Name" },
+      { header: "Gender" },
+      { header: "Status" },
+      { header: "Grade" },
+      { header: "Current Section" },
+      { header: "Created Date" },
+    ],
+    count: (query) =>
+      countNonArchivedStudents(getStudentListFilters(query), transaction),
+    loadBatch: (query, pagination) => {
+      const filters = getStudentListFilters(query);
+
+      return query.sort === "grade"
+        ? findNonArchivedStudentsForExportByGrade(
+            filters,
+            pagination,
+            query.direction ?? "asc",
+            transaction,
+          )
+        : findNonArchivedStudentsForExport(
+            filters,
+            pagination,
+            getStudentOrderBy(query),
+            transaction,
+          );
+    },
+    mapProjection: (student) => [
+      student.lrn,
+      formatFullName(
+        student.firstName,
+        student.middleName,
+        student.lastName,
+      ),
+      formatExportEnum(student.gender),
+      formatExportEnum(student.status),
+      student.currentSection?.gradeLevel ?? "-",
+      student.currentSection?.sectionName ?? "-",
+      formatExportDate(student.createdAt),
+    ],
+  };
+}
+
+export async function exportStudents(
+  query: StudentTableQuery,
+  format: ExportFormat,
+): Promise<DownloadableFile> {
+  await requirePermission(Permissions.STUDENTS);
+
+  return prisma.$transaction(
+    (transaction) =>
+      generateExport(
+        query,
+        format,
+        getStudentExportDefinition(transaction),
+      ),
+    {
+      isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+      timeout: 30_000,
+    },
+  );
 }
 
 export async function getStudentFilterOptions(): Promise<StudentFilterOptions> {
