@@ -12,12 +12,12 @@ import { StatusBadge, GenderBadge } from "@/components/common/badges";
 import { StudentInfoSection } from "./student-info-section";
 import { StudentInfoItem } from "./student-info-item";
 
-import type { Student } from "@/app/generated/prisma/client";
+import type { StudentListItem } from "@/types/student";
 
 import { formatDate, formatFullName } from "@/lib/format";
 
 interface StudentViewDialogProps {
-  student: Student;
+  student: StudentListItem;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -27,6 +27,19 @@ export function StudentViewDialog({
   open,
   onOpenChange,
 }: StudentViewDialogProps) {
+  const currentSection = student.currentSection;
+  const adviser = currentSection?.adviser
+    ? formatFullName(
+        currentSection.adviser.user.firstName,
+        currentSection.adviser.user.middleName,
+        currentSection.adviser.user.lastName,
+      )
+    : null;
+  const shift = currentSection?.shift
+    ? currentSection.shift.charAt(0) +
+      currentSection.shift.slice(1).toLowerCase()
+    : null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] max-w-5xl! max-h-[90vh] overflow-y-auto">
@@ -82,6 +95,24 @@ export function StudentViewDialog({
               label="Birth Date"
               value={formatDate(student.dateOfBirth)}
             />
+          </StudentInfoSection>
+
+          <StudentInfoSection title="Current Placement">
+            <StudentInfoItem
+              label="Grade Level"
+              value={currentSection?.gradeLevel}
+            />
+            <StudentInfoItem
+              label="Section"
+              value={currentSection?.sectionName}
+            />
+            <StudentInfoItem
+              label="Track / Strand"
+              value={currentSection?.trackStrand}
+            />
+            <StudentInfoItem label="Shift" value={shift} />
+            <StudentInfoItem label="Room" value={currentSection?.room} />
+            <StudentInfoItem label="Adviser" value={adviser} />
           </StudentInfoSection>
 
           {/* Family */}

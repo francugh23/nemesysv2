@@ -11,12 +11,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import type { Student } from "@/app/generated/prisma/client";
+import type { StudentListItem } from "@/types/student";
 import type { Table } from "@tanstack/react-table";
 import { useState } from "react";
 
 interface StudentToolbarProps {
-  table: Table<Student>;
+  table: Table<StudentListItem>;
 }
 export function StudentToolbar({ table }: StudentToolbarProps) {
   const [search, setSearch] = useState("");

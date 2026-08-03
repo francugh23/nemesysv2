@@ -2,12 +2,12 @@
 
 import { FormDialog } from "@/components/common/dialogs/form-dialog";
 
-import type { Student } from "@/app/generated/prisma/client";
+import type { StudentListItem } from "@/types/student";
 
 import { StudentForm } from "./student-form";
 
 interface StudentEditDialogProps {
-  student: Student;
+  student: StudentListItem;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

@@ -112,6 +112,9 @@ model Student {
 
   status StudentStatus @default(UNENROLLED)
 
+  currentSectionId String?
+  currentSection   Section? @relation("StudentCurrentSection", fields: [currentSectionId], references: [id])
+
   createdById String
   createdBy   User   @relation(fields: [createdById], references: [id])
 
@@ -120,6 +123,8 @@ model Student {
   deletedAt DateTime?
 
   enrollments Enrollment[]
+
+  @@index([currentSectionId])
 }
 
 model Teacher {
@@ -162,6 +167,7 @@ model Section {
 
   subjectAssignments SubjectAssignment[]
   enrollments        Enrollment[]
+  currentStudents    Student[]           @relation("StudentCurrentSection")
 }
 
 model Subject {

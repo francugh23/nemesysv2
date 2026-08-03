@@ -2,20 +2,19 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { StudentActions } from "./student-actions";
-import { Student } from "@/app/generated/prisma/client";
-import { Button } from "@/components/ui/button";
+import type { StudentListItem } from "@/types/student";
 import { StatusBadge, GenderBadge } from "@/components/common/badges";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 
 interface StudentColumnProps {
-  onEdit: (student: Student) => void;
-  onDelete: (student: Student) => void;
+  onEdit: (student: StudentListItem) => void;
+  onDelete: (student: StudentListItem) => void;
 }
 
 export function studentColumns({
   onEdit,
   onDelete,
-}: StudentColumnProps): ColumnDef<Student>[] {
+}: StudentColumnProps): ColumnDef<StudentListItem>[] {
   return [
     {
       accessorKey: "lrn",
@@ -55,6 +54,24 @@ export function studentColumns({
         <DataTableColumnHeader column={column} title="Gender" />
       ),
       cell: ({ row }) => <GenderBadge gender={row.original.gender} />,
+    },
+
+    {
+      id: "gradeLevel",
+      accessorFn: (student) => student.currentSection?.gradeLevel ?? "",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Grade" />
+      ),
+      cell: ({ row }) => row.original.currentSection?.gradeLevel ?? "-",
+    },
+
+    {
+      id: "currentSection",
+      accessorFn: (student) => student.currentSection?.sectionName ?? "",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Current Section" />
+      ),
+      cell: ({ row }) => row.original.currentSection?.sectionName ?? "-",
     },
 
     {

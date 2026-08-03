@@ -7,6 +7,29 @@ export async function findStudents() {
     where: {
       deletedAt: null,
     },
+    include: {
+      currentSection: {
+        select: {
+          id: true,
+          gradeLevel: true,
+          trackStrand: true,
+          sectionName: true,
+          room: true,
+          shift: true,
+          adviser: {
+            select: {
+              user: {
+                select: {
+                  firstName: true,
+                  middleName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
 
     orderBy: [
       {
@@ -60,8 +83,49 @@ export async function findActiveStudentForEnrollment(
       firstName: true,
       middleName: true,
       lastName: true,
+      status: true,
+      currentSectionId: true,
+      currentSection: {
+        select: {
+          gradeLevel: true,
+          trackStrand: true,
+          sectionName: true,
+        },
+      },
     },
   });
+}
+
+export async function updateStudentEnrollmentSummary(
+  id: string,
+  data: Pick<
+    Prisma.StudentUncheckedUpdateInput,
+    "status" | "currentSectionId"
+  >,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).student.update({
+    where: {
+      id,
+    },
+    data,
+    select: {
+      status: true,
+      currentSectionId: true,
+    },
+  });
+}
+
+export async function lockStudentForEnrollmentSynchronization(
+  id: string,
+  transaction: Prisma.TransactionClient,
+) {
+  return transaction.$queryRaw<{ id: string }[]>(Prisma.sql`
+    SELECT "id"
+    FROM "Student"
+    WHERE "id" = ${id}
+    FOR UPDATE
+  `);
 }
 
 export async function createStudent(data: Prisma.StudentCreateInput) {

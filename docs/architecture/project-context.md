@@ -9,11 +9,11 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-No active implementation milestone. Security Hardening Phase S3 is complete.
+No active implementation milestone. Enrollment Management Phase 10D is complete.
 
 ### Current Objective
 
-No active implementation objective. Immediate production HTTP, session, configuration, bootstrap, invalidation-route, proxy, and dependency hardening is complete.
+No active implementation objective. Enrollment lifecycle synchronization and controlled cross-grade correction are complete.
 
 ### Completed Modules
 
@@ -23,7 +23,7 @@ No active implementation objective. Immediate production HTTP, session, configur
 - Shared CRUD toolbar and DataTable sorting improvements
 - Subject Assignment foundation, creation, view, edit, and archive
 - Section Management foundation, creation, view, edit, and archive
-- Enrollment Management foundation, read path, creation, details, edit, and status lifecycle
+- Enrollment Management foundation, read path, creation, details, edit, status lifecycle, Student summary synchronization, and controlled cross-grade correction
 - Security Hardening Phase S1 centralized authorization architecture
 - Security Hardening Phase S2 active-account revalidation
 - Security Hardening Phase S3 immediate production security
@@ -50,6 +50,8 @@ No active implementation objective. Immediate production HTTP, session, configur
 - Production responses apply standard browser security headers; authenticated route families and APIs are private and non-cacheable.
 - Auth.js retains encrypted JWT sessions with an explicit 8-hour maximum age and default secure cookie behavior.
 - Production startup validates required secrets, database configuration, and any configured canonical Auth.js URL.
+- Enrollment is the operational lifecycle source of truth. Student status and current Section are synchronized summaries maintained transactionally by `EnrollmentService`.
+- Student current placement is normalized through nullable `currentSectionId`; grade, track/strand, shift, adviser, and other placement details are derived from Section.
 - Stable architectural principles are maintained in [`.ai/context/architecture.md`](../../.ai/context/architecture.md).
 
 ## Active Constraints
@@ -60,10 +62,6 @@ No active implementation objective. Immediate production HTTP, session, configur
 - Lifecycle-managed records use soft deletion. Active reads explicitly exclude archived records, and historical relations and audit records are preserved.
 - Material mutations require transactional audit records with actor, operation, module, record identity, and a human-readable outcome.
 - Third-party API proposals require authoritative MCP verification when available; otherwise use official documentation, installed types/source, or CLI output and record the fallback.
-
-## Known Environmental Issue
-
-- Prisma's Windows schema-engine process fails to launch with `spawn UNKNOWN`, blocking deployment of the pending Section identity migration and database-backed behavioral verification. This is a documented environment blocker, not an implementation blocker for completed Phase 9 application scope. See the [Phase 09 record](./milestones/phase-09-section-management.md#pending-identity-migration) for impact and migration details.
 
 ## Dependency Relationships
 

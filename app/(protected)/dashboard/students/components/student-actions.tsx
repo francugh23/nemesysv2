@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,11 +11,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import type { Student } from "@/app/generated/prisma/client";
+import type { StudentListItem } from "@/types/student";
 interface StudentActionsProps {
-  student: Student;
-  onEdit: (student: Student) => void;
-  onDelete: (student: Student) => void;
+  student: StudentListItem;
+  onEdit: (student: StudentListItem) => void;
+  onDelete: (student: StudentListItem) => void;
 }
 
 export function StudentActions({

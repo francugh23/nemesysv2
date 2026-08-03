@@ -7,12 +7,12 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { ConfirmDeleteDialog } from "@/components/common/dialogs/confirm-delete-dialog";
 
-import type { Student } from "@/app/generated/prisma/client";
+import type { StudentListItem } from "@/types/student";
 
 import { deleteStudentAction } from "@/actions/student.action";
 
 interface DeleteStudentDialogProps {
-  student: Student;
+  student: StudentListItem;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

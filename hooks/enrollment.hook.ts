@@ -35,6 +35,7 @@ export function useCreateEnrollment() {
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["enrollments"] }),
+        queryClient.invalidateQueries({ queryKey: ["students"] }),
         queryClient.invalidateQueries({
           queryKey: ["enrollment-form-options"],
         }),
@@ -59,7 +60,10 @@ export function useUpdateEnrollment() {
         return;
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["enrollments"] }),
+        queryClient.invalidateQueries({ queryKey: ["students"] }),
+      ]);
     },
   });
 }

@@ -16,7 +16,7 @@ import { useStudents } from "@/hooks/student.hook";
 import { studentColumns } from "./components/student-columns";
 import { StudentToolbar } from "./components/student-toolbar";
 import { StudentTableSkeleton } from "@/components/skeletons/student-table-skeleton";
-import { Student } from "@/app/generated/prisma/client";
+import type { StudentListItem } from "@/types/student";
 import {
   StudentDialogManager,
   StudentDialogType,
@@ -27,9 +27,10 @@ import { studentExportDefinition } from "./components/student-export";
 
 export default function StudentsPage() {
   const { data, isLoading } = useStudents();
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedStudent, setSelectedStudent] =
+    useState<StudentListItem | null>(null);
   const [dialog, setDialog] = useState<StudentDialogType>(null);
-  const tableRef = useRef<Table<Student> | null>(null);
+  const tableRef = useRef<Table<StudentListItem> | null>(null);
 
   const columns = useMemo(
     () =>

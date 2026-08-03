@@ -29,11 +29,11 @@ Completed subphases:
 - Update reloads the active Section inside its transaction, normalizes and checks the identity excluding the current record, validates an optional active adviser, updates the record, and writes an UPDATE audit record atomically.
 - Mutations are restricted to `SUPER_ADMIN`; navigation visibility is not authorization.
 
-## Pending Identity Migration
+## Identity Migration
 
 - Migration `20260729000000_section_identity_null_safe` normalizes Section identity values, rejects invalid or duplicate active data before modification, and defines a PostgreSQL partial unique expression index for active grade level + track/strand + section name identities.
-- The migration was authored but remains undeployed because Prisma's Windows schema-engine process fails to launch with `spawn UNKNOWN`.
-- Until deployed, source-level checks enforce the rule during ordinary requests, but database-level concurrency enforcement is not active.
+- The migration was applied successfully during Phase 10D before migration `20260803063946_add_student_current_section`.
+- Source-level checks and database-level concurrency enforcement are both active.
 
 ## Archive Lifecycle And Audit
 
@@ -56,7 +56,7 @@ Completed subphases:
 - Phase 9C targeted ESLint, `npx prisma validate`, `git diff --check`, and `npm run build` passed.
 - Phase 9D reran targeted ESLint across the Section feature, `npx prisma validate`, `git diff --check`, and `npm run build`; all passed.
 - The production build includes `/dashboard/sections`.
-- Database-backed behavioral tests were not run because the identity migration is pending deployment.
+- Database-backed Section behavior was not rerun after the migration was applied.
 
 ## Reusable Implementation Knowledge
 

@@ -105,7 +105,9 @@ export function EditEnrollmentForm({
                 onValueChange={field.onChange}
                 options={sectionOptions}
                 placeholder={
-                  isLoading ? "Loading sections..." : "Search sections"
+                  isLoading
+                    ? "Loading sections..."
+                    : "Search any active section"
                 }
                 disabled={isLoading}
               />

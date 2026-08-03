@@ -1,4 +1,4 @@
-import { Prisma } from "@/app/generated/prisma/client";
+import { Prisma, type StudentStatus } from "@/app/generated/prisma/client";
 import { Permissions, requirePermission } from "@/lib/authorization";
 import prisma from "@/lib/prisma";
 import { createAuditLogs } from "@/repositories/audit.repository";
@@ -6,6 +6,8 @@ import {
   createEnrollment,
   findActiveEnrollmentById,
   findEnrollmentByIdentity,
+  findLatestActiveEnrollmentByStudent,
+  findLatestTerminalEnrollmentByStudent,
   findNonArchivedEnrollments,
   updateEnrollment,
 } from "@/repositories/enrollment.repository";
@@ -16,6 +18,8 @@ import {
 import {
   findActiveStudentForEnrollment,
   findActiveStudentsForEnrollment,
+  lockStudentForEnrollmentSynchronization,
+  updateStudentEnrollmentSummary,
 } from "@/repositories/student.repository";
 import type {
   CreateEnrollmentInput,
@@ -26,6 +30,12 @@ import type {
 export class EnrollmentServiceError extends Error {}
 
 type EnrollmentStatus = UpdateEnrollmentInput["status"];
+type AuditChanges = Record<string, { from: string; to: string }>;
+type SectionSummary = {
+  gradeLevel: string;
+  trackStrand: string | null;
+  sectionName: string;
+};
 
 const allowedStatusTransitions: Record<
   EnrollmentStatus,
@@ -98,6 +108,95 @@ function getStudentName(student: {
     .join(" ");
 }
 
+function getSectionName(section: SectionSummary | null) {
+  if (!section) {
+    return "NONE";
+  }
+
+  return `Grade ${section.gradeLevel}${section.trackStrand ? ` - ${section.trackStrand}` : ""} - ${section.sectionName}`;
+}
+
+function addStudentSynchronizationChanges(
+  changes: AuditChanges,
+  previous: {
+    status: StudentStatus;
+    currentSectionId: string | null;
+    currentSection: SectionSummary | null;
+  },
+  next: {
+    status: StudentStatus;
+    currentSectionId: string | null;
+    currentSection: SectionSummary | null;
+  },
+) {
+  if (previous.status !== next.status) {
+    changes["student.status"] = {
+      from: previous.status,
+      to: next.status,
+    };
+  }
+
+  if (previous.currentSectionId !== next.currentSectionId) {
+    changes["student.currentSectionId"] = {
+      from: previous.currentSectionId ?? "NONE",
+      to: next.currentSectionId ?? "NONE",
+    };
+    changes["student.currentSection"] = {
+      from: getSectionName(previous.currentSection),
+      to: getSectionName(next.currentSection),
+    };
+  }
+}
+
+async function synchronizeStudentFromEnrollments(
+  studentId: string,
+  transaction: Prisma.TransactionClient,
+) {
+  const activeEnrollment = await findLatestActiveEnrollmentByStudent(
+    studentId,
+    transaction,
+  );
+
+  let status: StudentStatus = "ENROLLED";
+  let currentSectionId: string | null = activeEnrollment?.sectionId ?? null;
+  let currentSection: SectionSummary | null = activeEnrollment?.section ?? null;
+
+  if (!activeEnrollment) {
+    const terminalEnrollment = await findLatestTerminalEnrollmentByStudent(
+      studentId,
+      transaction,
+    );
+
+    currentSectionId = null;
+    currentSection = null;
+
+    if (terminalEnrollment?.status === "COMPLETED") {
+      status = "ENROLLED";
+    } else if (terminalEnrollment?.status === "TRANSFERRED") {
+      status = "TRANSFERRED";
+    } else if (terminalEnrollment?.status === "DROPPED") {
+      status = "DROPPED";
+    } else {
+      status = "UNENROLLED";
+    }
+  }
+
+  await updateStudentEnrollmentSummary(
+    studentId,
+    {
+      status,
+      currentSectionId,
+    },
+    transaction,
+  );
+
+  return {
+    status,
+    currentSectionId,
+    currentSection,
+  };
+}
+
 function validateStatusTransition(
   currentStatus: EnrollmentStatus,
   nextStatus: EnrollmentStatus,
@@ -119,6 +218,11 @@ export async function createEnrollmentService(values: CreateEnrollmentInput) {
 
   try {
     return await prisma.$transaction(async (transaction) => {
+      await lockStudentForEnrollmentSynchronization(
+        values.studentId,
+        transaction,
+      );
+
       const [student, section] = await Promise.all([
         findActiveStudentForEnrollment(values.studentId, transaction),
         findActiveSectionForAssignment(values.sectionId, transaction),
@@ -157,6 +261,27 @@ export async function createEnrollmentService(values: CreateEnrollmentInput) {
         transaction,
       );
 
+      await updateStudentEnrollmentSummary(
+        student.id,
+        {
+          status: "ENROLLED",
+          currentSectionId: enrollment.sectionId,
+        },
+        transaction,
+      );
+
+      const changes: AuditChanges = {};
+
+      addStudentSynchronizationChanges(
+        changes,
+        student,
+        {
+          status: "ENROLLED",
+          currentSectionId: enrollment.sectionId,
+          currentSection: section,
+        },
+      );
+
       await createAuditLogs(
         [
           {
@@ -166,6 +291,8 @@ export async function createEnrollmentService(values: CreateEnrollmentInput) {
             recordId: enrollment.id,
             recordName: `${student.lrn} - ${getStudentName(student)} - ${academicYear}`,
             description: `Created enrollment in ${section.sectionName}`,
+            metadata:
+              Object.keys(changes).length > 0 ? { changes } : undefined,
           },
         ],
         transaction,
@@ -185,6 +312,17 @@ export async function updateEnrollmentService(
   const session = await requirePermission(Permissions.ENROLLMENT);
 
   return prisma.$transaction(async (transaction) => {
+    const enrollmentReference = await findActiveEnrollmentById(id, transaction);
+
+    if (!enrollmentReference) {
+      throw new EnrollmentServiceError("Enrollment not found.");
+    }
+
+    await lockStudentForEnrollmentSynchronization(
+      enrollmentReference.studentId,
+      transaction,
+    );
+
     const enrollment = await findActiveEnrollmentById(id, transaction);
 
     if (!enrollment) {
@@ -211,25 +349,10 @@ export async function updateEnrollmentService(
         throw new EnrollmentServiceError("Section not found or inactive.");
       }
 
-      if (enrollment.section.gradeLevel !== activeSection.gradeLevel) {
-        throw new EnrollmentServiceError(
-          "The new section must have the same grade level.",
-        );
-      }
-
-      if (
-        enrollment.section.trackStrand !== null &&
-        enrollment.section.trackStrand !== activeSection.trackStrand
-      ) {
-        throw new EnrollmentServiceError(
-          "The new section must have a compatible track or strand.",
-        );
-      }
-
       section = activeSection;
     }
 
-    const changes: Record<string, { from: string; to: string }> = {};
+    const changes: AuditChanges = {};
 
     if (values.sectionId !== enrollment.sectionId) {
       changes.section = {
@@ -271,6 +394,17 @@ export async function updateEnrollmentService(
         "Enrollment is no longer active and cannot be updated.",
       );
     }
+
+    const synchronizedStudent = await synchronizeStudentFromEnrollments(
+      enrollment.studentId,
+      transaction,
+    );
+
+    addStudentSynchronizationChanges(
+      changes,
+      enrollment.student,
+      synchronizedStudent,
+    );
 
     const changedFields = Object.keys(changes);
     const description =

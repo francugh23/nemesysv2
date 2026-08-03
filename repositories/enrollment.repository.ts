@@ -104,6 +104,15 @@ export async function findActiveEnrollmentById(
           firstName: true,
           middleName: true,
           lastName: true,
+          status: true,
+          currentSectionId: true,
+          currentSection: {
+            select: {
+              gradeLevel: true,
+              trackStrand: true,
+              sectionName: true,
+            },
+          },
         },
       },
       section: {
@@ -125,5 +134,48 @@ export async function updateEnrollment(
   return (transaction ?? prisma).enrollment.updateMany({
     where,
     data,
+  });
+}
+
+export async function findLatestActiveEnrollmentByStudent(
+  studentId: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).enrollment.findFirst({
+    where: {
+      studentId,
+      status: "ACTIVE",
+      deletedAt: null,
+    },
+    select: {
+      sectionId: true,
+      section: {
+        select: {
+          gradeLevel: true,
+          trackStrand: true,
+          sectionName: true,
+        },
+      },
+    },
+    orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+  });
+}
+
+export async function findLatestTerminalEnrollmentByStudent(
+  studentId: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).enrollment.findFirst({
+    where: {
+      studentId,
+      status: {
+        in: ["COMPLETED", "DROPPED", "TRANSFERRED"],
+      },
+      deletedAt: null,
+    },
+    select: {
+      status: true,
+    },
+    orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
   });
 }

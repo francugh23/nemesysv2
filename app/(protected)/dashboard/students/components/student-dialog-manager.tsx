@@ -1,6 +1,6 @@
 "use client";
 
-import type { Student } from "@/app/generated/prisma/client";
+import type { StudentListItem } from "@/types/student";
 
 import { StudentViewDialog } from "./student-view-dialog";
 import { StudentEditDialog } from "./edit-student-dialog";
@@ -9,7 +9,7 @@ import { DeleteStudentDialog } from "./delete-student-dialog";
 export type StudentDialogType = "view" | "edit" | "delete" | null;
 
 interface StudentDialogManagerProps {
-  student: Student | null;
+  student: StudentListItem | null;
 
   dialog: StudentDialogType;
 
