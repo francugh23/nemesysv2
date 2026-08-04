@@ -13,9 +13,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { downloadExportFile } from "@/lib/export/download";
 import { parseSpreadsheet } from "@/lib/import/spreadsheet";
 import type { ActionResponse } from "@/types/action-response";
 import type { ImportValidationResult } from "@/types/import";
+import type { ImportTemplateActionResult } from "@/types/import-template";
 import { WizardDialog } from "@/components/common/wizard/wizard-dialog";
 import { WizardStepPreview } from "@/components/common/wizard/wizard-step-preview";
 import { WizardStepSummary } from "@/components/common/wizard/wizard-step-summary";
@@ -32,6 +34,7 @@ interface ImportWizardProps {
     headers: string[],
   ) => ImportValidationResult;
   importRecords: (rows: Record<string, unknown>[]) => Promise<ActionResponse>;
+  downloadTemplate?: () => Promise<ImportTemplateActionResult>;
 }
 
 export function ImportWizard({
@@ -41,12 +44,14 @@ export function ImportWizard({
   normalizeRow,
   validateRows,
   importRecords,
+  downloadTemplate,
 }: ImportWizardProps) {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
+  const [isDownloadingTemplate, startTemplateDownload] = useTransition();
   const queryClient = useQueryClient();
   const normalizeRowEvent = useEffectEvent(normalizeRow);
 
@@ -115,6 +120,25 @@ export function ImportWizard({
     });
   }
 
+  function handleTemplateDownload() {
+    if (!downloadTemplate) return;
+
+    startTemplateDownload(async () => {
+      try {
+        const result = await downloadTemplate();
+
+        if ("error" in result) {
+          toast.error(result.error);
+          return;
+        }
+
+        downloadExportFile(result.file);
+      } catch {
+        toast.error("Unable to download the import template.");
+      }
+    });
+  }
+
   return (
     <>
       {trigger && isValidElement<{ onClick?: () => void }>(trigger) ? (
@@ -142,6 +166,8 @@ export function ImportWizard({
                 entityLabel={entityLabel}
                 file={file}
                 onFileChange={handleFileChange}
+                onTemplateDownload={downloadTemplate ? handleTemplateDownload : undefined}
+                isDownloadingTemplate={isDownloadingTemplate}
               />
             ),
           },

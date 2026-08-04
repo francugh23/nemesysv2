@@ -1,30 +1,10 @@
 import * as XLSX from "xlsx";
 
-const HEADER_ALIASES: Record<string, string> = {
-  lrn: "lrn",
-  learnerreferencenumber: "lrn",
-  firstname: "firstName",
-  middlename: "middleName",
-  lastname: "lastName",
-  gender: "gender",
-  dateofbirth: "dateOfBirth",
-  purok: "purok",
-  barangay: "barangay",
-  municipality: "municipality",
-  province: "province",
-  zipcode: "zipCode",
-  fathername: "fatherName",
-  fathercontact: "fatherContact",
-  mothername: "motherName",
-  mothercontact: "motherContact",
-  guardianname: "guardianName",
-  guardiancontact: "guardianContact",
-};
+import { studentImportTemplateDefinition } from "@/lib/import/definitions/student-import-template.definition";
+import { getImportFieldKeyByHeader } from "@/lib/import/template-definition";
 
 export function normalizeStudentImportHeader(header: string) {
-  return HEADER_ALIASES[
-    header.trim().toLowerCase().replace(/[^a-z0-9]/g, "")
-  ];
+  return getImportFieldKeyByHeader(studentImportTemplateDefinition, header);
 }
 
 function normalizeString(value: unknown) {

@@ -3,17 +3,11 @@ import type {
   ImportValidationError,
   ImportValidationResult,
 } from "@/types/import";
+import { studentImportTemplateDefinition } from "@/lib/import/definitions/student-import-template.definition";
+import { getRequiredImportFieldKeys } from "@/lib/import/template-definition";
 import { normalizeStudentImportHeader } from "./student-import-normalizer";
 
-const REQUIRED_FIELDS = [
-  "lrn",
-  "firstName",
-  "lastName",
-  "gender",
-  "barangay",
-  "municipality",
-  "province",
-];
+const REQUIRED_FIELDS = getRequiredImportFieldKeys(studentImportTemplateDefinition);
 
 export function validateStudentImport(
   rows: Record<string, unknown>[],

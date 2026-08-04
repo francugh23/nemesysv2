@@ -9,17 +9,17 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-No active implementation milestone. Shared Export Infrastructure Phase 17A is complete.
+Shared Import Template Infrastructure Phase 17B is complete.
 
 ### Current Objective
 
-No active implementation objective. Shared authorized export infrastructure now provides complete filtered Student CSV and XLSX downloads and is ready for future feature integrations.
+Reusable XLSX import-template infrastructure now provides authorized Student and Subject template downloads while preserving existing import behavior.
 
 ### Completed Modules
 
-- Student CRUD, UI, import, URL-driven server-table UX, and complete filtered CSV/XLSX export
+- Student CRUD, UI, import, URL-driven server-table UX, complete filtered CSV/XLSX export, and XLSX import template
 - Teacher CRUD and URL-driven server-table UX
-- Subject CRUD, identity correction, archive, import, and URL-driven server-table UX
+- Subject CRUD, identity correction, archive, import, URL-driven server-table UX, and XLSX import template
 - Shared CRUD toolbar and backward-compatible client/server DataTable infrastructure
 - Subject Assignment foundation, creation, view, edit, and archive
 - Section Management foundation, creation, view, edit, archive, and URL-driven server-table UX
@@ -47,6 +47,7 @@ No active implementation objective. Shared authorized export infrastructure now 
 - [Phase 16B: Audit Log Details And Export Preparation](./milestones/phase-16b-audit-log-details.md)
 - [Phase 16C: Audit Log Advanced Filtering And Navigation](./milestones/phase-16c-audit-log-navigation.md)
 - [Phase 17A: Shared Export Infrastructure](./milestones/phase-17a-export-architecture.md)
+- [Phase 17B: Shared Import Template Infrastructure](./milestones/phase-17b-import-template-infrastructure.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -78,6 +79,7 @@ No active implementation objective. Shared authorized export infrastructure now 
 - Audit Log action filters support canonical comma-separated URL values and Prisma `in` filtering through the represented Action selector; supported record modules navigate through a fixed route whitelist, while unsupported historical modules remain plain text.
 - Shared export infrastructure generates authorized UTF-8 CSV and XLSX artifacts from validated feature table queries. Feature Services own orchestration, feature repositories return explicit projections in deterministic batches, and the shared engine enforces row and file-size limits.
 - Student export reuses the complete filtered table query while ignoring query pagination and exposes only the seven visible data columns. Other operational modules retain disabled Export placeholders until separately approved integrations.
+- Shared import-template infrastructure generates definition-owned header-only XLSX workbooks without persistence access. Student and Subject definitions are the single source of truth for canonical headers, aliases, and required fields; their existing normalizers and validators consume those definitions without changing import behavior.
 - Operational module headers own the primary Add or lifecycle action. Table toolbars contain search and filters on the left and only existing Import actions plus approved or disabled Export controls on the right.
 - Stable architectural principles are maintained in [`.ai/context/architecture.md`](../../.ai/context/architecture.md).
 
@@ -98,7 +100,7 @@ No active implementation objective. Shared authorized export infrastructure now 
 
 ## Next Planned Milestone
 
-No next milestone is active or approved. Shared Import Template Infrastructure is deferred to Phase 17B. Teacher, Subject, Section, User, and Audit Log export integrations, password change and first-login completion workflows, MFA, recovery, and User archive/restore remain deferred to separately approved milestones.
+No next milestone is active or approved. Teacher and Section import-template integrations; Teacher, Subject, Section, User, and Audit Log export integrations; password change and first-login completion workflows; MFA; recovery; and User archive/restore remain deferred to separately approved milestones.
 
 ## Technology Stack
 

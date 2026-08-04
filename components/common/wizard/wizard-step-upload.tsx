@@ -1,6 +1,6 @@
 "use client";
 
-import { Upload } from "lucide-react";
+import { Download, Loader2, Upload } from "lucide-react";
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -8,12 +8,16 @@ interface WizardStepUploadProps {
   entityLabel: string;
   file: File | null;
   onFileChange: (file: File | null) => void;
+  onTemplateDownload?: () => void;
+  isDownloadingTemplate?: boolean;
 }
 
 export function WizardStepUpload({
   entityLabel,
   file,
   onFileChange,
+  onTemplateDownload,
+  isDownloadingTemplate = false,
 }: WizardStepUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -32,6 +36,17 @@ export function WizardStepUpload({
       </div>
 
       <Button onClick={() => inputRef.current?.click()}>Browse Files</Button>
+      {onTemplateDownload && (
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isDownloadingTemplate}
+          onClick={onTemplateDownload}
+        >
+          {isDownloadingTemplate ? <Loader2 className="animate-spin" /> : <Download />}
+          {isDownloadingTemplate ? "Preparing template..." : "Download template"}
+        </Button>
+      )}
       <input
         ref={inputRef}
         type="file"

@@ -1,20 +1,9 @@
 import { normalizeSubjectIdentity } from "@/lib/subject-identity";
-
-const HEADER_ALIASES: Record<string, string> = {
-  code: "code",
-  subjectcode: "code",
-  description: "description",
-  subjectdescription: "description",
-  gradelevel: "gradeLevel",
-  grade: "gradeLevel",
-  trackstrand: "trackStrand",
-  track: "trackStrand",
-  strand: "trackStrand",
-  semester: "semester",
-};
+import { subjectImportTemplateDefinition } from "@/lib/import/definitions/subject-import-template.definition";
+import { getImportFieldKeyByHeader } from "@/lib/import/template-definition";
 
 export function normalizeSubjectImportHeader(header: string) {
-  return HEADER_ALIASES[header.trim().toLowerCase().replace(/[^a-z0-9]/g, "")];
+  return getImportFieldKeyByHeader(subjectImportTemplateDefinition, header);
 }
 
 function normalizeString(value: unknown) {

@@ -1,0 +1,61 @@
+import type { ImportTemplateDefinition } from "@/types/import-template";
+
+export const subjectImportTemplateDefinition = {
+  fileSlug: "subjects",
+  includeInstructions: true,
+  importWorksheet: {
+    sheetName: "Subjects",
+    fields: [
+      {
+        key: "code",
+        canonicalHeader: "Code",
+        displayLabel: "Code",
+        required: true,
+        aliases: ["Subject Code"],
+        acceptedValues: "Text",
+        format: "Text",
+        notes: "Subject code.",
+      },
+      {
+        key: "description",
+        canonicalHeader: "Description",
+        displayLabel: "Description",
+        required: true,
+        aliases: ["Subject Description"],
+        acceptedValues: "Text",
+        format: "Text",
+        notes: "Subject description.",
+      },
+      {
+        key: "gradeLevel",
+        canonicalHeader: "Grade Level",
+        displayLabel: "Grade Level",
+        required: true,
+        aliases: ["Grade"],
+        acceptedValues: "7, 8, 9, 10, 11, 12",
+        format: "Grade 7-12 or 7-12",
+        notes: "Use the grade level where the subject is offered.",
+      },
+      {
+        key: "trackStrand",
+        canonicalHeader: "Track/Strand",
+        displayLabel: "Track/Strand",
+        required: false,
+        aliases: ["Track", "Strand"],
+        acceptedValues: "Text",
+        format: "Text",
+        notes: "Only applicable to Grades 11 and 12.",
+      },
+      {
+        key: "semester",
+        canonicalHeader: "Semester",
+        displayLabel: "Semester",
+        required: false,
+        aliases: [],
+        acceptedValues: "FIRST, SECOND",
+        format: "FIRST or SECOND",
+        notes: "Optional semester.",
+      },
+    ],
+  },
+} satisfies ImportTemplateDefinition;

@@ -1,6 +1,7 @@
 "use client";
 
 import { importSubjectsAction } from "@/actions/subject-import.action";
+import { downloadSubjectImportTemplateAction } from "@/actions/subject-import-template.action";
 import { ImportWizard } from "@/components/common/import/import-wizard";
 import type { ReactNode } from "react";
 
@@ -19,6 +20,7 @@ export function SubjectImportDialog({ trigger }: SubjectImportDialogProps) {
       normalizeRow={normalizeSubjectImportRow}
       validateRows={validateSubjectImport}
       importRecords={importSubjectsAction}
+      downloadTemplate={downloadSubjectImportTemplateAction}
     />
   );
 }

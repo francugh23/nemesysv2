@@ -18,10 +18,13 @@ export interface ExportDefinition<TQuery, TProjection> {
   mapProjection: (record: TProjection) => ExportCellValue[];
 }
 
-export interface DownloadableFile {
+export interface DownloadableArtifact {
   fileName: string;
   mimeType: string;
   contentBase64: string;
+}
+
+export interface DownloadableFile extends DownloadableArtifact {
   rowCount: number;
 }
 

@@ -37,8 +37,17 @@ import type {
   ExportFormat,
 } from "@/types/export";
 import { generateExport } from "@/services/export.service";
+import { generateImportTemplate } from "@/services/import-template.service";
+import { studentImportTemplateDefinition } from "@/lib/import/definitions/student-import-template.definition";
+import type { ImportTemplateFile } from "@/types/import-template";
 
 import { z } from "zod";
+
+export async function getStudentImportTemplate(): Promise<ImportTemplateFile> {
+  await requirePermission(Permissions.STUDENTS);
+
+  return generateImportTemplate(studentImportTemplateDefinition);
+}
 
 function getStudentOrderBy(
   query: StudentTableQuery,

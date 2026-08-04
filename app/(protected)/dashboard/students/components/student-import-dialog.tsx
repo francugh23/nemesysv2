@@ -1,6 +1,7 @@
 "use client";
 
 import { importStudentsAction } from "@/actions/student-import.action";
+import { downloadStudentImportTemplateAction } from "@/actions/student-import-template.action";
 import { ImportWizard } from "@/components/common/import/import-wizard";
 import { normalizeStudentImportRow } from "@/lib/student-import-normalizer";
 import { validateStudentImport } from "@/lib/student-import-validator";
@@ -19,6 +20,7 @@ export function StudentImportDialog({ trigger }: StudentImportDialogProps) {
       normalizeRow={normalizeStudentImportRow}
       validateRows={validateStudentImport}
       importRecords={importStudentsAction}
+      downloadTemplate={downloadStudentImportTemplateAction}
     />
   );
 }

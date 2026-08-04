@@ -27,7 +27,16 @@ import {
   UpdateSubjectSchema,
 } from "@/schemas";
 import type { SubjectFilterOptions, SubjectPage } from "@/types/subject";
+import { generateImportTemplate } from "@/services/import-template.service";
+import { subjectImportTemplateDefinition } from "@/lib/import/definitions/subject-import-template.definition";
+import type { ImportTemplateFile } from "@/types/import-template";
 import { z } from "zod";
+
+export async function getSubjectImportTemplate(): Promise<ImportTemplateFile> {
+  await requirePermission(Permissions.SUBJECTS);
+
+  return generateImportTemplate(subjectImportTemplateDefinition);
+}
 
 function getSubjectOrderBy(
   query: SubjectTableQuery,

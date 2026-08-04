@@ -1,6 +1,6 @@
-import type { DownloadableFile } from "@/types/export";
+import type { DownloadableArtifact } from "@/types/export";
 
-export function downloadExportFile(file: DownloadableFile) {
+export function downloadExportFile(file: DownloadableArtifact) {
   const binary = window.atob(file.contentBase64);
   const bytes = new Uint8Array(binary.length);
 

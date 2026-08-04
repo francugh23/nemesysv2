@@ -1,10 +1,12 @@
 import { getSubjectIdentityKey, normalizeSubjectIdentity } from "@/lib/subject-identity";
 import { CreateSubjectSchema } from "@/schemas";
 import type { ImportValidationError, ImportValidationResult } from "@/types/import";
+import { subjectImportTemplateDefinition } from "@/lib/import/definitions/subject-import-template.definition";
+import { getRequiredImportFieldKeys } from "@/lib/import/template-definition";
 
 import { normalizeSubjectImportHeader } from "./subject-import-normalizer";
 
-const REQUIRED_FIELDS = ["code", "description", "gradeLevel"];
+const REQUIRED_FIELDS = getRequiredImportFieldKeys(subjectImportTemplateDefinition);
 
 export function validateSubjectImport(
   rows: Record<string, unknown>[],
