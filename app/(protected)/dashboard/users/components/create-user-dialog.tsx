@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, Copy, Plus } from "lucide-react";
+import { Check, CirclePlus, Copy } from "lucide-react";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -102,7 +102,7 @@ export function CreateUserDialog() {
   return (
     <>
       <Button onClick={() => setOpen(true)}>
-        <Plus />
+        <CirclePlus />
         Add User
       </Button>
       <FormDialog
@@ -225,7 +225,10 @@ export function CreateUserDialog() {
                     name="role"
                     control={form.control}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <SelectTrigger
                           id="create-user-role"
                           ref={field.ref}
@@ -240,7 +243,9 @@ export function CreateUserDialog() {
                           <SelectValue placeholder="Select role" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+                          <SelectItem value="SUPER_ADMIN">
+                            Super Admin
+                          </SelectItem>
                           <SelectItem value="REGISTRAR">Registrar</SelectItem>
                           <SelectItem value="PRINCIPAL">Principal</SelectItem>
                         </SelectContent>
@@ -319,7 +324,10 @@ export function CreateUserDialog() {
                     name="gender"
                     control={form.control}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <SelectTrigger
                           id="create-user-gender"
                           ref={field.ref}

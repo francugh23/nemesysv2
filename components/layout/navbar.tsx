@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, ChevronRight } from "lucide-react";
 
-import { AppSidebarFooter } from "@/components/layout/app-sidebar-footer";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -63,9 +62,6 @@ export function Navbar() {
               )}
             </ol>
           </nav>
-          <h1 className="truncate text-base font-semibold tracking-tight sm:text-lg">
-            {pageTitle}
-          </h1>
         </div>
       </div>
 
@@ -80,7 +76,6 @@ export function Navbar() {
         >
           <Bell />
         </Button>
-        <AppSidebarFooter variant="navbar" />
       </div>
     </header>
   );
