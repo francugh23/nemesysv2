@@ -1,9 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 import {
@@ -17,6 +15,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 import { Separator } from "@/components/ui/separator";
@@ -29,30 +29,45 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const router = useRouter();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   if (!session?.user) return null;
 
   const items = navigation[session.user.role];
 
+  function navigate(href: string) {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+
+    router.push(href);
+  }
+
   return (
-    <Sidebar>
-      <SidebarHeader className="bg-white">
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="border-b pr-10 lg:pr-2">
         <Button
           variant="ghost"
-          onClick={() => router.push("/dashboard")}
-          className="h-auto w-full flex-col gap-2 px-4 py-5"
+          onClick={() => navigate("/dashboard")}
+          aria-label="Go to dashboard"
+          className="h-12 w-full justify-start gap-3 overflow-hidden px-2 py-2 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-0!"
         >
-          <Image src="/nvg-logo.png" alt="NEMESYS" width={60} height={60} />
+          <Image
+            src="/nvg-logo.png"
+            alt="NEMESYS logo"
+            width={40}
+            height={40}
+            className="size-10 shrink-0 group-data-[collapsible=icon]:size-8"
+          />
 
-          <div className="text-center">
-            <h1 className="text-xl font-bold">NEMESYS</h1>
+          <div className="min-w-0 text-left group-data-[collapsible=icon]:hidden">
+            <h1 className="truncate text-base font-bold">NEMESYS</h1>
 
-            <p className="text-xs text-muted-foreground">
+            <p className="truncate text-[11px] text-muted-foreground">
               Enrollment Management System
             </p>
           </div>
         </Button>
-        <Separator />
       </SidebarHeader>
 
       <SidebarContent>
@@ -69,7 +84,9 @@ export function AppSidebar() {
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton
                         isActive={pathname === item.href}
-                        onClick={() => router.push(item.href)}
+                        tooltip={item.title}
+                        aria-current={pathname === item.href ? "page" : undefined}
+                        onClick={() => navigate(item.href)}
                       >
                         <Icon className="size-4" />
                         <span>{item.title}</span>
@@ -86,10 +103,11 @@ export function AppSidebar() {
       <SidebarFooter>
         <AppSidebarFooter />
         <Separator />
-        <p className="py-2 text-center text-[10px] text-muted-foreground">
+        <p className="py-2 text-center text-[10px] text-muted-foreground group-data-[collapsible=icon]:hidden">
           v2.0.0.0
         </p>
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 }

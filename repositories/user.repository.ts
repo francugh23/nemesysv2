@@ -110,6 +110,8 @@ export async function findUserCredentialsByUsername(username: string) {
       role: true,
       status: true,
       deletedAt: true,
+      isFirstLogin: true,
+      sessionVersion: true,
     },
   });
 }
@@ -125,6 +127,26 @@ export async function findActiveUserById(id: string) {
       id: true,
       role: true,
       status: true,
+      isFirstLogin: true,
+      sessionVersion: true,
+    },
+  });
+}
+
+export async function findActiveUserCredentialsById(id: string) {
+  return prisma.user.findFirst({
+    where: {
+      id,
+      deletedAt: null,
+      status: "ACTIVE",
+    },
+    select: {
+      id: true,
+      passwordHash: true,
+      firstName: true,
+      lastName: true,
+      isFirstLogin: true,
+      sessionVersion: true,
     },
   });
 }
@@ -171,6 +193,7 @@ export async function findNonArchivedUserForUpdate(
       gender: true,
       role: true,
       status: true,
+      sessionVersion: true,
       teacher: {
         select: {
           id: true,
@@ -253,6 +276,47 @@ export async function updateUser(
       gender: true,
       role: true,
       status: true,
+    },
+  });
+}
+
+export async function updateActiveUserPassword(
+  id: string,
+  expectedSessionVersion: number,
+  passwordHash: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).user.updateMany({
+    where: {
+      id,
+      deletedAt: null,
+      status: "ACTIVE",
+      sessionVersion: expectedSessionVersion,
+    },
+    data: {
+      passwordHash,
+      isFirstLogin: false,
+      sessionVersion: { increment: 1 },
+    },
+  });
+}
+
+export async function resetUserPassword(
+  id: string,
+  expectedSessionVersion: number,
+  passwordHash: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).user.updateMany({
+    where: {
+      id,
+      deletedAt: null,
+      sessionVersion: expectedSessionVersion,
+    },
+    data: {
+      passwordHash,
+      isFirstLogin: true,
+      sessionVersion: { increment: 1 },
     },
   });
 }

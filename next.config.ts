@@ -72,6 +72,14 @@ const nextConfig: NextConfig = {
         headers: [privateNoStoreHeader],
       },
       {
+        source: "/account/:path*",
+        headers: [privateNoStoreHeader],
+      },
+      {
+        source: "/session-invalid",
+        headers: [privateNoStoreHeader],
+      },
+      {
         source: "/api/:path*",
         headers: [privateNoStoreHeader],
       },

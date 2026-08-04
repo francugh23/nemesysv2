@@ -1,6 +1,7 @@
 "use client";
 
 import { Download } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { Suspense, useEffect, useEffectEvent, useMemo, useState } from "react";
 
 import { CrudToolbar } from "@/components/common/crud-toolbar";
@@ -45,6 +46,7 @@ export default function UsersPage() {
 }
 
 function UsersPageContent() {
+  const { data: session } = useSession();
   const tableState = useTableUrlState({
     filterKeys: userFilterKeys,
     sortableColumns: userSortFields,
@@ -100,6 +102,7 @@ function UsersPageContent() {
   const columns = useMemo(
     () =>
       userColumns({
+        currentActorId: session?.user.id,
         onEdit: (user) => {
           setDialogState((current) => ({
             selectedUser: user,
@@ -117,7 +120,7 @@ function UsersPageContent() {
           setDialogState((current) => ({ selectedUser: user, dialog: "role", instanceId: current.instanceId + 1 }));
         },
       }),
-    [],
+    [session?.user.id],
   );
   const reconcilePage = useEffectEvent((page: number) => {
     tableState.onPaginationChange({

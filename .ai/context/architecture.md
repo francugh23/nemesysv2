@@ -27,6 +27,8 @@ Do not bypass a layer to save code.
 - Services independently perform final authorization before business rules or data access.
 - Permissions map to allowed roles in one central catalog; feature modules authorize by permission rather than hardcoded role checks.
 - Central authorization revalidates account existence, active status, soft-deletion state, and current role once per protected request.
+- Credential mutations increment a database-backed session version. Central authorization rejects older JWT sessions, and successful password changes require reauthentication.
+- First-login state is enforced from the revalidated database account. Pending accounts may access only authenticated account-completion paths, not role- or permission-protected operations.
 - Repositories never import authentication or authorization concerns.
 - Protected API routes authorize directly; proxy protection is defense in depth only.
 
@@ -53,6 +55,7 @@ Do not bypass a layer to save code.
 - Zod validates external input at boundaries.
 - TanStack Query manages client server-state and targeted invalidation.
 - Prefer generated shadcn/Base UI primitives and established project components over handwritten interaction primitives.
+- Responsive application shells reuse the generated sidebar and modal primitives: server-readable state initializes desktop layout, transient drawers own tablet/mobile interaction, and primitive-provided focus, dismissal, and keyboard behavior remains intact.
 - Keep evolving feature status and decisions in `docs/architecture/project-context.md`, not this file.
 
 ## Project Memory

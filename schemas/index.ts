@@ -1,8 +1,10 @@
 import { z } from "zod";
 
+import { BcryptPasswordInputSchema } from "@/lib/password-policy";
+
 export const LoginSchema = z.object({
-  username: z.string().min(1, "Username is required."),
-  password: z.string().min(1, "Password is required."),
+  username: z.string().trim().min(1, "Username is required.").max(100),
+  password: BcryptPasswordInputSchema,
 });
 
 export * from "./student.schema"
@@ -14,3 +16,4 @@ export * from "./enrollment.schema"
 export * from "./user.schema"
 export * from "./audit.schema"
 export * from "./export.schema"
+export * from "./account.schema"

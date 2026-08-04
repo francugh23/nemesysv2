@@ -13,6 +13,7 @@ import type { UserListItem } from "@/schemas";
 
 interface UserActionsProps {
   user: UserListItem;
+  isCurrentActor: boolean;
   onEdit: (user: UserListItem) => void;
   onResetPassword: (user: UserListItem) => void;
   onChangeStatus: (user: UserListItem) => void;
@@ -21,6 +22,7 @@ interface UserActionsProps {
 
 export function UserActions({
   user,
+  isCurrentActor,
   onEdit,
   onResetPassword,
   onChangeStatus,
@@ -28,6 +30,8 @@ export function UserActions({
 }: UserActionsProps) {
   const isTeacher = user.isTeacherOwned || user.role === "TEACHER";
   const teacherHelpId = `teacher-edit-help-${user.id}`;
+  const selfHelpId = `self-administration-help-${user.id}`;
+  const administrationDisabled = isTeacher || isCurrentActor;
 
   return (
     <DropdownMenu>
@@ -58,12 +62,18 @@ export function UserActions({
           Edit
         </DropdownMenuItem>
         <DropdownMenuItem
-          disabled={isTeacher}
-          aria-describedby={isTeacher ? teacherHelpId : undefined}
+          disabled={administrationDisabled}
+          aria-describedby={
+            isTeacher
+              ? teacherHelpId
+              : isCurrentActor
+                ? selfHelpId
+                : undefined
+          }
           onClick={(event) => {
             event.stopPropagation();
 
-            if (!isTeacher) {
+            if (!administrationDisabled) {
               onChangeRole(user);
             }
           }}
@@ -71,12 +81,18 @@ export function UserActions({
           Change Role
         </DropdownMenuItem>
         <DropdownMenuItem
-          disabled={isTeacher}
-          aria-describedby={isTeacher ? teacherHelpId : undefined}
+          disabled={administrationDisabled}
+          aria-describedby={
+            isTeacher
+              ? teacherHelpId
+              : isCurrentActor
+                ? selfHelpId
+                : undefined
+          }
           onClick={(event) => {
             event.stopPropagation();
 
-            if (!isTeacher) {
+            if (!administrationDisabled) {
               onChangeStatus(user);
             }
           }}
@@ -84,12 +100,18 @@ export function UserActions({
           {user.status === "ACTIVE" ? "Deactivate" : "Activate"}
         </DropdownMenuItem>
         <DropdownMenuItem
-          disabled={isTeacher}
-          aria-describedby={isTeacher ? teacherHelpId : undefined}
+          disabled={administrationDisabled}
+          aria-describedby={
+            isTeacher
+              ? teacherHelpId
+              : isCurrentActor
+                ? selfHelpId
+                : undefined
+          }
           onClick={(event) => {
             event.stopPropagation();
 
-            if (!isTeacher) {
+            if (!administrationDisabled) {
               onResetPassword(user);
             }
           }}
@@ -102,6 +124,15 @@ export function UserActions({
             className="max-w-48 px-1.5 py-1 text-xs text-muted-foreground"
           >
             Teacher accounts are managed through Teacher Management.
+          </p>
+        )}
+        {!isTeacher && isCurrentActor && (
+          <p
+            id={selfHelpId}
+            className="max-w-48 px-1.5 py-1 text-xs text-muted-foreground"
+          >
+            Use the account menu to change your own password. Your role and
+            status cannot be changed here.
           </p>
         )}
       </DropdownMenuContent>

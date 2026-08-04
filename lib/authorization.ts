@@ -32,7 +32,7 @@ const getValidatedSession = cache(async () => {
 
   const user = await findActiveUserById(session.user.id);
 
-  if (!user) {
+  if (!user || user.sessionVersion !== session.user.sessionVersion) {
     throw new AuthorizationError("Unauthorized.", 401);
   }
 
@@ -42,6 +42,7 @@ const getValidatedSession = cache(async () => {
       ...session.user,
       id: user.id,
       role: user.role,
+      isFirstLogin: user.isFirstLogin,
     },
   };
 });
@@ -52,6 +53,10 @@ export async function requireAuthenticatedUser() {
 
 export async function requireRole(...roles: readonly UserRole[]) {
   const session = await requireAuthenticatedUser();
+
+  if (session.user.isFirstLogin) {
+    throw new AuthorizationError("Forbidden.", 403);
+  }
 
   if (!roles.includes(session.user.role)) {
     throw new AuthorizationError("Forbidden.", 403);

@@ -11,6 +11,7 @@ import type { UserListItem } from "@/schemas";
 import { UserActions } from "./user-actions";
 
 interface UserColumnProps {
+  currentActorId?: string;
   onEdit: (user: UserListItem) => void;
   onResetPassword: (user: UserListItem) => void;
   onChangeStatus: (user: UserListItem) => void;
@@ -18,6 +19,7 @@ interface UserColumnProps {
 }
 
 export function userColumns({
+  currentActorId,
   onEdit,
   onResetPassword,
   onChangeStatus,
@@ -102,6 +104,7 @@ export function userColumns({
       cell: ({ row }) => (
         <UserActions
           user={row.original}
+          isCurrentActor={row.original.id === currentActorId}
           onEdit={onEdit}
           onResetPassword={onResetPassword}
           onChangeStatus={onChangeStatus}

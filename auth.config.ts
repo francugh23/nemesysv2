@@ -1,6 +1,8 @@
 import type { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
+import { COMPLETE_PASSWORD_ROUTE } from "@/routes";
+
 const authConfig: NextAuthConfig = {
   trustHost: true,
 
@@ -30,6 +32,8 @@ const authConfig: NextAuthConfig = {
         token.firstName = user.firstName;
         token.lastName = user.lastName;
         token.role = user.role;
+        token.isFirstLogin = user.isFirstLogin;
+        token.sessionVersion = user.sessionVersion;
       }
 
       return token;
@@ -42,6 +46,8 @@ const authConfig: NextAuthConfig = {
         session.user.firstName = token.firstName as string;
         session.user.lastName = token.lastName as string;
         session.user.role = token.role;
+        session.user.isFirstLogin = token.isFirstLogin;
+        session.user.sessionVersion = token.sessionVersion;
       }
 
       return session;
@@ -53,7 +59,9 @@ const authConfig: NextAuthConfig = {
       const isAuthPage = request.nextUrl.pathname.startsWith("/auth");
 
       if (isAuthPage && isLoggedIn) {
-        return Response.redirect(new URL("/dashboard", request.nextUrl));
+        return Response.redirect(
+          new URL(COMPLETE_PASSWORD_ROUTE, request.nextUrl),
+        );
       }
 
       return true;

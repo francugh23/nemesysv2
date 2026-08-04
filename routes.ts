@@ -1,10 +1,14 @@
 import { UserRole } from "@/app/generated/prisma/enums";
 
-export const publicRoutes = ["/", "/auth/login"];
+export const INVALID_SESSION_ROUTE = "/session-invalid";
+
+export const publicRoutes = ["/", "/auth/login", INVALID_SESSION_ROUTE];
 
 export const authRoutes = ["/auth/login"];
 
 export const apiAuthPrefix = "/api/auth";
+
+export const COMPLETE_PASSWORD_ROUTE = "/account/complete-password";
 
 export const DEFAULT_LOGIN_REDIRECT = (role: UserRole) => {
   switch (role) {

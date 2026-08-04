@@ -14,6 +14,7 @@ import {
   findUserFilterOptionValues,
   findUserByUsername,
   findUsersByIdentity,
+  resetUserPassword,
   updateUser,
 } from "@/repositories/user.repository";
 import {
@@ -367,13 +368,26 @@ export async function resetUserPasswordService(id: string) {
     const user = await findNonArchivedUserForUpdate(id, transaction);
     assertAdministrativeUser(user);
 
+    if (user.id === session.user.id) {
+      throw new UserAdministrationError(
+        "Use Change Password to update your own password.",
+      );
+    }
+
     const temporaryPassword = generateTemporaryPassword();
     const passwordHash = await hashPassword(temporaryPassword);
-    const updatedUser = await updateUser(
+    const update = await resetUserPassword(
       user.id,
-      { passwordHash, isFirstLogin: true, lastLoginAt: null },
+      user.sessionVersion,
+      passwordHash,
       transaction,
     );
+
+    if (update.count !== 1) {
+      throw new UserAdministrationError(
+        "User credentials changed. Refresh and try again.",
+      );
+    }
 
     await createAuditLogs(
       [
@@ -381,8 +395,8 @@ export async function resetUserPasswordService(id: string) {
           userId: session.user.id,
           action: "PASSWORD_RESET",
           module: "User",
-          recordId: updatedUser.id,
-          recordName: `${updatedUser.lastName}, ${updatedUser.firstName}`,
+          recordId: user.id,
+          recordName: `${user.lastName}, ${user.firstName}`,
           description: "Reset user account password and required first login.",
         },
       ],

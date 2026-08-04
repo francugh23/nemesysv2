@@ -8,6 +8,8 @@ import {
   authRoutes,
   publicRoutes,
   DEFAULT_LOGIN_REDIRECT,
+  COMPLETE_PASSWORD_ROUTE,
+  INVALID_SESSION_ROUTE,
 } from "@/routes";
 import { hasPermission, Permissions } from "@/lib/permissions";
 
@@ -32,7 +34,11 @@ export default auth((req) => {
     typeof sessionUser?.id === "string" &&
     sessionUser.id.trim().length > 0 &&
     isUserRole(sessionUser.role)
-      ? { id: sessionUser.id, role: sessionUser.role }
+      ? {
+          id: sessionUser.id,
+          role: sessionUser.role,
+          isFirstLogin: sessionUser.isFirstLogin === true,
+        }
       : null;
   const isLoggedIn = authenticatedUser !== null;
 
@@ -43,6 +49,15 @@ export default auth((req) => {
   // Allow Auth.js API routes
   if (isApiAuthRoute) {
     return NextResponse.next();
+  }
+
+  if (
+    authenticatedUser?.isFirstLogin &&
+    nextUrl.pathname !== COMPLETE_PASSWORD_ROUTE &&
+    nextUrl.pathname !== INVALID_SESSION_ROUTE &&
+    !nextUrl.pathname.startsWith("/api/")
+  ) {
+    return NextResponse.redirect(new URL(COMPLETE_PASSWORD_ROUTE, nextUrl));
   }
 
   // Prevent logged-in users from going back to /auth/login
