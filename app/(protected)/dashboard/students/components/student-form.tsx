@@ -1,26 +1,20 @@
 "use client";
 
 import { toast } from "sonner";
-import {
-  createStudentAction,
-  updateStudentAction,
-} from "@/actions/student.action";
 
-import { useQueryClient } from "@tanstack/react-query";
-import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { CreateStudentSchema } from "@/schemas";
+import { useCreateStudent, useUpdateStudent } from "@/hooks/student.hook";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Field,
   FieldError,
-  FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
 
@@ -33,8 +27,8 @@ interface StudentFormProps {
 }
 
 export function StudentForm({ student, onSuccess }: StudentFormProps) {
-  const [isPending, startTransition] = useTransition();
-  const queryClient = useQueryClient();
+  const createStudent = useCreateStudent();
+  const updateStudent = useUpdateStudent();
 
   const form = useForm<z.infer<typeof CreateStudentSchema>>({
     resolver: zodResolver(CreateStudentSchema),
@@ -59,26 +53,19 @@ export function StudentForm({ student, onSuccess }: StudentFormProps) {
     },
   });
 
-  function onSubmit(values: z.infer<typeof CreateStudentSchema>) {
-    startTransition(async () => {
-      const result = student
-        ? await updateStudentAction(student.id, values)
-        : await createStudentAction(values);
+  async function onSubmit(values: z.infer<typeof CreateStudentSchema>) {
+    const result = student
+      ? await updateStudent.mutateAsync({ id: student.id, values })
+      : await createStudent.mutateAsync(values);
 
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
 
-      toast.success(result.success);
-
-      await queryClient.invalidateQueries({
-        queryKey: ["students"],
-      });
-
-      form.reset();
-      onSuccess?.();
-    });
+    toast.success(result.success);
+    form.reset();
+    onSuccess?.();
   }
 
   return (
@@ -229,8 +216,12 @@ export function StudentForm({ student, onSuccess }: StudentFormProps) {
         </div>
       </section>
 
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Saving..." : student ? "Update Student" : "Save Student"}
+      <Button type="submit" disabled={createStudent.isPending || updateStudent.isPending}>
+        {createStudent.isPending || updateStudent.isPending
+          ? "Saving..."
+          : student
+            ? "Update Student"
+            : "Save Student"}
       </Button>
     </form>
   );

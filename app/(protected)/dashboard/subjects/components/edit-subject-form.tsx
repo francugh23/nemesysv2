@@ -1,14 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQueryClient } from "@tanstack/react-query";
-import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { updateSubjectAction } from "@/actions/subject.action";
 import { Button } from "@/components/ui/button";
+import { useUpdateSubject } from "@/hooks/subject.hook";
 import { UpdateSubjectSchema } from "@/schemas";
 import type { SubjectGradeLevel } from "@/lib/subject-identity";
 import type { SubjectListItem } from "@/schemas";
@@ -21,8 +19,7 @@ interface EditSubjectFormProps {
 }
 
 export function EditSubjectForm({ subject, onSuccess }: EditSubjectFormProps) {
-  const [isPending, startTransition] = useTransition();
-  const queryClient = useQueryClient();
+  const updateSubject = useUpdateSubject();
   const form = useForm<z.infer<typeof UpdateSubjectSchema>>({
     resolver: zodResolver(UpdateSubjectSchema),
     defaultValues: {
@@ -34,28 +31,23 @@ export function EditSubjectForm({ subject, onSuccess }: EditSubjectFormProps) {
     },
   });
 
-  function onSubmit(values: z.infer<typeof UpdateSubjectSchema>) {
-    startTransition(async () => {
-      const result = await updateSubjectAction(subject.id, values);
+  async function onSubmit(values: z.infer<typeof UpdateSubjectSchema>) {
+    const result = await updateSubject.mutateAsync({ id: subject.id, values });
 
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
 
-      toast.success(result.success);
-      await queryClient.invalidateQueries({
-        queryKey: ["subjects"],
-      });
-      onSuccess?.();
-    });
+    toast.success(result.success);
+    onSuccess?.();
   }
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       <SubjectForm form={form} />
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Saving..." : "Update Subject"}
+      <Button type="submit" disabled={updateSubject.isPending}>
+        {updateSubject.isPending ? "Saving..." : "Update Subject"}
       </Button>
     </form>
   );

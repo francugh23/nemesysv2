@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { archiveSubjectAction } from "@/actions/subject.action";
 import { ConfirmDeleteDialog } from "@/components/common/dialogs/confirm-delete-dialog";
+import { useArchiveSubject } from "@/hooks/subject.hook";
 import type { SubjectListItem } from "@/schemas";
 
 interface ArchiveSubjectDialogProps {
@@ -20,27 +19,20 @@ export function ArchiveSubjectDialog({
   onOpenChange,
 }: ArchiveSubjectDialogProps) {
   const [confirmation, setConfirmation] = useState("");
-  const [isArchiving, setIsArchiving] = useState(false);
-  const queryClient = useQueryClient();
+  const archiveSubject = useArchiveSubject();
   const isConfirmed = confirmation === subject.code;
 
   async function handleArchive() {
     if (!isConfirmed) return;
 
-    setIsArchiving(true);
-    const result = await archiveSubjectAction(subject.id);
+    const result = await archiveSubject.mutateAsync(subject.id);
 
     if (result.error) {
       toast.error(result.error);
-      setIsArchiving(false);
       return;
     }
 
     toast.success(result.success);
-    await queryClient.invalidateQueries({
-      queryKey: ["subjects"],
-    });
-    setIsArchiving(false);
     setConfirmation("");
     onOpenChange(false);
   }
@@ -64,7 +56,7 @@ export function ArchiveSubjectDialog({
       inputValue={confirmation}
       onInputChange={setConfirmation}
       canConfirm={isConfirmed}
-      isDeleting={isArchiving}
+       isDeleting={archiveSubject.isPending}
       actionLabel="Archive"
       processingLabel="Archiving..."
       onConfirm={handleArchive}

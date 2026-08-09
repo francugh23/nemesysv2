@@ -1,12 +1,21 @@
 "use client";
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import {
+  createTeacherAction,
+  deactivateTeacherAction,
   getTeacherFilterOptionsAction,
   getTeachersAction,
+  updateTeacherAction,
 } from "@/actions/teacher.action";
 import type { TeacherTableQueryInput } from "@/schemas";
+import { invalidateTeacherQueries } from "@/hooks/query-invalidation";
 
 export function useTeachers(query: TeacherTableQueryInput) {
   return useQuery({
@@ -20,5 +29,50 @@ export function useTeacherFilterOptions() {
   return useQuery({
     queryKey: ["teachers", "filter-options"],
     queryFn: getTeacherFilterOptionsAction,
+  });
+}
+
+export function useCreateTeacher() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createTeacherAction,
+    onSuccess: async (result) => {
+      if (!result.error) {
+        await invalidateTeacherQueries(queryClient);
+      }
+    },
+  });
+}
+
+export function useUpdateTeacher() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      values,
+    }: {
+      id: string;
+      values: Parameters<typeof updateTeacherAction>[1];
+    }) => updateTeacherAction(id, values),
+    onSuccess: async (result) => {
+      if (!result.error) {
+        await invalidateTeacherQueries(queryClient);
+      }
+    },
+  });
+}
+
+export function useDeactivateTeacher() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deactivateTeacherAction,
+    onSuccess: async (result) => {
+      if (!result.error) {
+        await invalidateTeacherQueries(queryClient);
+      }
+    },
   });
 }

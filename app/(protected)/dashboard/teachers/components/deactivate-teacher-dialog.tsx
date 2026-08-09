@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { deactivateTeacherAction } from "@/actions/teacher.action";
 import { ConfirmDeleteDialog } from "@/components/common/dialogs/confirm-delete-dialog";
+import { useDeactivateTeacher } from "@/hooks/teacher.hook";
 import type { TeacherListItem } from "@/schemas";
 
 interface DeactivateTeacherDialogProps {
@@ -20,28 +19,21 @@ export function DeactivateTeacherDialog({
   onOpenChange,
 }: DeactivateTeacherDialogProps) {
   const [confirmation, setConfirmation] = useState("");
-  const [isDeactivating, setIsDeactivating] = useState(false);
-  const queryClient = useQueryClient();
+  const deactivateTeacher = useDeactivateTeacher();
   const employeeNumber = teacher.user.employeeNumber ?? "";
   const isConfirmed = Boolean(employeeNumber) && confirmation === employeeNumber;
 
   async function handleDeactivate() {
     if (!isConfirmed) return;
 
-    setIsDeactivating(true);
-    const result = await deactivateTeacherAction(teacher.id);
+    const result = await deactivateTeacher.mutateAsync(teacher.id);
 
     if (result.error) {
       toast.error(result.error);
-      setIsDeactivating(false);
       return;
     }
 
     toast.success(result.success);
-    await queryClient.invalidateQueries({
-      queryKey: ["teachers"],
-    });
-    setIsDeactivating(false);
     setConfirmation("");
     onOpenChange(false);
   }
@@ -67,7 +59,7 @@ export function DeactivateTeacherDialog({
       inputValue={confirmation}
       onInputChange={setConfirmation}
       canConfirm={isConfirmed}
-      isDeleting={isDeactivating}
+       isDeleting={deactivateTeacher.isPending}
       actionLabel="Deactivate"
       processingLabel="Deactivating..."
       onConfirm={handleDeactivate}

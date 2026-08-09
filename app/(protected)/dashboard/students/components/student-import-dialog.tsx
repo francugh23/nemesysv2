@@ -16,6 +16,7 @@ export function StudentImportDialog({ trigger }: StudentImportDialogProps) {
     <ImportWizard
       entityLabel="Student"
       queryKey={["students"]}
+      dependentQueryKeys={[["enrollment-form-options"]]}
       trigger={trigger}
       normalizeRow={normalizeStudentImportRow}
       validateRows={validateStudentImport}

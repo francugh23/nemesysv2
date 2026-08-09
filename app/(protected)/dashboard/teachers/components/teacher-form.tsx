@@ -1,14 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQueryClient } from "@tanstack/react-query";
-import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { createTeacherAction } from "@/actions/teacher.action";
 import { Button } from "@/components/ui/button";
+import { useCreateTeacher } from "@/hooks/teacher.hook";
 import {
   Field,
   FieldError,
@@ -29,8 +27,7 @@ interface TeacherFormProps {
 }
 
 export function TeacherForm({ onSuccess }: TeacherFormProps) {
-  const [isPending, startTransition] = useTransition();
-  const queryClient = useQueryClient();
+  const createTeacher = useCreateTeacher();
   const form = useForm<z.infer<typeof CreateTeacherSchema>>({
     resolver: zodResolver(CreateTeacherSchema),
     defaultValues: {
@@ -47,22 +44,17 @@ export function TeacherForm({ onSuccess }: TeacherFormProps) {
     },
   });
 
-  function onSubmit(values: z.infer<typeof CreateTeacherSchema>) {
-    startTransition(async () => {
-      const result = await createTeacherAction(values);
+  async function onSubmit(values: z.infer<typeof CreateTeacherSchema>) {
+    const result = await createTeacher.mutateAsync(values);
 
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
 
-      toast.success(result.success);
-      await queryClient.invalidateQueries({
-        queryKey: ["teachers"],
-      });
-      form.reset();
-      onSuccess?.();
-    });
+    toast.success(result.success);
+    form.reset();
+    onSuccess?.();
   }
 
   return (
@@ -167,8 +159,8 @@ export function TeacherForm({ onSuccess }: TeacherFormProps) {
         </div>
       </section>
 
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Creating..." : "Create Teacher"}
+      <Button type="submit" disabled={createTeacher.isPending}>
+        {createTeacher.isPending ? "Creating..." : "Create Teacher"}
       </Button>
     </form>
   );

@@ -16,22 +16,12 @@ import {
   updateSectionAction,
 } from "@/actions/section.action";
 import type { SectionTableQueryInput } from "@/schemas";
+import { invalidateSectionQueries } from "@/hooks/query-invalidation";
 
 function useInvalidateSectionQueries() {
   const queryClient = useQueryClient();
 
-  return async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["sections"] }),
-      queryClient.invalidateQueries({ queryKey: ["section-form-options"] }),
-      queryClient.invalidateQueries({
-        queryKey: ["subject-assignment-options"],
-      }),
-      queryClient.invalidateQueries({
-        queryKey: ["enrollment-form-options"],
-      }),
-    ]);
-  };
+  return () => invalidateSectionQueries(queryClient);
 }
 
 export function useSections(query: SectionTableQueryInput) {

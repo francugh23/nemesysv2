@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { downloadExportFile } from "@/lib/export/download";
 import { parseSpreadsheet } from "@/lib/import/spreadsheet";
+import { invalidateImportQueries } from "@/hooks/query-invalidation";
 import type { ActionResponse } from "@/types/action-response";
 import type { ImportValidationResult } from "@/types/import";
 import type { ImportTemplateActionResult } from "@/types/import-template";
@@ -27,6 +28,7 @@ import { WizardStepValidation } from "@/components/common/wizard/wizard-step-val
 interface ImportWizardProps {
   entityLabel: string;
   queryKey: readonly unknown[];
+  dependentQueryKeys?: readonly (readonly unknown[])[];
   trigger?: ReactNode;
   normalizeRow: (row: Record<string, unknown>) => Record<string, unknown>;
   validateRows: (
@@ -40,6 +42,7 @@ interface ImportWizardProps {
 export function ImportWizard({
   entityLabel,
   queryKey,
+  dependentQueryKeys,
   trigger,
   normalizeRow,
   validateRows,
@@ -115,7 +118,11 @@ export function ImportWizard({
       }
 
       toast.success(result.success);
-      await queryClient.invalidateQueries({ queryKey });
+      await invalidateImportQueries(
+        queryClient,
+        queryKey,
+        dependentQueryKeys,
+      );
       handleOpenChange(false);
     });
   }

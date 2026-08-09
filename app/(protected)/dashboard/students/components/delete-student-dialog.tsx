@@ -3,13 +3,11 @@
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { useQueryClient } from "@tanstack/react-query";
-
 import { ConfirmDeleteDialog } from "@/components/common/dialogs/confirm-delete-dialog";
 
 import type { StudentListItem } from "@/types/student";
 
-import { deleteStudentAction } from "@/actions/student.action";
+import { useDeleteStudent } from "@/hooks/student.hook";
 
 interface DeleteStudentDialogProps {
   student: StudentListItem;
@@ -23,32 +21,21 @@ export function DeleteStudentDialog({
   onOpenChange,
 }: DeleteStudentDialogProps) {
   const [lrnInput, setLrnInput] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const queryClient = useQueryClient();
+  const deleteStudent = useDeleteStudent();
 
   const isConfirmed = lrnInput === student.lrn;
 
   async function handleDelete() {
     if (!isConfirmed) return;
 
-    setIsDeleting(true);
-
-    const result = await deleteStudentAction(student.id);
+    const result = await deleteStudent.mutateAsync(student.id);
 
     if (result.error) {
       toast.error(result.error);
-      setIsDeleting(false);
       return;
     }
 
     toast.success(result.success);
-
-    await queryClient.invalidateQueries({
-      queryKey: ["students"],
-    });
-
-    setIsDeleting(false);
     setLrnInput("");
 
     onOpenChange(false);
@@ -72,9 +59,9 @@ export function DeleteStudentDialog({
       itemName={`${student.lastName}, ${student.firstName}${
         student.middleName ? ` ${student.middleName}` : ""
       }`}
-      inputValue={lrnInput}
-      onInputChange={setLrnInput}
-      isDeleting={isDeleting}
+       inputValue={lrnInput}
+       onInputChange={setLrnInput}
+       isDeleting={deleteStudent.isPending}
       onConfirm={handleDelete}
     />
   );

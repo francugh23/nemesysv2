@@ -1,14 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQueryClient } from "@tanstack/react-query";
-import { type ReactNode, useTransition } from "react";
+import { type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { updateTeacherAction } from "@/actions/teacher.action";
 import { Button } from "@/components/ui/button";
+import { useUpdateTeacher } from "@/hooks/teacher.hook";
 import {
   Field,
   FieldError,
@@ -31,8 +30,7 @@ interface TeacherEditFormProps {
 }
 
 export function TeacherEditForm({ teacher, onSuccess }: TeacherEditFormProps) {
-  const [isPending, startTransition] = useTransition();
-  const queryClient = useQueryClient();
+  const updateTeacher = useUpdateTeacher();
   const form = useForm<z.infer<typeof UpdateTeacherSchema>>({
     resolver: zodResolver(UpdateTeacherSchema),
     defaultValues: {
@@ -48,21 +46,16 @@ export function TeacherEditForm({ teacher, onSuccess }: TeacherEditFormProps) {
     },
   });
 
-  function onSubmit(values: z.infer<typeof UpdateTeacherSchema>) {
-    startTransition(async () => {
-      const result = await updateTeacherAction(teacher.id, values);
+  async function onSubmit(values: z.infer<typeof UpdateTeacherSchema>) {
+    const result = await updateTeacher.mutateAsync({ id: teacher.id, values });
 
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
 
-      toast.success(result.success);
-      await queryClient.invalidateQueries({
-        queryKey: ["teachers"],
-      });
-      onSuccess?.();
-    });
+    toast.success(result.success);
+    onSuccess?.();
   }
 
   return (
@@ -151,8 +144,8 @@ export function TeacherEditForm({ teacher, onSuccess }: TeacherEditFormProps) {
         </div>
       </section>
 
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Saving..." : "Update Teacher"}
+      <Button type="submit" disabled={updateTeacher.isPending}>
+        {updateTeacher.isPending ? "Saving..." : "Update Teacher"}
       </Button>
     </form>
   );
