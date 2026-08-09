@@ -8,7 +8,6 @@ import {
   FieldError,
   FieldLabel,
 } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import {
   SearchableSelect,
   type SearchableSelectOption,
@@ -58,6 +57,11 @@ export function SubjectAssignmentForm({ form }: SubjectAssignmentFormProps) {
       value: section.id,
       label: `Grade ${section.gradeLevel}${section.trackStrand ? ` - ${section.trackStrand}` : ""} - ${section.sectionName}`,
       searchValue: `${section.gradeLevel} ${section.trackStrand ?? ""} ${section.sectionName}`,
+    })) ?? [];
+  const academicYearOptions: SearchableSelectOption[] =
+    options?.academicYears.map((academicYear) => ({
+      value: academicYear.id,
+      label: academicYear.label,
     })) ?? [];
 
   return (
@@ -124,8 +128,22 @@ export function SubjectAssignmentForm({ form }: SubjectAssignmentFormProps) {
 
       <Field>
         <FieldLabel>Academic Year</FieldLabel>
-        <Input placeholder="e.g. 2026-2027" {...form.register("academicYear")} />
-        <FieldError>{form.formState.errors.academicYear?.message}</FieldError>
+        <Controller
+          name="academicYearId"
+          control={form.control}
+          render={({ field }) => (
+            <SearchableSelect
+              value={field.value}
+              onValueChange={field.onChange}
+              options={academicYearOptions}
+              placeholder={
+                isLoading ? "Loading academic years..." : "Search academic years"
+              }
+              disabled={isLoading}
+            />
+          )}
+        />
+        <FieldError>{form.formState.errors.academicYearId?.message}</FieldError>
       </Field>
     </div>
   );

@@ -30,7 +30,7 @@ export function ArchiveSubjectAssignmentDialog({
     assignment.teacherLastName,
   );
   const sectionIdentity = `Grade ${assignment.sectionGradeLevel}${assignment.sectionTrackStrand ? ` - ${assignment.sectionTrackStrand}` : ""} - ${assignment.sectionName}`;
-  const assignmentIdentity = `${teacherName} | ${assignment.subjectCode} - ${assignment.subjectDescription} | ${sectionIdentity} | AY ${assignment.academicYear}`;
+  const assignmentIdentity = `${teacherName} | ${assignment.subjectCode} - ${assignment.subjectDescription} | ${sectionIdentity} | AY ${assignment.academicYearLabel}`;
 
   async function handleArchive() {
     if (!isConfirmed) return;

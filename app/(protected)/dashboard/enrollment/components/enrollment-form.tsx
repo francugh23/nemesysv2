@@ -3,7 +3,6 @@
 import { Controller, type UseFormReturn } from "react-hook-form";
 
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import {
   SearchableSelect,
   type SearchableSelectOption,
@@ -46,6 +45,11 @@ export function EnrollmentForm({ form }: EnrollmentFormProps) {
       label: `Grade ${section.gradeLevel}${section.trackStrand ? ` - ${section.trackStrand}` : ""} - ${section.sectionName}`,
       searchValue: `${section.gradeLevel} ${section.trackStrand ?? ""} ${section.sectionName}`,
     })) ?? [];
+  const academicYearOptions: SearchableSelectOption[] =
+    options?.academicYears.map((academicYear) => ({
+      value: academicYear.id,
+      label: academicYear.label,
+    })) ?? [];
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -87,8 +91,22 @@ export function EnrollmentForm({ form }: EnrollmentFormProps) {
 
       <Field>
         <FieldLabel>Academic Year</FieldLabel>
-        <Input placeholder="e.g. 2026-2027" {...form.register("academicYear")} />
-        <FieldError>{form.formState.errors.academicYear?.message}</FieldError>
+        <Controller
+          name="academicYearId"
+          control={form.control}
+          render={({ field }) => (
+            <SearchableSelect
+              value={field.value}
+              onValueChange={field.onChange}
+              options={academicYearOptions}
+              placeholder={
+                isLoading ? "Loading academic years..." : "Select academic year"
+              }
+              disabled={isLoading}
+            />
+          )}
+        />
+        <FieldError>{form.formState.errors.academicYearId?.message}</FieldError>
       </Field>
 
       <Field>

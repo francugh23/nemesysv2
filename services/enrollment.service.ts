@@ -1,10 +1,12 @@
 import { Prisma, type StudentStatus } from "@/app/generated/prisma/client";
 import { Permissions, requirePermission } from "@/lib/authorization";
+import { isAcademicYearWritable } from "@/lib/academic-year";
 import prisma from "@/lib/prisma";
 import { createAuditLogs } from "@/repositories/audit.repository";
 import {
   createEnrollment,
   countNonArchivedEnrollments,
+  findActiveAcademicYearsForEnrollment,
   findActiveEnrollmentById,
   findEnrollmentFilterOptionValues,
   findEnrollmentByIdentity,
@@ -12,6 +14,7 @@ import {
   findLatestTerminalEnrollmentByStudent,
   findNonArchivedEnrollments,
   findNonArchivedEnrollmentsByGrade,
+  lockAcademicYearForEnrollment,
   updateEnrollment,
 } from "@/repositories/enrollment.repository";
 import {
@@ -75,14 +78,19 @@ function getEnrollmentOrderBy(
     case "sectionName":
       return [{ section: { sectionName: direction } }, { id: "asc" }];
     case "academicYear":
-      return [{ academicYear: direction }, { id: "asc" }];
+      return [
+        { academicYear: { startDate: direction } },
+        { academicYearId: direction },
+        { id: "asc" },
+      ];
     case "semester":
       return [{ semester: direction }, { id: "asc" }];
     case "status":
       return [{ status: direction }, { id: "asc" }];
     default:
       return [
-        { academicYear: "desc" },
+        { academicYear: { startDate: "desc" } },
+        { academicYearId: "desc" },
         { student: { lastName: "asc" } },
         { student: { firstName: "asc" } },
         { student: { lrn: "asc" } },
@@ -100,7 +108,7 @@ export async function getEnrollments(
     search: query.q,
     status: query.status,
     gradeLevel: query.gradeLevel,
-    academicYear: query.academicYear,
+    academicYearId: query.academicYearId,
     sectionId: query.sectionId,
     semester: query.semester,
   };
@@ -129,6 +137,7 @@ export async function getEnrollments(
       id: enrollment.id,
       studentId: enrollment.studentId,
       sectionId: enrollment.sectionId,
+      academicYearId: enrollment.academicYearId,
       studentLrn: enrollment.student.lrn,
       studentFirstName: enrollment.student.firstName,
       studentMiddleName: enrollment.student.middleName,
@@ -136,7 +145,8 @@ export async function getEnrollments(
       sectionGradeLevel: enrollment.section.gradeLevel,
       sectionTrackStrand: enrollment.section.trackStrand,
       sectionName: enrollment.section.sectionName,
-      academicYear: enrollment.academicYear,
+      academicYear: enrollment.academicYear.label,
+      academicYearStatus: enrollment.academicYear.status,
       semester: enrollment.semester,
       status: enrollment.status,
       createdAt: enrollment.createdAt,
@@ -155,7 +165,7 @@ export async function getEnrollmentFilterOptions(): Promise<EnrollmentFilterOpti
   const [academicYears, sections] = await findEnrollmentFilterOptionValues();
 
   return {
-    academicYears: academicYears.map((value) => value.academicYear),
+    academicYears,
     gradeLevels: [...new Set(sections.map((section) => section.gradeLevel))].sort(
       (first, second) => Number(first) - Number(second),
     ),
@@ -180,14 +190,16 @@ export async function getEnrollmentFilterOptions(): Promise<EnrollmentFilterOpti
 export async function getEnrollmentFormOptions() {
   await requirePermission(Permissions.ENROLLMENT);
 
-  const [students, sections] = await Promise.all([
+  const [students, sections, academicYears] = await Promise.all([
     findActiveStudentsForEnrollment(),
     findActiveSectionsForAssignment(),
+    findActiveAcademicYearsForEnrollment(),
   ]);
 
   return {
     students,
     sections,
+    academicYears,
   };
 }
 
@@ -320,7 +332,6 @@ function validateStatusTransition(
 
 export async function createEnrollmentService(values: CreateEnrollmentInput) {
   const session = await requirePermission(Permissions.ENROLLMENT);
-  const academicYear = values.academicYear.trim();
 
   try {
     return await prisma.$transaction(async (transaction) => {
@@ -329,9 +340,10 @@ export async function createEnrollmentService(values: CreateEnrollmentInput) {
         transaction,
       );
 
-      const [student, section] = await Promise.all([
+      const [student, section, academicYear] = await Promise.all([
         findActiveStudentForEnrollment(values.studentId, transaction),
         findActiveSectionForAssignment(values.sectionId, transaction),
+        lockAcademicYearForEnrollment(values.academicYearId, transaction),
       ]);
 
       if (!student) {
@@ -342,10 +354,16 @@ export async function createEnrollmentService(values: CreateEnrollmentInput) {
         throw new EnrollmentServiceError("Section not found or inactive.");
       }
 
+      if (!academicYear || !isAcademicYearWritable(academicYear.status)) {
+        throw new EnrollmentServiceError(
+          "Academic year not found or is not active.",
+        );
+      }
+
       const duplicate = await findEnrollmentByIdentity(
         {
           studentId: student.id,
-          academicYear,
+          academicYearId: academicYear.id,
         },
         transaction,
       );
@@ -360,7 +378,7 @@ export async function createEnrollmentService(values: CreateEnrollmentInput) {
         {
           studentId: student.id,
           sectionId: section.id,
-          academicYear,
+          academicYearId: academicYear.id,
           semester: values.semester ?? null,
           createdById: session.user.id,
         },
@@ -395,7 +413,7 @@ export async function createEnrollmentService(values: CreateEnrollmentInput) {
             action: "CREATE",
             module: "Enrollment",
             recordId: enrollment.id,
-            recordName: `${student.lrn} - ${getStudentName(student)} - ${academicYear}`,
+            recordName: `${student.lrn} - ${getStudentName(student)} - ${academicYear.label}`,
             description: `Created enrollment in ${section.sectionName}`,
             metadata:
               Object.keys(changes).length > 0 ? { changes } : undefined,
@@ -424,10 +442,36 @@ export async function updateEnrollmentService(
       throw new EnrollmentServiceError("Enrollment not found.");
     }
 
+    if (!isAcademicYearWritable(enrollmentReference.academicYear.status)) {
+      throw new EnrollmentServiceError(
+        enrollmentReference.academicYear.status === "LOCKED" ||
+          enrollmentReference.academicYear.status === "ARCHIVED"
+          ? "Enrollment is read-only because its academic year is locked or archived."
+          : "Enrollment cannot be updated because its academic year is not active.",
+      );
+    }
+
     await lockStudentForEnrollmentSynchronization(
       enrollmentReference.studentId,
       transaction,
     );
+
+    const academicYearReference = await lockAcademicYearForEnrollment(
+      enrollmentReference.academicYearId,
+      transaction,
+    );
+
+    if (
+      !academicYearReference ||
+      !isAcademicYearWritable(academicYearReference.status)
+    ) {
+      throw new EnrollmentServiceError(
+        academicYearReference?.status === "LOCKED" ||
+          academicYearReference?.status === "ARCHIVED"
+          ? "Enrollment is read-only because its academic year is locked or archived."
+          : "Enrollment cannot be updated because its academic year is not active.",
+      );
+    }
 
     const enrollment = await findActiveEnrollmentById(id, transaction);
 
@@ -486,6 +530,7 @@ export async function updateEnrollmentService(
         id: enrollment.id,
         deletedAt: null,
         status: "ACTIVE",
+        academicYear: { status: "ACTIVE" },
       },
       {
         sectionId: values.sectionId,
@@ -525,7 +570,7 @@ export async function updateEnrollmentService(
           action: "UPDATE",
           module: "Enrollment",
           recordId: enrollment.id,
-          recordName: `${enrollment.student.lrn} - ${getStudentName(enrollment.student)} - ${enrollment.academicYear}`,
+          recordName: `${enrollment.student.lrn} - ${getStudentName(enrollment.student)} - ${enrollment.academicYear.label}`,
           description,
           metadata: changedFields.length > 0 ? { changes } : undefined,
         },

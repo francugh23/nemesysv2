@@ -97,7 +97,8 @@ export function enrollmentColumns({
       id: "actions",
       enableSorting: false,
       cell: ({ row }) =>
-        row.original.status === "ACTIVE" ? (
+        row.original.status === "ACTIVE" &&
+        row.original.academicYearStatus === "ACTIVE" ? (
           <EnrollmentActions enrollment={row.original} onEdit={onEdit} />
         ) : null,
     },

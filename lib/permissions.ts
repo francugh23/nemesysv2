@@ -13,6 +13,7 @@ export const Permissions = {
   GRADES: "GRADES",
   ATTENDANCE: "ATTENDANCE",
   REPORT_CARDS: "REPORT_CARDS",
+  ACADEMIC_YEARS: "ACADEMIC_YEARS",
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];
@@ -30,6 +31,7 @@ const PERMISSION_ROLES = {
   [Permissions.GRADES]: ["SUPER_ADMIN"],
   [Permissions.ATTENDANCE]: ["SUPER_ADMIN"],
   [Permissions.REPORT_CARDS]: ["SUPER_ADMIN"],
+  [Permissions.ACADEMIC_YEARS]: ["SUPER_ADMIN", "REGISTRAR"],
 } as const satisfies Record<Permission, readonly UserRole[]>;
 
 export function getPermissionRoles(permission: Permission) {

@@ -69,20 +69,21 @@ export function subjectAssignmentColumns({
       ),
     },
     {
-      accessorKey: "academicYear",
+      accessorKey: "academicYearLabel",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Academic Year" />
       ),
     },
     {
       id: "actions",
-      cell: ({ row }) => (
-        <SubjectAssignmentActions
-          assignment={row.original}
-          onEdit={onEdit}
-          onArchive={onArchive}
-        />
-      ),
+      cell: ({ row }) =>
+        row.original.academicYearStatus === "ACTIVE" ? (
+          <SubjectAssignmentActions
+            assignment={row.original}
+            onEdit={onEdit}
+            onArchive={onArchive}
+          />
+        ) : null,
     },
   ];
 }

@@ -16,7 +16,7 @@ export const DEFAULT_LOGIN_REDIRECT = (role: UserRole) => {
       return "/dashboard";
 
     case "REGISTRAR":
-      return "/registrar";
+      return "/dashboard/academic-years";
 
     case "PRINCIPAL":
       return "/principal";
@@ -32,7 +32,7 @@ export const DEFAULT_LOGIN_REDIRECT = (role: UserRole) => {
 export const roleRoutes = {
   SUPER_ADMIN: ["/dashboard"],
 
-  REGISTRAR: ["/registrar"],
+  REGISTRAR: ["/dashboard/academic-years"],
 
   PRINCIPAL: ["/principal"],
 

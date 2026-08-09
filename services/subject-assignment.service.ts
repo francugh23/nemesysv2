@@ -2,6 +2,7 @@ import { Prisma } from "@/app/generated/prisma/client";
 import { Permissions, requirePermission } from "@/lib/authorization";
 import prisma from "@/lib/prisma";
 import { formatFullName } from "@/lib/format";
+import { isAcademicYearWritable } from "@/lib/academic-year";
 import { createAuditLogs } from "@/repositories/audit.repository";
 import {
   findActiveSectionForAssignment,
@@ -10,6 +11,8 @@ import {
 import {
   archiveSubjectAssignment,
   createSubjectAssignment,
+  findActiveAcademicYearsForAssignment,
+  findAcademicYearForAssignment,
   findActiveSubjectAssignment,
   findActiveSubjectAssignmentById,
   findActiveSubjectAssignmentExcludingId,
@@ -43,6 +46,7 @@ export async function getSubjectAssignments(): Promise<
     teacherId: assignment.teacherId,
     subjectId: assignment.subjectId,
     sectionId: assignment.sectionId,
+    academicYearId: assignment.academicYearId,
     employeeNumber: assignment.teacher.user.employeeNumber,
     teacherFirstName: assignment.teacher.user.firstName,
     teacherMiddleName: assignment.teacher.user.middleName,
@@ -52,17 +56,19 @@ export async function getSubjectAssignments(): Promise<
     sectionGradeLevel: assignment.section.gradeLevel,
     sectionTrackStrand: assignment.section.trackStrand,
     sectionName: assignment.section.sectionName,
-    academicYear: assignment.academicYear,
+    academicYearLabel: assignment.academicYear.label,
+    academicYearStatus: assignment.academicYear.status,
   }));
 }
 
 export async function getSubjectAssignmentOptions() {
   await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
 
-  const [teachers, subjects, sections] = await Promise.all([
+  const [teachers, subjects, sections, academicYears] = await Promise.all([
     findActiveTeachersForAssignment(),
     findSubjects(),
     findActiveSectionsForAssignment(),
+    findActiveAcademicYearsForAssignment(),
   ]);
 
   return {
@@ -75,6 +81,7 @@ export async function getSubjectAssignmentOptions() {
     })),
     subjects,
     sections,
+    academicYears,
   };
 }
 
@@ -98,10 +105,11 @@ export async function createSubjectAssignmentService(
 
   try {
     return await prisma.$transaction(async (transaction) => {
-      const [teacher, subject, section] = await Promise.all([
+      const [teacher, subject, section, academicYear] = await Promise.all([
         findActiveTeacherForAssignment(values.teacherId, transaction),
         findActiveSubjectById(values.subjectId, transaction),
         findActiveSectionForAssignment(values.sectionId, transaction),
+        findAcademicYearForAssignment(values.academicYearId, transaction),
       ]);
 
       if (!teacher) {
@@ -114,6 +122,10 @@ export async function createSubjectAssignmentService(
 
       if (!section) {
         throw new Error("Section not found or inactive.");
+      }
+
+      if (!academicYear || !isAcademicYearWritable(academicYear.status)) {
+        throw new Error("Academic year not found or inactive.");
       }
 
       if (subject.gradeLevel !== section.gradeLevel) {
@@ -166,15 +178,23 @@ export async function updateSubjectAssignmentService(
 
   try {
     return await prisma.$transaction(async (transaction) => {
-      const [assignment, teacher, subject, section] = await Promise.all([
-        findActiveSubjectAssignmentById(id, transaction),
-        findActiveTeacherForAssignment(values.teacherId, transaction),
-        findActiveSubjectById(values.subjectId, transaction),
-        findActiveSectionForAssignment(values.sectionId, transaction),
-      ]);
+      const [assignment, teacher, subject, section, targetAcademicYear] =
+        await Promise.all([
+          findActiveSubjectAssignmentById(id, transaction),
+          findActiveTeacherForAssignment(values.teacherId, transaction),
+          findActiveSubjectById(values.subjectId, transaction),
+          findActiveSectionForAssignment(values.sectionId, transaction),
+          findAcademicYearForAssignment(values.academicYearId, transaction),
+        ]);
 
       if (!assignment) {
         throw new Error("Subject assignment not found.");
+      }
+
+      if (!isAcademicYearWritable(assignment.academicYear.status)) {
+        throw new Error(
+          "Subject assignments can only be updated while their academic year is active.",
+        );
       }
 
       if (!teacher) {
@@ -187,6 +207,13 @@ export async function updateSubjectAssignmentService(
 
       if (!section) {
         throw new Error("Section not found or inactive.");
+      }
+
+      if (
+        !targetAcademicYear ||
+        !isAcademicYearWritable(targetAcademicYear.status)
+      ) {
+        throw new Error("Target academic year not found or inactive.");
       }
 
       if (subject.gradeLevel !== section.gradeLevel) {
@@ -249,6 +276,17 @@ export async function archiveSubjectAssignmentService(id: string) {
       throw new Error("Subject assignment not found.");
     }
 
+    const academicYear = await findAcademicYearForAssignment(
+      assignment.academicYearId,
+      transaction,
+    );
+
+    if (!academicYear || !isAcademicYearWritable(academicYear.status)) {
+      throw new Error(
+        "Subject assignments can only be archived while their academic year is active.",
+      );
+    }
+
     const archivedAssignment = await archiveSubjectAssignment(
       assignment.id,
       transaction,
@@ -270,7 +308,7 @@ export async function archiveSubjectAssignmentService(id: string) {
           action: "ARCHIVE",
           module: "SubjectAssignment",
           recordId: archivedAssignment.id,
-          recordName: `Teacher: ${teacherIdentity} | Subject: ${assignment.subject.code} - ${assignment.subject.description} | Section: ${sectionIdentity} | Academic Year: ${assignment.academicYear}`,
+          recordName: `Teacher: ${teacherIdentity} | Subject: ${assignment.subject.code} - ${assignment.subject.description} | Section: ${sectionIdentity} | Academic Year: ${assignment.academicYear.label}`,
           description: "Archived subject assignment",
         },
       ],

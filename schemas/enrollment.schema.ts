@@ -3,7 +3,7 @@ import * as z from "zod";
 export const CreateEnrollmentSchema = z.object({
   studentId: z.string().min(1, "Student is required."),
   sectionId: z.string().min(1, "Section is required."),
-  academicYear: z.string().trim().min(1, "Academic year is required."),
+  academicYearId: z.string().min(1, "Academic year is required."),
   semester: z.enum(["FIRST", "SECOND"]).optional(),
 });
 
@@ -45,7 +45,7 @@ export const EnrollmentTableQuerySchema = z.object({
   q: z.string().trim().max(100).optional(),
   status: EnrollmentStatusSchema.optional(),
   gradeLevel: z.string().trim().min(1).optional(),
-  academicYear: z.string().trim().min(1).optional(),
+  academicYearId: z.string().trim().min(1).optional(),
   sectionId: z.string().trim().min(1).optional(),
   semester: EnrollmentSemesterFilterSchema.optional(),
   sort: EnrollmentSortFieldSchema.optional(),
@@ -63,6 +63,7 @@ export const EnrollmentListItemSchema = z.object({
   id: z.string(),
   studentId: z.string(),
   sectionId: z.string(),
+  academicYearId: z.string(),
   studentLrn: z.string(),
   studentFirstName: z.string(),
   studentMiddleName: z.string().nullable(),
@@ -71,6 +72,7 @@ export const EnrollmentListItemSchema = z.object({
   sectionTrackStrand: z.string().nullable(),
   sectionName: z.string(),
   academicYear: z.string(),
+  academicYearStatus: z.enum(["DRAFT", "ACTIVE", "LOCKED", "ARCHIVED"]),
   semester: z.enum(["FIRST", "SECOND"]).nullable(),
   status: EnrollmentStatusSchema,
   createdAt: z.date(),
@@ -88,7 +90,10 @@ export interface EnrollmentPage {
 }
 
 export interface EnrollmentFilterOptions {
-  academicYears: string[];
+  academicYears: Array<{
+    id: string;
+    label: string;
+  }>;
   gradeLevels: string[];
   sections: Array<{
     id: string;

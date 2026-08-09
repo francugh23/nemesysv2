@@ -1,5 +1,6 @@
 import {
   Prisma,
+  type AcademicYearStatus,
   type EnrollmentStatus,
   type Semester,
 } from "@/app/generated/prisma/client";
@@ -7,14 +8,14 @@ import prisma from "@/lib/prisma";
 
 interface EnrollmentIdentity {
   studentId: string;
-  academicYear: string;
+  academicYearId: string;
 }
 
 export interface EnrollmentListFilters {
   search?: string;
   status?: "ACTIVE" | "COMPLETED" | "DROPPED" | "TRANSFERRED";
   gradeLevel?: string;
-  academicYear?: string;
+  academicYearId?: string;
   sectionId?: string;
   semester?: "FIRST" | "SECOND" | "NONE";
 }
@@ -27,7 +28,7 @@ function getEnrollmentListWhere(
   return {
     deletedAt: null,
     status: filters.status,
-    academicYear: filters.academicYear,
+    academicYearId: filters.academicYearId,
     sectionId: filters.sectionId,
     semester:
       filters.semester === "NONE" ? null : filters.semester,
@@ -59,7 +60,11 @@ function getEnrollmentListWhere(
             sectionName: { contains: term, mode: "insensitive" },
           },
         },
-        { academicYear: { contains: term, mode: "insensitive" } },
+        {
+          academicYear: {
+            label: { contains: term, mode: "insensitive" },
+          },
+        },
       ],
     })),
   };
@@ -84,7 +89,7 @@ export async function findNonArchivedEnrollments(
       id: true,
       studentId: true,
       sectionId: true,
-      academicYear: true,
+      academicYearId: true,
       semester: true,
       status: true,
       createdAt: true,
@@ -102,6 +107,12 @@ export async function findNonArchivedEnrollments(
           gradeLevel: true,
           trackStrand: true,
           sectionName: true,
+        },
+      },
+      academicYear: {
+        select: {
+          label: true,
+          status: true,
         },
       },
     },
@@ -122,9 +133,9 @@ function getEnrollmentGradeSortConditions(filters: EnrollmentListFilters) {
     );
   }
 
-  if (filters.academicYear) {
+  if (filters.academicYearId) {
     conditions.push(
-      Prisma.sql`"enrollment"."academicYear" = ${filters.academicYear}`,
+      Prisma.sql`"enrollment"."academicYearId" = ${filters.academicYearId}`,
     );
   }
 
@@ -156,7 +167,7 @@ function getEnrollmentGradeSortConditions(filters: EnrollmentListFilters) {
       OR "student"."middleName" ILIKE ${pattern}
       OR "student"."lastName" ILIKE ${pattern}
       OR "section"."sectionName" ILIKE ${pattern}
-      OR "enrollment"."academicYear" ILIKE ${pattern}
+      OR "academicYear"."label" ILIKE ${pattern}
     )`);
   }
 
@@ -175,7 +186,9 @@ export async function findNonArchivedEnrollmentsByGrade(
       id: string;
       studentId: string;
       sectionId: string;
+      academicYearId: string;
       academicYear: string;
+      academicYearStatus: AcademicYearStatus;
       semester: Semester | null;
       status: EnrollmentStatus;
       createdAt: Date;
@@ -193,7 +206,9 @@ export async function findNonArchivedEnrollmentsByGrade(
       "enrollment"."id",
       "enrollment"."studentId",
       "enrollment"."sectionId",
-      "enrollment"."academicYear",
+      "enrollment"."academicYearId",
+      "academicYear"."label" AS "academicYear",
+      "academicYear"."status" AS "academicYearStatus",
       "enrollment"."semester",
       "enrollment"."status",
       "enrollment"."createdAt",
@@ -210,6 +225,8 @@ export async function findNonArchivedEnrollmentsByGrade(
       ON "student"."id" = "enrollment"."studentId"
     INNER JOIN "Section" AS "section"
       ON "section"."id" = "enrollment"."sectionId"
+    INNER JOIN "AcademicYear" AS "academicYear"
+      ON "academicYear"."id" = "enrollment"."academicYearId"
     WHERE ${Prisma.join(getEnrollmentGradeSortConditions(filters), " AND ")}
     ORDER BY CASE BTRIM("section"."gradeLevel")
       WHEN '7' THEN 7
@@ -228,7 +245,7 @@ export async function findNonArchivedEnrollmentsByGrade(
     id: enrollment.id,
     studentId: enrollment.studentId,
     sectionId: enrollment.sectionId,
-    academicYear: enrollment.academicYear,
+    academicYearId: enrollment.academicYearId,
     semester: enrollment.semester,
     status: enrollment.status,
     createdAt: enrollment.createdAt,
@@ -244,22 +261,28 @@ export async function findNonArchivedEnrollmentsByGrade(
       trackStrand: enrollment.sectionTrackStrand,
       sectionName: enrollment.sectionName,
     },
+    academicYear: {
+      label: enrollment.academicYear,
+      status: enrollment.academicYearStatus,
+    },
   }));
 }
 
 export async function findEnrollmentFilterOptionValues() {
   return Promise.all([
-    prisma.enrollment.findMany({
+    prisma.academicYear.findMany({
       where: {
-        deletedAt: null,
+        enrollments: {
+          some: {
+            deletedAt: null,
+          },
+        },
       },
-      distinct: ["academicYear"],
       select: {
-        academicYear: true,
+        id: true,
+        label: true,
       },
-      orderBy: {
-        academicYear: "desc",
-      },
+      orderBy: [{ startDate: "desc" }, { id: "asc" }],
     }),
     prisma.section.findMany({
       where: {
@@ -290,7 +313,7 @@ export async function findEnrollmentByIdentity(
 ) {
   return (transaction ?? prisma).enrollment.findUnique({
     where: {
-      studentId_academicYear: identity,
+      studentId_academicYearId: identity,
     },
     select: {
       id: true,
@@ -320,7 +343,7 @@ export async function findActiveEnrollmentById(
       id: true,
       studentId: true,
       sectionId: true,
-      academicYear: true,
+      academicYearId: true,
       semester: true,
       status: true,
       student: {
@@ -347,8 +370,45 @@ export async function findActiveEnrollmentById(
           sectionName: true,
         },
       },
+      academicYear: {
+        select: {
+          label: true,
+          status: true,
+        },
+      },
     },
   });
+}
+
+export async function findActiveAcademicYearsForEnrollment() {
+  return prisma.academicYear.findMany({
+    where: { status: "ACTIVE" },
+    select: {
+      id: true,
+      label: true,
+    },
+    orderBy: [{ startDate: "desc" }, { id: "asc" }],
+  });
+}
+
+export async function lockAcademicYearForEnrollment(
+  id: string,
+  transaction: Prisma.TransactionClient,
+) {
+  const academicYears = await transaction.$queryRaw<
+    Array<{
+      id: string;
+      label: string;
+      status: AcademicYearStatus;
+    }>
+  >(Prisma.sql`
+    SELECT "id", "label", "status"
+    FROM "AcademicYear"
+    WHERE "id" = ${id}
+    FOR SHARE
+  `);
+
+  return academicYears[0] ?? null;
 }
 
 export async function updateEnrollment(
@@ -371,6 +431,7 @@ export async function findLatestActiveEnrollmentByStudent(
       studentId,
       status: "ACTIVE",
       deletedAt: null,
+      academicYear: { status: "ACTIVE" },
     },
     select: {
       sectionId: true,

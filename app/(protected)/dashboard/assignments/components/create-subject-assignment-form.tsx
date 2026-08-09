@@ -28,7 +28,7 @@ export function CreateSubjectAssignmentForm({
       teacherId: "",
       subjectId: "",
       sectionId: "",
-      academicYear: "",
+      academicYearId: "",
     },
   });
 

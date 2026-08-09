@@ -24,6 +24,17 @@ export function displayValue(value?: string | null) {
   return value?.trim() || "—";
 }
 
+export function formatDateOnly(date?: Date | string | null): string {
+  if (!date) return "—";
+
+  return new Intl.DateTimeFormat("en-PH", {
+    timeZone: "UTC",
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+  }).format(new Date(date));
+}
+
 export function formatDateTime(date?: Date | string | null): string {
   if (!date) return "—";
 

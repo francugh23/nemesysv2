@@ -1,11 +1,54 @@
 import prisma from "@/lib/prisma";
-import { Prisma } from "@/app/generated/prisma/client";
+import {
+  Prisma,
+  type AcademicYearStatus,
+} from "@/app/generated/prisma/client";
 
 interface SubjectAssignmentIdentity {
   teacherId: string;
   subjectId: string;
   sectionId: string;
-  academicYear: string;
+  academicYearId: string;
+}
+
+export async function findActiveAcademicYearsForAssignment() {
+  return prisma.academicYear.findMany({
+    where: {
+      status: "ACTIVE",
+    },
+    select: {
+      id: true,
+      label: true,
+    },
+    orderBy: [{ startDate: "desc" }, { id: "asc" }],
+  });
+}
+
+export async function findAcademicYearForAssignment(
+  id: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  if (transaction) {
+    const academicYears = await transaction.$queryRaw<
+      Array<{ id: string; label: string; status: AcademicYearStatus }>
+    >(Prisma.sql`
+      SELECT "id", "label", "status"
+      FROM "AcademicYear"
+      WHERE "id" = ${id}
+      FOR SHARE
+    `);
+
+    return academicYears[0] ?? null;
+  }
+
+  return (transaction ?? prisma).academicYear.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      label: true,
+      status: true,
+    },
+  });
 }
 
 export async function findActiveSubjectAssignment(
@@ -34,7 +77,13 @@ export async function findActiveSubjectAssignmentById(
     },
     select: {
       id: true,
-      academicYear: true,
+      academicYearId: true,
+      academicYear: {
+        select: {
+          label: true,
+          status: true,
+        },
+      },
       teacher: {
         select: {
           user: {
@@ -129,7 +178,13 @@ export async function findAllSubjectAssignments() {
       teacherId: true,
       subjectId: true,
       sectionId: true,
-      academicYear: true,
+      academicYearId: true,
+      academicYear: {
+        select: {
+          label: true,
+          status: true,
+        },
+      },
       teacher: {
         select: {
           user: {
@@ -158,7 +213,9 @@ export async function findAllSubjectAssignments() {
     },
     orderBy: [
       {
-        academicYear: "desc",
+        academicYear: {
+          startDate: "desc",
+        },
       },
       {
         section: {
@@ -183,6 +240,9 @@ export async function findAllSubjectAssignments() {
             firstName: "asc",
           },
         },
+      },
+      {
+        id: "asc",
       },
     ],
   });

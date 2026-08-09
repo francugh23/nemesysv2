@@ -12,6 +12,7 @@ import {
   Shield,
   ScrollText,
   Settings,
+  CalendarRange,
   LucideIcon,
 } from "lucide-react";
 
@@ -132,7 +133,23 @@ export const navigation = {
     },
   ],
 
-  REGISTRAR: [],
+  REGISTRAR: [
+    {
+      title: "Academics",
+      items: [
+        {
+          title: "Academic Years",
+          href: "/dashboard/academic-years",
+          icon: CalendarRange,
+        },
+        {
+          title: "Academic Years",
+          href: "/dashboard/academic-years",
+          icon: CalendarRange,
+        },
+      ],
+    },
+  ],
 
   PRINCIPAL: [],
 

@@ -45,6 +45,9 @@ export default auth((req) => {
   const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
   const isAuthRoute = authRoutes.includes(nextUrl.pathname);
+  const isAcademicYearsRoute =
+    nextUrl.pathname === "/dashboard/academic-years" ||
+    nextUrl.pathname.startsWith("/dashboard/academic-years/");
 
   // Allow Auth.js API routes
   if (isApiAuthRoute) {
@@ -79,7 +82,11 @@ export default auth((req) => {
   if (
     authenticatedUser &&
     nextUrl.pathname.startsWith("/dashboard") &&
-    !hasPermission(authenticatedUser.role, Permissions.DASHBOARD)
+    !hasPermission(authenticatedUser.role, Permissions.DASHBOARD) &&
+    !(
+      isAcademicYearsRoute &&
+      hasPermission(authenticatedUser.role, Permissions.ACADEMIC_YEARS)
+    )
   ) {
     return NextResponse.redirect(
       new URL(DEFAULT_LOGIN_REDIRECT(authenticatedUser.role), nextUrl),

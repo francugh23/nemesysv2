@@ -52,7 +52,7 @@ export function SubjectAssignmentViewDialog({
           <SubjectAssignmentInfoItem label="Section" value={section} />
           <SubjectAssignmentInfoItem
             label="Academic Year"
-            value={assignment.academicYear}
+            value={assignment.academicYearLabel}
           />
         </div>
       </DialogContent>

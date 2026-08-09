@@ -9,11 +9,11 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-Phase 18A Query Cache Coherence implementation is complete; manual browser verification remains pending.
+Phase 18B Academic Year Management implementation and automated verification are complete; authenticated browser verification remains pending before production.
 
 ### Current Objective
 
-Source-domain mutations now invalidate their dependent selector queries so cached academic option lists remain coherent without a browser refresh.
+Academic Year is now the canonical database-backed period identity for Enrollment and Subject Assignment, with guarded legacy migration, lifecycle management, historical preservation, and ACTIVE-only operational selectors.
 
 ### Completed Modules
 
@@ -24,6 +24,7 @@ Source-domain mutations now invalidate their dependent selector queries so cache
 - Subject Assignment foundation, creation, view, edit, and archive
 - Section Management foundation, creation, view, edit, archive, and URL-driven server-table UX
 - Enrollment Management foundation, lifecycle completion, controlled correction, and URL-driven server-table UX
+- Academic Year canonical identity, guarded legacy migration, lifecycle management, URL-driven server-table UX, and Enrollment/Subject Assignment integration
 - User Management authorized read path, URL-driven server-table UX, audited administrative account creation and administration, forced first-login completion, self-service password change, and credential-driven session invalidation
 - Audit Log Management read-only URL-driven server-table UX, authorized details, multi-action filtering, safe supported-module navigation, immutable historical actor visibility, and export-ready validated query reuse
 - Security Hardening Phase S1 centralized authorization architecture
@@ -50,6 +51,7 @@ Source-domain mutations now invalidate their dependent selector queries so cache
 - [Phase 17A: Shared Export Infrastructure](./milestones/phase-17a-export-architecture.md)
 - [Phase 17B: Shared Import Template Infrastructure](./milestones/phase-17b-import-template-infrastructure.md)
 - [Phase 18A: Query Cache Coherence](./milestones/phase-18a-query-cache-coherence.md)
+- [Phase 18B: Academic Year Management](./milestones/phase-18b-academic-year-management.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -89,6 +91,9 @@ Source-domain mutations now invalidate their dependent selector queries so cache
 - Student export reuses the complete filtered table query while ignoring query pagination and exposes only the seven visible data columns. Other operational modules retain disabled Export placeholders until separately approved integrations.
 - Shared import-template infrastructure generates definition-owned header-only XLSX workbooks without persistence access. Student and Subject definitions are the single source of truth for canonical headers, aliases, and required fields; their existing normalizers and validators consume those definitions without changing import behavior.
 - Teacher, Subject, Student, and Section feature hooks own successful mutation invalidation for their active list queries and only the selector queries supplied by those source records. Import wrappers declare the same narrow dependent query keys after successful imports.
+- Academic Years use canonical date-derived labels and a DRAFT, ACTIVE, LOCKED, ARCHIVED lifecycle. PostgreSQL guarantees non-overlapping dates and at most one ACTIVE year; locked years preserve dependent history while shared row locking makes Enrollment and Subject Assignment mutations read-only.
+- Enrollment and Subject Assignment reference Academic Year by required foreign key. Historical reads retain canonical labels, while operational creation selectors include only the ACTIVE year.
+- Academic Year management is available to Super Admin and Registrar through `Permissions.ACADEMIC_YEARS`; Registrar receives narrow `/dashboard/academic-years` shell access without general Dashboard permission.
 - Operational module headers own the primary Add or lifecycle action. Table toolbars contain search and filters on the left and only existing Import actions plus approved or disabled Export controls on the right.
 - The protected shell uses the shared sidebar provider and Base UI modal drawer: desktop state persists through the existing cookie, icon collapse retains tooltips, tablet/mobile navigation is transient below 1024px, and the sticky navbar supplies title, breadcrumbs, notifications placeholder, account controls, and the responsive trigger.
 - Stable architectural principles are maintained in [`.ai/context/architecture.md`](../../.ai/context/architecture.md).
@@ -110,7 +115,7 @@ Source-domain mutations now invalidate their dependent selector queries so cache
 
 ## Next Planned Milestone
 
-No next milestone is active or approved. Phase 18 Academic Year, Semester, Teacher completion, Subject curriculum, Section completion, Subject Assignment modernization, and scheduling remain deferred to separately approved subphases. Teacher and Section import-template integrations; Teacher, Subject, Section, User, and Audit Log export integrations; MFA; recovery; detailed login history; login throttling; breached-password checks; password history; and User archive/restore remain deferred to separately approved milestones.
+No next milestone is active or approved. Before Phase 18C, the current nullable `FIRST | SECOND` Semester model must be explicitly reconciled with the official three-term DepEd School Year 2026-2027 structure; no compatibility is assumed. Semester Management, Teacher completion, Subject curriculum, Section completion, Subject Assignment modernization, and scheduling remain deferred to separately approved subphases. Teacher and Section import-template integrations; Teacher, Subject, Section, User, and Audit Log export integrations; MFA; recovery; detailed login history; login throttling; breached-password checks; password history; and User archive/restore remain deferred to separately approved milestones.
 
 ## Technology Stack
 

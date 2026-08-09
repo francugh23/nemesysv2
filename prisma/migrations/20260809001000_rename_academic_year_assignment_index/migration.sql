@@ -1,0 +1,2 @@
+ALTER INDEX "SubjectAssignment_subjectId_teacherId_sectionId_academicYearId_"
+  RENAME TO "SubjectAssignment_subjectId_teacherId_sectionId_academicYea_key";

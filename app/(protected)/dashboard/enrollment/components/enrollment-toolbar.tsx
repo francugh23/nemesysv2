@@ -12,7 +12,7 @@ import type { ReactNode } from "react";
 export const enrollmentFilterKeys = [
   "status",
   "gradeLevel",
-  "academicYear",
+  "academicYearId",
   "sectionId",
   "semester",
 ] as const;
@@ -69,8 +69,8 @@ export function EnrollmentToolbar({
     })) ?? [];
   const academicYearOptions =
     options?.academicYears.map((academicYear) => ({
-      label: academicYear,
-      value: academicYear,
+      label: academicYear.label,
+      value: academicYear.id,
     })) ?? [];
   const sectionOptions =
     options?.sections.map((section) => ({
@@ -118,9 +118,9 @@ export function EnrollmentToolbar({
       <DataTableFacetedFilter
         label="Academic Year"
         allLabel="All Academic Years"
-        value={filters.academicYear}
+        value={filters.academicYearId}
         options={academicYearOptions}
-        onValueChange={(value) => onFilterChange("academicYear", value)}
+        onValueChange={(value) => onFilterChange("academicYearId", value)}
         disabled={isLoading || isError}
       />
       <DataTableFacetedFilter

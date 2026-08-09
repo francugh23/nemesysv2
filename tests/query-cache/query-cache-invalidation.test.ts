@@ -7,6 +7,7 @@ import {
   invalidateStudentQueries,
   invalidateSubjectQueries,
   invalidateTeacherQueries,
+  invalidateAcademicYearQueries,
 } from "../../hooks/query-invalidation";
 
 function createInvalidationRecorder() {
@@ -79,5 +80,22 @@ test("Imports can add narrowly scoped dependent query invalidation", async () =>
   assert.deepEqual(queryKeys, [
     ["subjects"],
     ["subject-assignment-options"],
+  ]);
+});
+
+test("Academic Year mutations refresh only management and operational selectors", async () => {
+  const invalidated: unknown[] = [];
+
+  await invalidateAcademicYearQueries({
+    invalidateQueries: ((filters: { queryKey?: readonly unknown[] }) => {
+      invalidated.push(filters.queryKey);
+      return Promise.resolve();
+    }) as never,
+  });
+
+  assert.deepEqual(invalidated, [
+    ["academic-years"],
+    ["subject-assignment-options"],
+    ["enrollment-form-options"],
   ]);
 });

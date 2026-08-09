@@ -26,7 +26,7 @@ export function CreateEnrollmentForm({
     defaultValues: {
       studentId: "",
       sectionId: "",
-      academicYear: "",
+      academicYearId: "",
       semester: undefined,
     },
   });

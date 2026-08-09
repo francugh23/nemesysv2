@@ -34,7 +34,7 @@ export function EditSubjectAssignmentForm({
       teacherId: assignment.teacherId,
       subjectId: assignment.subjectId,
       sectionId: assignment.sectionId,
-      academicYear: assignment.academicYear,
+      academicYearId: assignment.academicYearId,
     },
   });
 

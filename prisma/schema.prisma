@@ -49,6 +49,13 @@ enum EnrollmentStatus {
   TRANSFERRED
 }
 
+enum AcademicYearStatus {
+  DRAFT
+  ACTIVE
+  LOCKED
+  ARCHIVED
+}
+
 model User {
   id String @id @default(cuid())
 
@@ -67,21 +74,22 @@ model User {
   role   UserRole
   status UserStatus @default(ACTIVE)
 
-  isFirstLogin  Boolean   @default(true)
-  lastLoginAt   DateTime?
-  sessionVersion Int      @default(0)
+  isFirstLogin   Boolean   @default(true)
+  lastLoginAt    DateTime?
+  sessionVersion Int       @default(0)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  teacher            Teacher?
-  createdStudents    Student[]
-  createdSections    Section[]
-  createdSubjects    Subject[]
-  createdEnrollments Enrollment[]
-  createdGrades      Grade[]
-  auditLogs          AuditLog[]
+  teacher              Teacher?
+  createdStudents      Student[]
+  createdSections      Section[]
+  createdSubjects      Subject[]
+  createdEnrollments   Enrollment[]
+  createdGrades        Grade[]
+  createdAcademicYears AcademicYear[]
+  auditLogs            AuditLog[]
 }
 
 model Student {
@@ -191,7 +199,6 @@ model Subject {
 
   assignments SubjectAssignment[]
   grades      Grade[]
-
 }
 
 model SubjectAssignment {
@@ -206,17 +213,18 @@ model SubjectAssignment {
   sectionId String
   section   Section @relation(fields: [sectionId], references: [id])
 
-  schedule     String?
-  room         String?
-  shift        Shift?
-  academicYear String
+  schedule       String?
+  room           String?
+  shift          Shift?
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  @@unique([subjectId, teacherId, sectionId, academicYear])
-  @@index([academicYear])
+  @@unique([subjectId, teacherId, sectionId, academicYearId])
+  @@index([academicYearId])
 }
 
 model Enrollment {
@@ -228,7 +236,8 @@ model Enrollment {
   sectionId String
   section   Section @relation(fields: [sectionId], references: [id])
 
-  academicYear String
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
 
   semester Semester?
 
@@ -243,8 +252,30 @@ model Enrollment {
 
   grades Grade[]
 
-  @@unique([studentId, academicYear])
-  @@index([academicYear])
+  @@unique([studentId, academicYearId])
+  @@index([academicYearId])
+}
+
+model AcademicYear {
+  id String @id @default(cuid())
+
+  label     String             @unique
+  startDate DateTime           @db.Date
+  endDate   DateTime           @db.Date
+  status    AcademicYearStatus @default(DRAFT)
+
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  enrollments        Enrollment[]
+  subjectAssignments SubjectAssignment[]
+
+  @@index([status])
+  @@index([startDate])
+  @@index([createdById])
 }
 
 model Grade {
@@ -284,7 +315,7 @@ model AuditLog {
   action String
   module String
 
-  recordId String?
+  recordId   String?
   recordName String?
 
   description String

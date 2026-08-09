@@ -63,7 +63,7 @@ function EnrollmentPageContent() {
     tableState.filters.semester,
   );
   const gradeLevel = tableState.filters.gradeLevel.trim();
-  const academicYear = tableState.filters.academicYear.trim();
+  const academicYearId = tableState.filters.academicYearId.trim();
   const sectionId = tableState.filters.sectionId.trim();
   const search = tableState.query.q?.trim().slice(0, 100);
   const normalizeUrl = useEffectEvent(() => {
@@ -79,8 +79,8 @@ function EnrollmentPageContent() {
       tableState.setFilter("gradeLevel", gradeLevel);
     }
 
-    if (tableState.filters.academicYear !== academicYear) {
-      tableState.setFilter("academicYear", academicYear);
+    if (tableState.filters.academicYearId !== academicYearId) {
+      tableState.setFilter("academicYearId", academicYearId);
     }
 
     if (tableState.filters.sectionId !== sectionId) {
@@ -95,7 +95,7 @@ function EnrollmentPageContent() {
     q: search || undefined,
     status: status.success ? status.data : undefined,
     gradeLevel: gradeLevel || undefined,
-    academicYear: academicYear || undefined,
+    academicYearId: academicYearId || undefined,
     sectionId: sectionId || undefined,
     semester: semester.success ? semester.data : undefined,
     sort: tableState.query.sort as EnrollmentTableQueryInput["sort"],
@@ -153,7 +153,7 @@ function EnrollmentPageContent() {
   }, [
     semester.success,
     status.success,
-    academicYear,
+    academicYearId,
     gradeLevel,
     search,
     sectionId,
