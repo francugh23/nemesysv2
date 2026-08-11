@@ -44,3 +44,42 @@ export async function findActiveStudentSubjectEnrollmentByIdentity(
     select: { id: true },
   });
 }
+
+export async function createStudentSubjectEnrollmentsFromOfferings(
+  enrollmentId: string,
+  offerings: Array<{
+    id: string;
+    gradeLevel: string;
+    subjectCode: string;
+    subjectDescription: string;
+    terms: Array<{ academicTermId: string }>;
+  }>,
+  createdById: string,
+  transaction: Prisma.TransactionClient,
+) {
+  return Promise.all(
+    offerings.map((offering) =>
+      transaction.studentSubjectEnrollment.create({
+        data: {
+          enrollmentId,
+          subjectOfferingId: offering.id,
+          subjectCode: offering.subjectCode,
+          subjectDescription: offering.subjectDescription,
+          gradeLevel: offering.gradeLevel,
+          createdById,
+          terms: {
+            create: offering.terms.map(({ academicTermId }) => ({ academicTermId })),
+          },
+        },
+        select: {
+          id: true,
+          subjectOfferingId: true,
+          subjectCode: true,
+          subjectDescription: true,
+          gradeLevel: true,
+          terms: { select: { academicTermId: true } },
+        },
+      }),
+    ),
+  );
+}

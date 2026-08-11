@@ -17,6 +17,7 @@ import {
   lockAcademicYearForEnrollment,
   updateEnrollment,
 } from "@/repositories/enrollment.repository";
+import { deriveApprovedRegularJhsStudentSubjectEnrollments } from "@/services/jhs-student-subject-enrollment-derivation.service";
 import {
   findActiveSectionForAssignment,
   findActiveSectionsForAssignment,
@@ -326,99 +327,119 @@ function validateStatusTransition(
   }
 }
 
+async function createEnrollmentInTransaction(
+  values: CreateEnrollmentInput,
+  actorId: string,
+  transaction: Prisma.TransactionClient,
+) {
+  await lockStudentForEnrollmentSynchronization(
+    values.studentId,
+    transaction,
+  );
+
+  const [student, section, academicYear] = await Promise.all([
+    findActiveStudentForEnrollment(values.studentId, transaction),
+    findActiveSectionForAssignment(values.sectionId, transaction),
+    lockAcademicYearForEnrollment(values.academicYearId, transaction),
+  ]);
+
+  if (!student) {
+    throw new EnrollmentServiceError("Student not found or inactive.");
+  }
+
+  if (!section) {
+    throw new EnrollmentServiceError("Section not found or inactive.");
+  }
+
+  if (!academicYear || !isAcademicYearWritable(academicYear.status)) {
+    throw new EnrollmentServiceError(
+      "Academic year not found or is not active.",
+    );
+  }
+
+  const duplicate = await findEnrollmentByIdentity(
+    {
+      studentId: student.id,
+      academicYearId: academicYear.id,
+    },
+    transaction,
+  );
+
+  if (duplicate) {
+    throw new EnrollmentServiceError(
+      "An enrollment already exists for this student and academic year.",
+    );
+  }
+
+  const enrollment = await createEnrollment(
+    {
+      studentId: student.id,
+      sectionId: section.id,
+      academicYearId: academicYear.id,
+      createdById: actorId,
+    },
+    transaction,
+  );
+
+  await updateStudentEnrollmentSummary(
+    student.id,
+    {
+      status: "ENROLLED",
+      currentSectionId: enrollment.sectionId,
+    },
+    transaction,
+  );
+
+  await deriveApprovedRegularJhsStudentSubjectEnrollments(
+    {
+      enrollmentId: enrollment.id,
+      academicYearId: academicYear.id,
+      academicYearLabel: academicYear.label,
+      gradeLevel: section.gradeLevel,
+      trackStrand: section.trackStrand,
+      studentLrn: student.lrn,
+      actorId,
+    },
+    transaction,
+  );
+
+  const changes: AuditChanges = {};
+
+  addStudentSynchronizationChanges(
+    changes,
+    student,
+    {
+      status: "ENROLLED",
+      currentSectionId: enrollment.sectionId,
+      currentSection: section,
+    },
+  );
+
+  await createAuditLogs(
+    [
+      {
+        userId: actorId,
+        action: "CREATE",
+        module: "Enrollment",
+        recordId: enrollment.id,
+        recordName: `${student.lrn} - ${getStudentName(student)} - ${academicYear.label}`,
+        description: `Created enrollment in ${section.sectionName}`,
+        metadata: Object.keys(changes).length > 0 ? { changes } : undefined,
+      },
+    ],
+    transaction,
+  );
+
+  return enrollment;
+}
+
 export async function createEnrollmentService(values: CreateEnrollmentInput) {
   const session = await requirePermission(Permissions.ENROLLMENT);
 
   try {
-    return await prisma.$transaction(async (transaction) => {
-      await lockStudentForEnrollmentSynchronization(
-        values.studentId,
-        transaction,
-      );
-
-      const [student, section, academicYear] = await Promise.all([
-        findActiveStudentForEnrollment(values.studentId, transaction),
-        findActiveSectionForAssignment(values.sectionId, transaction),
-        lockAcademicYearForEnrollment(values.academicYearId, transaction),
-      ]);
-
-      if (!student) {
-        throw new EnrollmentServiceError("Student not found or inactive.");
-      }
-
-      if (!section) {
-        throw new EnrollmentServiceError("Section not found or inactive.");
-      }
-
-      if (!academicYear || !isAcademicYearWritable(academicYear.status)) {
-        throw new EnrollmentServiceError(
-          "Academic year not found or is not active.",
-        );
-      }
-
-      const duplicate = await findEnrollmentByIdentity(
-        {
-          studentId: student.id,
-          academicYearId: academicYear.id,
-        },
-        transaction,
-      );
-
-      if (duplicate) {
-        throw new EnrollmentServiceError(
-          "An enrollment already exists for this student and academic year.",
-        );
-      }
-
-      const enrollment = await createEnrollment(
-        {
-          studentId: student.id,
-          sectionId: section.id,
-          academicYearId: academicYear.id,
-          createdById: session.user.id,
-        },
-        transaction,
-      );
-
-      await updateStudentEnrollmentSummary(
-        student.id,
-        {
-          status: "ENROLLED",
-          currentSectionId: enrollment.sectionId,
-        },
-        transaction,
-      );
-
-      const changes: AuditChanges = {};
-
-      addStudentSynchronizationChanges(
-        changes,
-        student,
-        {
-          status: "ENROLLED",
-          currentSectionId: enrollment.sectionId,
-          currentSection: section,
-        },
-      );
-
-      await createAuditLogs(
-        [
-          {
-            userId: session.user.id,
-            action: "CREATE",
-            module: "Enrollment",
-            recordId: enrollment.id,
-            recordName: `${student.lrn} - ${getStudentName(student)} - ${academicYear.label}`,
-            description: `Created enrollment in ${section.sectionName}`,
-            metadata:
-              Object.keys(changes).length > 0 ? { changes } : undefined,
-          },
-        ],
-        transaction,
-      );
-
-      return enrollment;
-    });
+    return await prisma.$transaction((transaction) =>
+      createEnrollmentInTransaction(values, session.user.id, transaction),
+    );
   } catch (error) {
     rethrowEnrollmentConflict(error);
   }
