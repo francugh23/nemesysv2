@@ -12,6 +12,7 @@ import { formatDateOnly, formatDateTime } from "@/lib/format";
 import type { AcademicYearListItem } from "@/schemas";
 
 import { AcademicYearStatusBadge } from "./academic-year-status-badge";
+import { AcademicTermManager } from "./academic-term-manager";
 
 export function AcademicYearViewDialog({
   academicYear,
@@ -65,6 +66,10 @@ export function AcademicYearViewDialog({
           <InfoItem label="Created At" value={formatDateTime(academicYear.createdAt)} />
           <InfoItem label="Updated At" value={formatDateTime(academicYear.updatedAt)} />
         </div>
+        <AcademicTermManager
+          academicYearId={academicYear.id}
+          isDraft={academicYear.status === "DRAFT"}
+        />
       </DialogContent>
     </Dialog>
   );

@@ -8,6 +8,7 @@ import {
   invalidateSubjectQueries,
   invalidateTeacherQueries,
   invalidateAcademicYearQueries,
+  invalidateAcademicTermQueries,
 } from "../../hooks/query-invalidation";
 
 function createInvalidationRecorder() {
@@ -42,6 +43,7 @@ test("Subject mutations refresh only their list and Assignment selectors", async
 
   assert.deepEqual(queryKeys, [
     ["subjects"],
+    ["subject-offering-options"],
     ["subject-assignment-options"],
   ]);
 });
@@ -97,5 +99,18 @@ test("Academic Year mutations refresh only management and operational selectors"
     ["academic-years"],
     ["subject-assignment-options"],
     ["enrollment-form-options"],
+    ["subject-offering-options"],
+  ]);
+});
+
+test("Academic Term mutations refresh their parent management view and term query", async () => {
+  const { queryClient, queryKeys } = createInvalidationRecorder();
+
+  await invalidateAcademicTermQueries(queryClient, "academic-year-2026-2027");
+
+  assert.deepEqual(queryKeys, [
+    ["academic-years"],
+    ["academic-terms", "academic-year-2026-2027"],
+    ["subject-offering-options"],
   ]);
 });

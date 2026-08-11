@@ -27,7 +27,6 @@ export function EditSubjectForm({ subject, onSuccess }: EditSubjectFormProps) {
       description: subject.description,
       gradeLevel: subject.gradeLevel as SubjectGradeLevel,
       trackStrand: subject.trackStrand ?? "",
-      semester: subject.semester ?? undefined,
     },
   });
 

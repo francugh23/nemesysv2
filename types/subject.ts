@@ -1,4 +1,3 @@
-import type { Semester } from "@/app/generated/prisma/client";
 import type { SubjectListItem } from "@/schemas";
 
 export interface SubjectPage {
@@ -12,5 +11,4 @@ export interface SubjectPage {
 export interface SubjectFilterOptions {
   gradeLevels: string[];
   trackStrands: string[];
-  semesters: Semester[];
 }

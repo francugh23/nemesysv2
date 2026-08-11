@@ -69,19 +69,6 @@ export function enrollmentColumns({
       ),
     },
     {
-      accessorKey: "semester",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Semester" />
-      ),
-      cell: ({ row }) => {
-        const semester = row.original.semester;
-
-        return semester
-          ? semester.charAt(0) + semester.slice(1).toLowerCase()
-          : displayValue(null);
-      },
-    },
-    {
       accessorKey: "status",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />

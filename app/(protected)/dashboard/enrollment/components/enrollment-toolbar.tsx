@@ -14,7 +14,6 @@ export const enrollmentFilterKeys = [
   "gradeLevel",
   "academicYearId",
   "sectionId",
-  "semester",
 ] as const;
 
 export type EnrollmentFilterKey = (typeof enrollmentFilterKeys)[number];
@@ -36,12 +35,6 @@ const statusOptions: DataTableFilterOption[] = [
   { label: "Completed", value: "COMPLETED" },
   { label: "Transferred", value: "TRANSFERRED" },
   { label: "Dropped", value: "DROPPED" },
-];
-
-const semesterOptions: DataTableFilterOption[] = [
-  { label: "First", value: "FIRST" },
-  { label: "Second", value: "SECOND" },
-  { label: "No semester", value: "NONE" },
 ];
 
 export function EnrollmentToolbar({
@@ -122,13 +115,6 @@ export function EnrollmentToolbar({
         options={academicYearOptions}
         onValueChange={(value) => onFilterChange("academicYearId", value)}
         disabled={isLoading || isError}
-      />
-      <DataTableFacetedFilter
-        label="Semester"
-        allLabel="All Semesters"
-        value={filters.semester}
-        options={semesterOptions}
-        onValueChange={(value) => onFilterChange("semester", value)}
       />
       {isError && (
         <Button

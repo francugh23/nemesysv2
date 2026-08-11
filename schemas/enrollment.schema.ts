@@ -4,7 +4,6 @@ export const CreateEnrollmentSchema = z.object({
   studentId: z.string().min(1, "Student is required."),
   sectionId: z.string().min(1, "Section is required."),
   academicYearId: z.string().min(1, "Academic year is required."),
-  semester: z.enum(["FIRST", "SECOND"]).optional(),
 });
 
 export type CreateEnrollmentInput = z.infer<typeof CreateEnrollmentSchema>;
@@ -16,15 +15,8 @@ export const EnrollmentStatusSchema = z.enum([
   "TRANSFERRED",
 ]);
 
-export const EnrollmentSemesterFilterSchema = z.enum([
-  "FIRST",
-  "SECOND",
-  "NONE",
-]);
-
 export const UpdateEnrollmentSchema = z.object({
   sectionId: z.string().min(1, "Section is required."),
-  semester: z.enum(["FIRST", "SECOND"]).optional(),
   status: EnrollmentStatusSchema,
 });
 
@@ -37,7 +29,6 @@ export const EnrollmentSortFieldSchema = z.enum([
   "sectionTrackStrand",
   "sectionName",
   "academicYear",
-  "semester",
   "status",
 ]);
 
@@ -47,7 +38,6 @@ export const EnrollmentTableQuerySchema = z.object({
   gradeLevel: z.string().trim().min(1).optional(),
   academicYearId: z.string().trim().min(1).optional(),
   sectionId: z.string().trim().min(1).optional(),
-  semester: EnrollmentSemesterFilterSchema.optional(),
   sort: EnrollmentSortFieldSchema.optional(),
   direction: z.enum(["asc", "desc"]).optional(),
   page: z.coerce.number().int().min(1).default(1),
@@ -73,7 +63,6 @@ export const EnrollmentListItemSchema = z.object({
   sectionName: z.string(),
   academicYear: z.string(),
   academicYearStatus: z.enum(["DRAFT", "ACTIVE", "LOCKED", "ARCHIVED"]),
-  semester: z.enum(["FIRST", "SECOND"]).nullable(),
   status: EnrollmentStatusSchema,
   createdAt: z.date(),
   updatedAt: z.date(),

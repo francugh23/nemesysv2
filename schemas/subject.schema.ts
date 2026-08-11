@@ -2,7 +2,6 @@ import * as z from "zod";
 import { isJhsGradeLevel, SUBJECT_GRADE_LEVELS } from "@/lib/subject-identity";
 
 export const SubjectGradeLevelSchema = z.enum(SUBJECT_GRADE_LEVELS);
-export const SubjectSemesterSchema = z.enum(["FIRST", "SECOND"]);
 
 const SubjectFieldsSchema = z
   .object({
@@ -10,7 +9,6 @@ const SubjectFieldsSchema = z
   description: z.string().trim().min(1, "Description is required."),
   gradeLevel: SubjectGradeLevelSchema,
   trackStrand: z.string().trim().optional(),
-  semester: SubjectSemesterSchema.optional(),
   })
   .superRefine((values, context) => {
     if (isJhsGradeLevel(values.gradeLevel) && values.trackStrand) {
@@ -30,14 +28,12 @@ export const SubjectSortFieldSchema = z.enum([
   "description",
   "gradeLevel",
   "trackStrand",
-  "semester",
 ]);
 
 export const SubjectTableQuerySchema = z.object({
   q: z.string().trim().max(100).optional(),
   grade: SubjectGradeLevelSchema.optional(),
   trackStrand: z.string().trim().min(1).max(100).optional(),
-  semester: SubjectSemesterSchema.optional(),
   sort: SubjectSortFieldSchema.optional(),
   direction: z.enum(["asc", "desc"]).optional(),
   page: z.coerce.number().int().min(1).default(1),
@@ -53,7 +49,6 @@ export const SubjectListItemSchema = z.object({
   description: z.string(),
   gradeLevel: z.string(),
   trackStrand: z.string().nullable(),
-  semester: SubjectSemesterSchema.nullable(),
 });
 
 export type SubjectListItem = z.infer<typeof SubjectListItemSchema>;

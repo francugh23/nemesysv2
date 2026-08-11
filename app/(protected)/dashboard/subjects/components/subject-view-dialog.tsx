@@ -35,16 +35,6 @@ export function SubjectViewDialog({
         <div className="grid gap-4 sm:grid-cols-2">
           <SubjectInfoItem label="Grade Level" value={subject.gradeLevel} />
           <SubjectInfoItem label="Track / Strand" value={subject.trackStrand} />
-          <SubjectInfoItem
-            label="Semester"
-            value={
-              subject.semester === "FIRST"
-                ? "First"
-                : subject.semester === "SECOND"
-                  ? "Second"
-                  : null
-            }
-          />
         </div>
       </DialogContent>
     </Dialog>

@@ -12,7 +12,6 @@ import type { ReactNode } from "react";
 export const subjectFilterKeys = [
   "grade",
   "trackStrand",
-  "semester",
 ] as const;
 
 export type SubjectFilterKey = (typeof subjectFilterKeys)[number];
@@ -28,11 +27,6 @@ interface SubjectToolbarProps {
   searchResetKey: number;
   actions?: ReactNode;
 }
-
-const semesterLabels: Record<string, string> = {
-  FIRST: "First Semester",
-  SECOND: "Second Semester",
-};
 
 export function SubjectToolbar({
   search,
@@ -61,11 +55,6 @@ export function SubjectToolbar({
     options?.trackStrands.map((trackStrand) => ({
       label: trackStrand,
       value: trackStrand,
-    })) ?? [];
-  const semesterOptions: DataTableFilterOption[] =
-    options?.semesters.map((semester) => ({
-      label: semesterLabels[semester] ?? semester,
-      value: semester,
     })) ?? [];
   const hasSearchOrFilters =
     Boolean(search) || Object.values(filters).some(Boolean);
@@ -97,14 +86,6 @@ export function SubjectToolbar({
         onValueChange={(value) => onFilterChange("trackStrand", value)}
         disabled={isLoading || isError}
         className="sm:max-w-52"
-      />
-      <DataTableFacetedFilter
-        label="Semester"
-        allLabel="All Semesters"
-        value={filters.semester}
-        options={semesterOptions}
-        onValueChange={(value) => onFilterChange("semester", value)}
-        disabled={isLoading || isError}
       />
       {isError && (
         <Button

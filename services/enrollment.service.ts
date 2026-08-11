@@ -83,8 +83,6 @@ function getEnrollmentOrderBy(
         { academicYearId: direction },
         { id: "asc" },
       ];
-    case "semester":
-      return [{ semester: direction }, { id: "asc" }];
     case "status":
       return [{ status: direction }, { id: "asc" }];
     default:
@@ -110,7 +108,6 @@ export async function getEnrollments(
     gradeLevel: query.gradeLevel,
     academicYearId: query.academicYearId,
     sectionId: query.sectionId,
-    semester: query.semester,
   };
   const totalCount = await countNonArchivedEnrollments(filters);
   const pageCount = Math.ceil(totalCount / query.pageSize);
@@ -147,7 +144,6 @@ export async function getEnrollments(
       sectionName: enrollment.section.sectionName,
       academicYear: enrollment.academicYear.label,
       academicYearStatus: enrollment.academicYear.status,
-      semester: enrollment.semester,
       status: enrollment.status,
       createdAt: enrollment.createdAt,
       updatedAt: enrollment.updatedAt,
@@ -379,7 +375,6 @@ export async function createEnrollmentService(values: CreateEnrollmentInput) {
           studentId: student.id,
           sectionId: section.id,
           academicYearId: academicYear.id,
-          semester: values.semester ?? null,
           createdById: session.user.id,
         },
         transaction,
@@ -511,13 +506,6 @@ export async function updateEnrollmentService(
       };
     }
 
-    if ((values.semester ?? null) !== enrollment.semester) {
-      changes.semester = {
-        from: enrollment.semester ?? "NONE",
-        to: values.semester ?? "NONE",
-      };
-    }
-
     if (values.status !== enrollment.status) {
       changes.status = {
         from: enrollment.status,
@@ -534,7 +522,6 @@ export async function updateEnrollmentService(
       },
       {
         sectionId: values.sectionId,
-        semester: values.semester ?? null,
         status: values.status,
       },
       transaction,

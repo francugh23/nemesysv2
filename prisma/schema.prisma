@@ -89,6 +89,8 @@ model User {
   createdEnrollments   Enrollment[]
   createdGrades        Grade[]
   createdAcademicYears AcademicYear[]
+  createdAcademicTerms AcademicTerm[]
+  createdSubjectOfferings SubjectOffering[]
   auditLogs            AuditLog[]
 }
 
@@ -154,6 +156,29 @@ model Teacher {
   subjectAssignments SubjectAssignment[]
 }
 
+model AcademicTerm {
+  id String @id @default(cuid())
+
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+
+  name      String
+  position  Int
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  subjectOfferings SubjectOfferingTerm[]
+
+  @@unique([academicYearId, position])
+  @@index([academicYearId])
+  @@index([createdById])
+}
+
 model Section {
   id String @id @default(cuid())
 
@@ -198,6 +223,7 @@ model Subject {
   deletedAt DateTime?
 
   assignments SubjectAssignment[]
+  offerings   SubjectOffering[]
   grades      Grade[]
 }
 
@@ -272,10 +298,40 @@ model AcademicYear {
 
   enrollments        Enrollment[]
   subjectAssignments SubjectAssignment[]
+  terms              AcademicTerm[]
+  subjectOfferings   SubjectOffering[]
 
   @@index([status])
   @@index([startDate])
   @@index([createdById])
+}
+
+model SubjectOffering {
+  id String @id @default(cuid())
+  subjectId String
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  academicYearId String
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+  gradeLevel String
+  subjectCode String
+  subjectDescription String
+  createdById String
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  terms SubjectOfferingTerm[]
+  @@index([academicYearId])
+  @@index([subjectId])
+}
+
+model SubjectOfferingTerm {
+  subjectOfferingId String
+  subjectOffering SubjectOffering @relation(fields: [subjectOfferingId], references: [id], onDelete: Restrict)
+  academicTermId String
+  academicTerm AcademicTerm @relation(fields: [academicTermId], references: [id], onDelete: Restrict)
+  @@id([subjectOfferingId, academicTermId])
+  @@index([academicTermId])
 }
 
 model Grade {

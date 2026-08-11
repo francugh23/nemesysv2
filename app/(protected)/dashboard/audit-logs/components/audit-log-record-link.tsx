@@ -10,6 +10,8 @@ const auditLogModuleRoutes: Record<string, string> = {
   Enrollment: "/dashboard/enrollment",
   User: "/dashboard/users",
   AcademicYear: "/dashboard/academic-years",
+  AcademicTerm: "/dashboard/academic-years",
+  SubjectOffering: "/dashboard/subject-offerings",
 };
 
 export function getAuditLogRecordHref(

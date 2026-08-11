@@ -2,7 +2,6 @@ import {
   Prisma,
   type AcademicYearStatus,
   type EnrollmentStatus,
-  type Semester,
 } from "@/app/generated/prisma/client";
 import prisma from "@/lib/prisma";
 
@@ -17,7 +16,6 @@ export interface EnrollmentListFilters {
   gradeLevel?: string;
   academicYearId?: string;
   sectionId?: string;
-  semester?: "FIRST" | "SECOND" | "NONE";
 }
 
 function getEnrollmentListWhere(
@@ -30,8 +28,6 @@ function getEnrollmentListWhere(
     status: filters.status,
     academicYearId: filters.academicYearId,
     sectionId: filters.sectionId,
-    semester:
-      filters.semester === "NONE" ? null : filters.semester,
     section: filters.gradeLevel
       ? {
           gradeLevel: filters.gradeLevel,
@@ -90,7 +86,6 @@ export async function findNonArchivedEnrollments(
       studentId: true,
       sectionId: true,
       academicYearId: true,
-      semester: true,
       status: true,
       createdAt: true,
       updatedAt: true,
@@ -145,14 +140,6 @@ function getEnrollmentGradeSortConditions(filters: EnrollmentListFilters) {
     );
   }
 
-  if (filters.semester === "NONE") {
-    conditions.push(Prisma.sql`"enrollment"."semester" IS NULL`);
-  } else if (filters.semester) {
-    conditions.push(
-      Prisma.sql`"enrollment"."semester" = ${filters.semester}::"Semester"`,
-    );
-  }
-
   if (filters.gradeLevel) {
     conditions.push(
       Prisma.sql`"section"."gradeLevel" = ${filters.gradeLevel}`,
@@ -189,7 +176,6 @@ export async function findNonArchivedEnrollmentsByGrade(
       academicYearId: string;
       academicYear: string;
       academicYearStatus: AcademicYearStatus;
-      semester: Semester | null;
       status: EnrollmentStatus;
       createdAt: Date;
       updatedAt: Date;
@@ -209,7 +195,6 @@ export async function findNonArchivedEnrollmentsByGrade(
       "enrollment"."academicYearId",
       "academicYear"."label" AS "academicYear",
       "academicYear"."status" AS "academicYearStatus",
-      "enrollment"."semester",
       "enrollment"."status",
       "enrollment"."createdAt",
       "enrollment"."updatedAt",
@@ -246,7 +231,6 @@ export async function findNonArchivedEnrollmentsByGrade(
     studentId: enrollment.studentId,
     sectionId: enrollment.sectionId,
     academicYearId: enrollment.academicYearId,
-    semester: enrollment.semester,
     status: enrollment.status,
     createdAt: enrollment.createdAt,
     updatedAt: enrollment.updatedAt,
@@ -344,7 +328,6 @@ export async function findActiveEnrollmentById(
       studentId: true,
       sectionId: true,
       academicYearId: true,
-      semester: true,
       status: true,
       student: {
         select: {

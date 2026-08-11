@@ -60,6 +60,12 @@ test("Subject template emits definition-backed instructions", () => {
     "Text",
     "Only applicable to Grades 11 and 12.",
   ]);
+  assert.equal(
+    subjectImportTemplateDefinition.importWorksheet.fields.some(
+      (field) => field.key === "semester",
+    ),
+    false,
+  );
 });
 
 test("Templates keep Instructions second when additional worksheets are declared", () => {
@@ -114,6 +120,7 @@ test("Definitions preserve existing Student and Subject header aliases", () => {
   assert.equal(normalizeStudentImportHeader("ZIP_code"), "zipCode");
   assert.equal(normalizeSubjectImportHeader("Subject Description"), "description");
   assert.equal(normalizeSubjectImportHeader("strand"), "trackStrand");
+  assert.equal(normalizeSubjectImportHeader("Semester"), undefined);
 });
 
 test("Template cells neutralize formula-like definition text", () => {

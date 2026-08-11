@@ -13,6 +13,7 @@ import {
   ScrollText,
   Settings,
   CalendarRange,
+  Layers,
   LucideIcon,
 } from "lucide-react";
 
@@ -75,6 +76,11 @@ export const navigation = {
           title: "Subjects",
           href: "/dashboard/subjects",
           icon: BookOpen,
+        },
+        {
+          title: "Subject Offerings",
+          href: "/dashboard/subject-offerings",
+          icon: Layers,
         },
         {
           title: "Assignments",

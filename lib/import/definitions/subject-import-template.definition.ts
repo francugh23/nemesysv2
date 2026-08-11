@@ -46,16 +46,6 @@ export const subjectImportTemplateDefinition = {
         format: "Text",
         notes: "Only applicable to Grades 11 and 12.",
       },
-      {
-        key: "semester",
-        canonicalHeader: "Semester",
-        displayLabel: "Semester",
-        required: false,
-        aliases: [],
-        acceptedValues: "FIRST, SECOND",
-        format: "FIRST or SECOND",
-        notes: "Optional semester.",
-      },
     ],
   },
 } satisfies ImportTemplateDefinition;

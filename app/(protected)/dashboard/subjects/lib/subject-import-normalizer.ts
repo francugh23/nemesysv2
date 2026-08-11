@@ -20,20 +20,6 @@ function normalizeGradeLevel(value: unknown) {
   return match?.[1] ?? normalized;
 }
 
-function normalizeSemester(value: unknown) {
-  const normalized = normalizeString(value)?.toUpperCase().replace(/[^A-Z0-9]/g, "");
-
-  if (["1", "1ST", "FIRST", "FIRSTSEMESTER"].includes(normalized ?? "")) {
-    return "FIRST";
-  }
-
-  if (["2", "2ND", "SECOND", "SECONDSEMESTER"].includes(normalized ?? "")) {
-    return "SECOND";
-  }
-
-  return normalized;
-}
-
 export function normalizeSubjectImportRow(row: Record<string, unknown>) {
   const mappedRow = Object.entries(row).reduce<Record<string, unknown>>(
     (normalizedRow, [header, value]) => {
@@ -58,6 +44,5 @@ export function normalizeSubjectImportRow(row: Record<string, unknown>) {
     description: normalizeString(mappedRow.description),
     gradeLevel: identity.gradeLevel || undefined,
     trackStrand: identity.trackStrand ?? undefined,
-    semester: normalizeSemester(mappedRow.semester),
   };
 }

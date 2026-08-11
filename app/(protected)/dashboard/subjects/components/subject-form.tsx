@@ -73,26 +73,6 @@ export function SubjectForm({ form }: SubjectFormProps) {
         <FieldError>{form.formState.errors.trackStrand?.message}</FieldError>
       </Field>
 
-      <Field>
-        <FieldLabel>Semester</FieldLabel>
-        <Select
-          value={form.watch("semester") || undefined}
-          onValueChange={(value) =>
-            form.setValue("semester", value as "FIRST" | "SECOND", {
-              shouldValidate: true,
-            })
-          }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select semester" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="FIRST">First</SelectItem>
-            <SelectItem value="SECOND">Second</SelectItem>
-          </SelectContent>
-        </Select>
-        <FieldError>{form.formState.errors.semester?.message}</FieldError>
-      </Field>
     </div>
   );
 }

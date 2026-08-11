@@ -7,13 +7,6 @@ import {
   SearchableSelect,
   type SearchableSelectOption,
 } from "@/components/ui/searchable-select";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useEnrollmentFormOptions } from "@/hooks/enrollment.hook";
 import type { CreateEnrollmentInput } from "@/schemas";
 
@@ -109,31 +102,6 @@ export function EnrollmentForm({ form }: EnrollmentFormProps) {
         <FieldError>{form.formState.errors.academicYearId?.message}</FieldError>
       </Field>
 
-      <Field>
-        <FieldLabel>Semester (optional)</FieldLabel>
-        <Controller
-          name="semester"
-          control={form.control}
-          render={({ field }) => (
-            <Select
-              value={field.value ?? "NONE"}
-              onValueChange={(value) =>
-                field.onChange(value === "NONE" ? undefined : value)
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select semester" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="NONE">No semester</SelectItem>
-                <SelectItem value="FIRST">First semester</SelectItem>
-                <SelectItem value="SECOND">Second semester</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        />
-        <FieldError>{form.formState.errors.semester?.message}</FieldError>
-      </Field>
     </div>
   );
 }

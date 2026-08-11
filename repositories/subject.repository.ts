@@ -5,7 +5,6 @@ export interface SubjectListFilters {
   search?: string;
   grade?: string;
   trackStrand?: string;
-  semester?: "FIRST" | "SECOND";
 }
 
 const subjectListSelect = {
@@ -14,7 +13,6 @@ const subjectListSelect = {
   description: true,
   gradeLevel: true,
   trackStrand: true,
-  semester: true,
 } satisfies Prisma.SubjectSelect;
 
 export async function findSubjects() {
@@ -40,7 +38,6 @@ function getSubjectListWhere(
     deletedAt: null,
     gradeLevel: filters.grade,
     trackStrand: filters.trackStrand,
-    semester: filters.semester,
     AND: searchTerms.map((term) => ({
       OR: [
         { code: { contains: term, mode: "insensitive" } },
@@ -80,12 +77,6 @@ function getSubjectGradeSortConditions(filters: SubjectListFilters) {
 
   if (filters.trackStrand) {
     conditions.push(Prisma.sql`"trackStrand" = ${filters.trackStrand}`);
-  }
-
-  if (filters.semester) {
-    conditions.push(
-      Prisma.sql`"semester" = ${filters.semester}::"Semester"`,
-    );
   }
 
   for (const term of filters.search?.split(/\s+/).filter(Boolean) ?? []) {
@@ -156,12 +147,6 @@ export async function findSubjectFilterOptionValues() {
       distinct: ["trackStrand"],
       select: { trackStrand: true },
       orderBy: { trackStrand: "asc" },
-    }),
-    prisma.subject.findMany({
-      where: { deletedAt: null, semester: { not: null } },
-      distinct: ["semester"],
-      select: { semester: true },
-      orderBy: { semester: "asc" },
     }),
   ]);
 }
@@ -251,6 +236,7 @@ export async function findActiveSubjectById(
     select: {
       id: true,
       code: true,
+      description: true,
       gradeLevel: true,
       trackStrand: true,
     },

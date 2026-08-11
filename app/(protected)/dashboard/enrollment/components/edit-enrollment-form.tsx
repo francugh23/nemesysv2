@@ -43,7 +43,6 @@ export function EditEnrollmentForm({
     resolver: zodResolver(UpdateEnrollmentSchema),
     defaultValues: {
       sectionId: enrollment.sectionId,
-      semester: enrollment.semester ?? undefined,
       status: enrollment.status,
     },
   });
@@ -116,31 +115,6 @@ export function EditEnrollmentForm({
           <FieldError>{form.formState.errors.sectionId?.message}</FieldError>
         </Field>
 
-        <Field>
-          <FieldLabel>Semester (optional)</FieldLabel>
-          <Controller
-            name="semester"
-            control={form.control}
-            render={({ field }) => (
-              <Select
-                value={field.value ?? "NONE"}
-                onValueChange={(value) =>
-                  field.onChange(value === "NONE" ? undefined : value)
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select semester" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="NONE">No semester</SelectItem>
-                  <SelectItem value="FIRST">First semester</SelectItem>
-                  <SelectItem value="SECOND">Second semester</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          <FieldError>{form.formState.errors.semester?.message}</FieldError>
-        </Field>
 
         <Field>
           <FieldLabel>Enrollment Status</FieldLabel>

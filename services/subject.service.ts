@@ -50,8 +50,6 @@ function getSubjectOrderBy(
       return [{ description: direction }, { id: "asc" }];
     case "trackStrand":
       return [{ trackStrand: direction }, { id: "asc" }];
-    case "semester":
-      return [{ semester: direction }, { id: "asc" }];
     default:
       return [{ id: "asc" }];
   }
@@ -66,7 +64,6 @@ export async function getSubjects(
     search: query.q,
     grade: query.grade,
     trackStrand: query.trackStrand,
-    semester: query.semester,
   };
   const totalCount = await countNonArchivedSubjects(filters);
   const pageCount = Math.ceil(totalCount / query.pageSize);
@@ -100,7 +97,7 @@ export async function getSubjects(
 export async function getSubjectFilterOptions(): Promise<SubjectFilterOptions> {
   await requirePermission(Permissions.SUBJECTS);
 
-  const [gradeLevels, trackStrands, semesters] =
+  const [gradeLevels, trackStrands] =
     await findSubjectFilterOptionValues();
 
   return {
@@ -109,9 +106,6 @@ export async function getSubjectFilterOptions(): Promise<SubjectFilterOptions> {
       .sort((first, second) => Number(first) - Number(second)),
     trackStrands: trackStrands.flatMap((value) =>
       value.trackStrand ? [value.trackStrand] : [],
-    ),
-    semesters: semesters.flatMap((value) =>
-      value.semester ? [value.semester] : [],
     ),
   };
 }
@@ -157,7 +151,6 @@ export async function createSubjectService(
         {
           ...identity,
           description: values.description,
-          semester: values.semester ?? null,
           createdById: session.user.id,
         },
         transaction,
@@ -207,7 +200,6 @@ export async function updateSubjectService(
         {
           ...identity,
           description: values.description,
-          semester: values.semester ?? null,
         },
         transaction,
       );
@@ -281,7 +273,6 @@ export async function importSubjectsService(
           {
             ...identity,
             description: subject.description,
-            semester: subject.semester ?? null,
             createdById: session.user.id,
           },
           transaction,

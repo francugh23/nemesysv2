@@ -17,7 +17,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useEnrollments } from "@/hooks/enrollment.hook";
 import { useTableUrlState } from "@/hooks/use-table-url-state.hook";
 import {
-  EnrollmentSemesterFilterSchema,
   EnrollmentStatusSchema,
   type EnrollmentTableQueryInput,
   type EnrollmentListItem,
@@ -41,7 +40,6 @@ const enrollmentSortFields = [
   "sectionTrackStrand",
   "sectionName",
   "academicYear",
-  "semester",
   "status",
 ] as const;
 
@@ -59,9 +57,6 @@ function EnrollmentPageContent() {
     sortableColumns: enrollmentSortFields,
   });
   const status = EnrollmentStatusSchema.safeParse(tableState.filters.status);
-  const semester = EnrollmentSemesterFilterSchema.safeParse(
-    tableState.filters.semester,
-  );
   const gradeLevel = tableState.filters.gradeLevel.trim();
   const academicYearId = tableState.filters.academicYearId.trim();
   const sectionId = tableState.filters.sectionId.trim();
@@ -69,10 +64,6 @@ function EnrollmentPageContent() {
   const normalizeUrl = useEffectEvent(() => {
     if (tableState.filters.status && !status.success) {
       tableState.setFilter("status", "");
-    }
-
-    if (tableState.filters.semester && !semester.success) {
-      tableState.setFilter("semester", "");
     }
 
     if (tableState.filters.gradeLevel !== gradeLevel) {
@@ -97,7 +88,6 @@ function EnrollmentPageContent() {
     gradeLevel: gradeLevel || undefined,
     academicYearId: academicYearId || undefined,
     sectionId: sectionId || undefined,
-    semester: semester.success ? semester.data : undefined,
     sort: tableState.query.sort as EnrollmentTableQueryInput["sort"],
     direction: tableState.query
       .direction as EnrollmentTableQueryInput["direction"],
@@ -151,13 +141,11 @@ function EnrollmentPageContent() {
   useEffect(() => {
     normalizeUrl();
   }, [
-    semester.success,
     status.success,
     academicYearId,
     gradeLevel,
     search,
     sectionId,
-    tableState.filters.semester,
     tableState.filters.status,
     tableState.query.q,
   ]);

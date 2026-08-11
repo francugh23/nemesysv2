@@ -33,10 +33,6 @@ export function EnrollmentViewDialog({
     enrollment.studentMiddleName,
     enrollment.studentLastName,
   );
-  const semester = enrollment.semester
-    ? enrollment.semester.charAt(0) +
-      enrollment.semester.slice(1).toLowerCase()
-    : null;
   const status =
     enrollment.status.charAt(0) + enrollment.status.slice(1).toLowerCase();
 
@@ -73,7 +69,6 @@ export function EnrollmentViewDialog({
             label="Academic Year"
             value={enrollment.academicYear}
           />
-          <EnrollmentInfoItem label="Semester" value={semester} />
           <div className="space-y-1">
             <p className="text-sm font-medium text-muted-foreground">
               Enrollment Status

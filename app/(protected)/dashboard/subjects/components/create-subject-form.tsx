@@ -24,7 +24,6 @@ export function CreateSubjectForm({ onSuccess }: CreateSubjectFormProps) {
       description: "",
       gradeLevel: undefined,
       trackStrand: "",
-      semester: undefined,
     },
   });
 

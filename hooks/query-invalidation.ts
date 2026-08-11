@@ -15,6 +15,7 @@ export async function invalidateTeacherQueries(queryClient: QueryInvalidator) {
 export async function invalidateSubjectQueries(queryClient: QueryInvalidator) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ["subjects"] }),
+    queryClient.invalidateQueries({ queryKey: ["subject-offering-options"] }),
     queryClient.invalidateQueries({
       queryKey: ["subject-assignment-options"],
     }),
@@ -48,6 +49,20 @@ export async function invalidateAcademicYearQueries(
       queryKey: ["subject-assignment-options"],
     }),
     queryClient.invalidateQueries({ queryKey: ["enrollment-form-options"] }),
+    queryClient.invalidateQueries({ queryKey: ["subject-offering-options"] }),
+  ]);
+}
+
+export async function invalidateAcademicTermQueries(
+  queryClient: QueryInvalidator,
+  academicYearId: string,
+) {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["academic-years"] }),
+    queryClient.invalidateQueries({
+      queryKey: ["academic-terms", academicYearId],
+    }),
+    queryClient.invalidateQueries({ queryKey: ["subject-offering-options"] }),
   ]);
 }
 

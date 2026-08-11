@@ -6,12 +6,6 @@ import { DataTableColumnHeader } from "@/components/data-table/data-table-column
 import type { SubjectListItem } from "@/schemas";
 import { SubjectActions } from "./subject-actions";
 
-function formatSemester(semester: SubjectListItem["semester"]) {
-  if (!semester) return "-";
-
-  return semester === "FIRST" ? "First" : "Second";
-}
-
 interface SubjectColumnProps {
   onEdit: (subject: SubjectListItem) => void;
   onArchive: (subject: SubjectListItem) => void;
@@ -47,13 +41,6 @@ export function subjectColumns({
       <DataTableColumnHeader column={column} title="Track / Strand" />
     ),
     cell: ({ row }) => row.original.trackStrand ?? "-",
-  },
-  {
-    accessorKey: "semester",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Semester" />
-    ),
-    cell: ({ row }) => formatSemester(row.original.semester),
   },
     {
       id: "actions",

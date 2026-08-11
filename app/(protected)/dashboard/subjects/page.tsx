@@ -12,7 +12,6 @@ import { useSubjects } from "@/hooks/subject.hook";
 import { useTableUrlState } from "@/hooks/use-table-url-state.hook";
 import {
   SubjectGradeLevelSchema,
-  SubjectSemesterSchema,
   type SubjectListItem,
   type SubjectTableQueryInput,
 } from "@/schemas";
@@ -34,7 +33,6 @@ const subjectSortFields = [
   "description",
   "gradeLevel",
   "trackStrand",
-  "semester",
 ] as const;
 
 export default function SubjectsPage() {
@@ -51,16 +49,11 @@ function SubjectsPageContent() {
     sortableColumns: subjectSortFields,
   });
   const grade = SubjectGradeLevelSchema.safeParse(tableState.filters.grade);
-  const semester = SubjectSemesterSchema.safeParse(tableState.filters.semester);
   const trackStrand = tableState.filters.trackStrand.trim().slice(0, 100);
   const search = tableState.query.q?.trim().slice(0, 100);
   const normalizeUrl = useEffectEvent(() => {
     if (tableState.filters.grade && !grade.success) {
       tableState.setFilter("grade", "");
-    }
-
-    if (tableState.filters.semester && !semester.success) {
-      tableState.setFilter("semester", "");
     }
 
     if (tableState.filters.trackStrand !== trackStrand) {
@@ -75,7 +68,6 @@ function SubjectsPageContent() {
     q: search || undefined,
     grade: grade.success ? grade.data : undefined,
     trackStrand: trackStrand || undefined,
-    semester: semester.success ? semester.data : undefined,
     sort: tableState.query.sort as SubjectTableQueryInput["sort"],
     direction: tableState.query.direction as SubjectTableQueryInput["direction"],
     page: tableState.query.page,
@@ -125,9 +117,7 @@ function SubjectsPageContent() {
   }, [
     grade.success,
     search,
-    semester.success,
     tableState.filters.grade,
-    tableState.filters.semester,
     tableState.filters.trackStrand,
     tableState.query.q,
     trackStrand,

@@ -78,6 +78,38 @@ export async function findAcademicYearById(
   });
 }
 
+export async function lockAcademicYearForAcademicTerms(
+  id: string,
+  transaction: Prisma.TransactionClient,
+  lock: "SHARE" | "UPDATE" = "SHARE",
+) {
+  const academicYears = await transaction.$queryRaw<
+    Array<{
+      id: string;
+      label: string;
+      startDate: Date;
+      endDate: Date;
+      status: AcademicYearStatus;
+    }>
+  >(
+    lock === "UPDATE"
+      ? Prisma.sql`
+          SELECT "id", "label", "startDate", "endDate", "status"
+          FROM "AcademicYear"
+          WHERE "id" = ${id}
+          FOR UPDATE
+        `
+      : Prisma.sql`
+          SELECT "id", "label", "startDate", "endDate", "status"
+          FROM "AcademicYear"
+          WHERE "id" = ${id}
+          FOR SHARE
+        `,
+  );
+
+  return academicYears[0] ?? null;
+}
+
 export async function findOverlappingAcademicYear(
   startDate: Date,
   endDate: Date,

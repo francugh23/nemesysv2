@@ -6,6 +6,7 @@ import {
   Permissions,
   requirePermission,
 } from "@/lib/authorization";
+import { hasThreeChronologicallyOrderedTerms } from "@/lib/academic-term";
 import prisma from "@/lib/prisma";
 import { createAuditLogs } from "@/repositories/audit.repository";
 import {
@@ -15,9 +16,11 @@ import {
   findAcademicYears,
   findAcademicYearStatusOptionValues,
   findOverlappingAcademicYear,
+  lockAcademicYearForAcademicTerms,
   transitionAcademicYearStatus,
   updateDraftAcademicYear,
 } from "@/repositories/academic-year.repository";
+import { findAcademicTermsByAcademicYear } from "@/repositories/academic-term.repository";
 import type {
   AcademicYearFilterOptions,
   AcademicYearPage,
@@ -299,7 +302,10 @@ async function transitionAcademicYearService(
   const session = await requirePermission(Permissions.ACADEMIC_YEARS);
 
   const operation = async (transaction: Prisma.TransactionClient) => {
-    const academicYear = await findAcademicYearById(id, transaction);
+    const academicYear =
+      action === "ACTIVATE"
+        ? await lockAcademicYearForAcademicTerms(id, transaction, "UPDATE")
+        : await findAcademicYearById(id, transaction);
 
     if (!academicYear) {
       throw new AcademicYearServiceError("Academic year not found.", "NOT_FOUND");
@@ -316,6 +322,27 @@ async function transitionAcademicYearService(
         `Academic year cannot be ${transitionVerb} from ${academicYear.status}.`,
         "INVALID_STATUS",
       );
+    }
+
+    if (action === "ACTIVATE") {
+      const terms = await findAcademicTermsByAcademicYear(
+        academicYear.id,
+        transaction,
+      );
+
+      if (terms.length !== 3) {
+        throw new AcademicYearServiceError(
+          "Academic year must have exactly three terms before activation.",
+          "INVALID_STATUS",
+        );
+      }
+
+      if (!hasThreeChronologicallyOrderedTerms(terms)) {
+        throw new AcademicYearServiceError(
+          "Academic term positions must be in chronological order.",
+          "INVALID_STATUS",
+        );
+      }
     }
 
     const update = await transitionAcademicYearStatus(
