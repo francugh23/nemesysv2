@@ -9,7 +9,7 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-Phase 18C-3 regular JHS baseline Subject and Offering population is complete; authenticated browser verification remains pending before production.
+Phase 19A Student Subject Enrollment persistence foundation is complete; authenticated browser verification for prior Subject Offering work remains pending before production.
 
 ### Current Objective
 
@@ -28,6 +28,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 - Academic Terms under Academic Years, including the approved 2026-2027 three-term calendar and Semester retirement from new Subject and Enrollment writes
 - Subject Offering foundation with explicit Academic Term applicability and no automatic curriculum backfill
 - Regular JHS Grade 7-10 baseline Subject and full-year Offering matrix for Academic Year 2026-2027
+- Student Subject Enrollment persistence foundation with immutable Offering snapshots and exact Term applicability
 - User Management authorized read path, URL-driven server-table UX, audited administrative account creation and administration, forced first-login completion, self-service password change, and credential-driven session invalidation
 - Audit Log Management read-only URL-driven server-table UX, authorized details, multi-action filtering, safe supported-module navigation, immutable historical actor visibility, and export-ready validated query reuse
 - Security Hardening Phase S1 centralized authorization architecture
@@ -58,6 +59,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 - [Phase 18C-1: Academic Terms And Semester Write Retirement](./milestones/phase-18c-1-academic-terms.md)
 - [Phase 18C-2: Subject Offering Foundation](./milestones/phase-18c-2-subject-offerings.md)
 - [Phase 18C-3: Regular JHS Baseline Population](./milestones/phase-18c-3-jhs-baseline.md)
+- [Phase 19A: Student Subject Enrollment Foundation](./milestones/phase-19a-student-subject-enrollment-foundation.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -104,6 +106,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 - Legacy nullable `FIRST | SECOND` Semester values remain physically preserved on Subject and Enrollment records but are excluded from new writes, imports, operational list queries, filters, sorting, and UI. They are not Term data.
 - Subject Offerings are year-specific, soft-archivable records with Subject identity snapshots and explicit Academic Term rows. Offering writes require an ACTIVE Academic Year; JHS Grade 7-10 Offerings require every configured Term. No Offering rows are inferred or backfilled from existing Subjects, Sections, `trackStrand`, or Assignments.
 - The approved 2026-2027 regular JHS baseline contains grade-specific Subjects and full-year Offerings for Filipino, English, Mathematics, Science, Araling Panlipunan, MAPEH, TLE, and GMRC / Values Education in Grades 7 through 10. `FIL`, `ENG`, `MATH`, `SCI`, `AP`, `MAPEH`, `TLE`, and `GMRC` plus grade are internal NEMESYS/SOLARIS identifiers, not asserted DepEd or NVGCHS official codes.
+- Student Subject Enrollment is an additive, audit-ready foundation linking an Enrollment to a source Subject Offering while snapshotting the Offering identity and exact applicable Terms. Its `ACTIVE` and `REPLACED` lifecycle preserves replacement history; no rows are yet materialized automatically or exposed through UI.
 - Academic Year management is available to Super Admin and Registrar through `Permissions.ACADEMIC_YEARS`; Registrar receives narrow `/dashboard/academic-years` shell access without general Dashboard permission.
 - Operational module headers own the primary Add or lifecycle action. Table toolbars contain search and filters on the left and only existing Import actions plus approved or disabled Export controls on the right.
 - The protected shell uses the shared sidebar provider and Base UI modal drawer: desktop state persists through the existing cookie, icon collapse retains tooltips, tablet/mobile navigation is transient below 1024px, and the sticky navbar supplies title, breadcrumbs, notifications placeholder, account controls, and the responsive trigger.
@@ -126,7 +129,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 
 ## Next Planned Milestone
 
-No next milestone is active or approved. Subject Offering design and implementation requires a separately approved JHS curriculum source and explicit SHS Academic, TechPro, and elective-cluster mapping; existing `trackStrand` data must not be blindly migrated. Student Subject Enrollment, TermGrade, manual final grades, Teacher completion, Subject Assignment modernization, Scheduling, Semester column retirement, and automatic rollover remain deferred to separately approved subphases. Teacher and Section import-template integrations; Teacher, Subject, Section, User, and Audit Log export integrations; MFA; recovery; detailed login history; login throttling; breached-password checks; password history; and User archive/restore remain deferred to separately approved milestones.
+No next milestone is active or approved. JHS Student Subject Enrollment materialization and reconciliation, SHS curriculum/individualized selection, TermGrade, manual final grades, Teacher completion, Subject Assignment modernization, Scheduling, Semester column retirement, and automatic rollover remain deferred to separately approved subphases. Existing `trackStrand` data must not be blindly migrated. Teacher and Section import-template integrations; Teacher, Subject, Section, User, and Audit Log export integrations; MFA; recovery; detailed login history; login throttling; breached-password checks; password history; and User archive/restore remain deferred to separately approved milestones.
 
 ## Technology Stack
 

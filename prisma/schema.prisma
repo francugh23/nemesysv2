@@ -49,6 +49,11 @@ enum EnrollmentStatus {
   TRANSFERRED
 }
 
+enum StudentSubjectEnrollmentStatus {
+  ACTIVE
+  REPLACED
+}
+
 enum AcademicYearStatus {
   DRAFT
   ACTIVE
@@ -91,6 +96,7 @@ model User {
   createdAcademicYears AcademicYear[]
   createdAcademicTerms AcademicTerm[]
   createdSubjectOfferings SubjectOffering[]
+  createdStudentSubjectEnrollments StudentSubjectEnrollment[]
   auditLogs            AuditLog[]
 }
 
@@ -173,6 +179,7 @@ model AcademicTerm {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   subjectOfferings SubjectOfferingTerm[]
+  studentSubjectEnrollmentTerms StudentSubjectEnrollmentTerm[]
 
   @@unique([academicYearId, position])
   @@index([academicYearId])
@@ -277,6 +284,7 @@ model Enrollment {
   deletedAt DateTime?
 
   grades Grade[]
+  studentSubjectEnrollments StudentSubjectEnrollment[]
 
   @@unique([studentId, academicYearId])
   @@index([academicYearId])
@@ -321,6 +329,7 @@ model SubjectOffering {
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
   terms SubjectOfferingTerm[]
+  studentSubjectEnrollments StudentSubjectEnrollment[]
   @@index([academicYearId])
   @@index([subjectId])
 }
@@ -331,6 +340,46 @@ model SubjectOfferingTerm {
   academicTermId String
   academicTerm AcademicTerm @relation(fields: [academicTermId], references: [id], onDelete: Restrict)
   @@id([subjectOfferingId, academicTermId])
+  @@index([academicTermId])
+}
+
+model StudentSubjectEnrollment {
+  id String @id @default(cuid())
+
+  enrollmentId String
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+
+  subjectOfferingId String
+  subjectOffering SubjectOffering @relation(fields: [subjectOfferingId], references: [id], onDelete: Restrict)
+
+  subjectCode String
+  subjectDescription String
+  gradeLevel String
+
+  status StudentSubjectEnrollmentStatus @default(ACTIVE)
+  replacedAt DateTime?
+
+  createdById String
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  terms StudentSubjectEnrollmentTerm[]
+
+  @@index([enrollmentId, status])
+  @@index([subjectOfferingId])
+  @@index([createdById])
+}
+
+model StudentSubjectEnrollmentTerm {
+  studentSubjectEnrollmentId String
+  studentSubjectEnrollment StudentSubjectEnrollment @relation(fields: [studentSubjectEnrollmentId], references: [id], onDelete: Restrict)
+
+  academicTermId String
+  academicTerm AcademicTerm @relation(fields: [academicTermId], references: [id], onDelete: Restrict)
+
+  @@id([studentSubjectEnrollmentId, academicTermId])
   @@index([academicTermId])
 }
 
