@@ -73,7 +73,7 @@ export function useUpdateEnrollment() {
       id: string;
       values: Parameters<typeof updateEnrollmentAction>[1];
     }) => updateEnrollmentAction(id, values),
-    onSuccess: async (result) => {
+    onSuccess: async (result, values) => {
       if (result.error) {
         return;
       }
@@ -81,6 +81,9 @@ export function useUpdateEnrollment() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["enrollments"] }),
         queryClient.invalidateQueries({ queryKey: ["students"] }),
+        queryClient.invalidateQueries({
+          queryKey: ["student-subject-enrollments", values.id],
+        }),
         queryClient.invalidateQueries({
           queryKey: ["enrollment-filter-options"],
         }),

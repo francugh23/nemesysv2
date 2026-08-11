@@ -9,7 +9,7 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-Phase 19C Student Subject Enrollment reconciliation lifecycle is complete; authenticated browser verification for prior Subject Offering work remains pending before production.
+Phase 19D Student Subject Enrollment UI is complete; authenticated browser verification for prior Subject Offering work remains pending before production.
 
 ### Current Objective
 
@@ -31,6 +31,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 - Student Subject Enrollment persistence foundation with immutable Offering snapshots and exact Term applicability
 - Regular JHS Grade 7-10 Student Subject Enrollment derivation from the approved baseline Offering matrix
 - Student Subject Enrollment reconciliation history for active Enrollment Section corrections
+- Enrollment-scoped read-only Student Subject Enrollment UI with accessible replacement history
 - User Management authorized read path, URL-driven server-table UX, audited administrative account creation and administration, forced first-login completion, self-service password change, and credential-driven session invalidation
 - Audit Log Management read-only URL-driven server-table UX, authorized details, multi-action filtering, safe supported-module navigation, immutable historical actor visibility, and export-ready validated query reuse
 - Security Hardening Phase S1 centralized authorization architecture
@@ -64,6 +65,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 - [Phase 19A: Student Subject Enrollment Foundation](./milestones/phase-19a-student-subject-enrollment-foundation.md)
 - [Phase 19B: JHS Student Subject Enrollment Derivation](./milestones/phase-19b-jhs-student-subject-enrollment-derivation.md)
 - [Phase 19C: Student Subject Enrollment Reconciliation Lifecycle](./milestones/phase-19c-student-subject-enrollment-reconciliation.md)
+- [Phase 19D: Student Subject Enrollment UI](./milestones/phase-19d-student-subject-enrollment-ui.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -110,7 +112,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 - Legacy nullable `FIRST | SECOND` Semester values remain physically preserved on Subject and Enrollment records but are excluded from new writes, imports, operational list queries, filters, sorting, and UI. They are not Term data.
 - Subject Offerings are year-specific, soft-archivable records with Subject identity snapshots and explicit Academic Term rows. Offering writes require an ACTIVE Academic Year; JHS Grade 7-10 Offerings require every configured Term. No Offering rows are inferred or backfilled from existing Subjects, Sections, `trackStrand`, or Assignments.
 - The approved 2026-2027 regular JHS baseline contains grade-specific Subjects and full-year Offerings for Filipino, English, Mathematics, Science, Araling Panlipunan, MAPEH, TLE, and GMRC / Values Education in Grades 7 through 10. `FIL`, `ENG`, `MATH`, `SCI`, `AP`, `MAPEH`, `TLE`, and `GMRC` plus grade are internal NEMESYS/SOLARIS identifiers, not asserted DepEd or NVGCHS official codes.
-- Student Subject Enrollment is an additive, audit-ready foundation linking an Enrollment to a source Subject Offering while snapshotting the Offering identity and exact applicable Terms. Regular Grade 7-10 Enrollments in Sections without `trackStrand` materialize active records only from the approved Phase 18C-3 baseline Offering code matrix; creation, Terms, and audit records are transactional. Active Enrollment Section corrections compare approved regular-JHS eligibility and grade: same-context corrections retain rows, while changed contexts replace ACTIVE rows historically and derive only approved regular-JHS replacements. UI, SHS, and specialized-program selection remain deferred.
+- Student Subject Enrollment is an additive, audit-ready foundation linking an Enrollment to a source Subject Offering while snapshotting the Offering identity and exact applicable Terms. Regular Grade 7-10 Enrollments in Sections without `trackStrand` materialize active records only from the approved Phase 18C-3 baseline Offering code matrix; creation, Terms, and audit records are transactional. Active Enrollment Section corrections compare approved regular-JHS eligibility and grade: same-context corrections retain rows, while changed contexts replace ACTIVE rows historically and derive only approved regular-JHS replacements. Enrollment Details provides the authorized read-only Enrollment-scoped view, with ACTIVE rows primary and REPLACED history accessible. SHS and specialized-program selection remain deferred.
 - Academic Year management is available to Super Admin and Registrar through `Permissions.ACADEMIC_YEARS`; Registrar receives narrow `/dashboard/academic-years` shell access without general Dashboard permission.
 - Operational module headers own the primary Add or lifecycle action. Table toolbars contain search and filters on the left and only existing Import actions plus approved or disabled Export controls on the right.
 - The protected shell uses the shared sidebar provider and Base UI modal drawer: desktop state persists through the existing cookie, icon collapse retains tooltips, tablet/mobile navigation is transient below 1024px, and the sticky navbar supplies title, breadcrumbs, notifications placeholder, account controls, and the responsive trigger.

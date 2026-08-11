@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { displayValue, formatDateTime, formatFullName } from "@/lib/format";
 import type { EnrollmentListItem } from "@/schemas";
 
+import { StudentSubjectEnrollmentList } from "./student-subject-enrollment-list";
+
 const statusVariants = {
   ACTIVE: "default",
   COMPLETED: "secondary",
@@ -38,7 +40,7 @@ export function EnrollmentViewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-2xl!">
+      <DialogContent className="max-h-[90vh] w-[95vw] max-w-5xl! overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Enrollment Details</DialogTitle>
         </DialogHeader>
@@ -84,6 +86,12 @@ export function EnrollmentViewDialog({
             value={formatDateTime(enrollment.updatedAt)}
           />
         </div>
+
+        <StudentSubjectEnrollmentList
+          key={enrollment.id}
+          enrollmentId={enrollment.id}
+          open={open}
+        />
       </DialogContent>
     </Dialog>
   );

@@ -141,7 +141,7 @@ test("Student Subject Enrollment migration prevents duplicate active Enrollment 
   );
 });
 
-test("Student Subject Enrollment retains replaced history alongside a current row", async () => {
+test("Student Subject Enrollment reads expose active rows and immutable replacement history", async () => {
   try {
     await prisma.$transaction(async (transaction) => {
       const fixture = await createFixture(transaction);
@@ -150,18 +150,40 @@ test("Student Subject Enrollment retains replaced history alongside a current ro
           ...createStudentSubjectEnrollment(fixture),
           status: "REPLACED",
           replacedAt: new Date(),
+          terms: {
+            create: fixture.offering.terms.map(({ academicTermId }) => ({ academicTermId })),
+          },
         },
       });
       const active = await transaction.studentSubjectEnrollment.create({
-        data: createStudentSubjectEnrollment(fixture),
+        data: {
+          ...createStudentSubjectEnrollment(fixture),
+          terms: {
+            create: fixture.offering.terms.map(({ academicTermId }) => ({ academicTermId })),
+          },
+        },
       });
 
       const rows = await findStudentSubjectEnrollments(
         { enrollmentId: fixture.enrollment.id },
         transaction,
       );
+      const activeRows = await findStudentSubjectEnrollments(
+        { enrollmentId: fixture.enrollment.id, status: "ACTIVE" },
+        transaction,
+      );
       assert.deepEqual(new Set(rows.map((row) => row.status)), new Set(["REPLACED", "ACTIVE"]));
       assert.deepEqual(new Set(rows.map((row) => row.id)), new Set([replaced.id, active.id]));
+      assert.ok(rows.every((row) => row.terms.length === fixture.offering.terms.length));
+      assert.ok(
+        rows.every((row) =>
+          row.terms.every(
+            (term, index) =>
+              term.academicTerm.position === index + 1 && term.academicTerm.name,
+          ),
+        ),
+      );
+      assert.deepEqual(activeRows.map((row) => row.id), [active.id]);
       throw new RollbackFixture();
     });
   } catch (error) {
