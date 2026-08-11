@@ -17,7 +17,10 @@ import {
   lockAcademicYearForEnrollment,
   updateEnrollment,
 } from "@/repositories/enrollment.repository";
-import { deriveApprovedRegularJhsStudentSubjectEnrollments } from "@/services/jhs-student-subject-enrollment-derivation.service";
+import {
+  deriveApprovedRegularJhsStudentSubjectEnrollments,
+  reconcileApprovedRegularJhsStudentSubjectEnrollments,
+} from "@/services/jhs-student-subject-enrollment-derivation.service";
 import {
   findActiveSectionForAssignment,
   findActiveSectionsForAssignment,
@@ -551,6 +554,22 @@ export async function updateEnrollmentService(
     if (updateResult.count !== 1) {
       throw new EnrollmentServiceError(
         "Enrollment is no longer active and cannot be updated.",
+      );
+    }
+
+    if (values.sectionId !== enrollment.sectionId) {
+      await reconcileApprovedRegularJhsStudentSubjectEnrollments(
+        {
+          enrollmentId: enrollment.id,
+          academicYearId: enrollment.academicYearId,
+          academicYearLabel: enrollment.academicYear.label,
+          enrollmentStatus: values.status,
+          previousSection: enrollment.section,
+          nextSection: section,
+          studentLrn: enrollment.student.lrn,
+          actorId: session.user.id,
+        },
+        transaction,
       );
     }
 
