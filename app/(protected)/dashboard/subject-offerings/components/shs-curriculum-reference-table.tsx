@@ -8,16 +8,25 @@ import { Badge } from "@/components/ui/badge";
 
 type Reference = Awaited<ReturnType<typeof getShsCurriculumReferencesAction>>[number];
 
+const categoryLabels = {
+  ARTS_SOCIAL_SCIENCE_HUMANITIES: "Arts, Social Science, and Humanities",
+  BUSINESS_ENTREPRENEURSHIP: "Business and Entrepreneurship",
+  SCIENCE_TECHNOLOGY_ENGINEERING_MATHEMATICS: "Science, Technology, Engineering, and Mathematics",
+  ICT_SUPPORT_COMPUTER_PROGRAMMING_TECHNOLOGIES: "ICT Support and Computer Programming Technologies",
+} as const;
+
 const columns: ColumnDef<Reference>[] = [
   { id: "subject", header: "Reference Subject", cell: ({ row }) => `${row.original.subject.code} - ${row.original.subject.description}` },
   { accessorKey: "gradeLevel", header: "Grade", cell: ({ row }) => `Grade ${row.original.gradeLevel}` },
   { accessorKey: "classification", header: "Classification", cell: ({ row }) => row.original.classification.replaceAll("_", " ") },
-  { id: "cluster", header: "Cluster", cell: ({ row }) => row.original.cluster?.name ?? "Core Subject" },
+  { id: "cluster", header: "DepEd Source Cluster", cell: ({ row }) => row.original.cluster?.name ?? "Core Subject" },
+  { id: "schoolCategories", header: "School-Facing Categories", cell: ({ row }) => row.original.schoolCategories.map((category) => categoryLabels[category]).join(", ") || "Unresolved" },
   {
     accessorKey: "termApplicability",
     header: "Term Evidence",
     cell: ({ row }) => {
       if (row.original.termApplicability === "ALL_CONFIGURED_TERMS") return "All configured terms";
+      if (row.original.termApplicability === "EXACT_CONFIGURED_TERMS") return row.original.termPositions.map((position) => `Term ${position}`).join(", ");
       if (row.original.termApplicability === "ONE_CONFIGURED_TERM_UNRESOLVED") return "One term; exact configured Term unresolved";
       return "Not specified by DepEd";
     },

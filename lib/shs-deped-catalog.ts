@@ -4,12 +4,18 @@ export const DEPED_SSHS_G12_PILOT_URL = "https://www.deped.gov.ph/wp-content/upl
 
 type Classification = "CORE" | "ACADEMIC_ELECTIVE" | "TECHPRO_ELECTIVE";
 type Track = "ACADEMIC" | "TECHPRO";
+export type AcademicSchoolCategory =
+  | "ARTS_SOCIAL_SCIENCE_HUMANITIES"
+  | "BUSINESS_ENTREPRENEURSHIP"
+  | "SCIENCE_TECHNOLOGY_ENGINEERING_MATHEMATICS"
+  | "ICT_SUPPORT_COMPUTER_PROGRAMMING_TECHNOLOGIES";
 
 export type DepedShsCatalogCluster = {
   code: string;
   name: string;
   track: Track;
   sourceReference: string;
+  isSchoolFacing: boolean;
 };
 
 export type DepedShsCatalogEntry = {
@@ -19,7 +25,10 @@ export type DepedShsCatalogEntry = {
   classification: Classification;
   clusterCode?: string;
   sourceReference: string;
-  termApplicability: "UNSPECIFIED" | "ALL_CONFIGURED_TERMS" | "ONE_CONFIGURED_TERM_UNRESOLVED";
+  termApplicability: "UNSPECIFIED" | "ALL_CONFIGURED_TERMS" | "ONE_CONFIGURED_TERM_UNRESOLVED" | "EXACT_CONFIGURED_TERMS";
+  termPositions: Array<1 | 2 | 3>;
+  schoolCategories: AcademicSchoolCategory[];
+  offeringClusterCode?: string;
   createOffering: boolean;
 };
 
@@ -27,25 +36,38 @@ const catalogSource = `DepEd SSHS curriculum guides: ${DEPED_SSHS_CATALOG_URL}`;
 const g12PilotSource = `DepEd DM 036, s. 2026 Grade 12 SSHS pilot: ${DEPED_SSHS_G12_PILOT_URL}; ${DEPED_SSHS_CATALOG_URL}`;
 
 export const depedShsCatalogClusters: DepedShsCatalogCluster[] = [
-  { code: "DEPED-ACA-ASSH", name: "Arts, Social Science, and Humanities", track: "ACADEMIC", sourceReference: catalogSource },
-  { code: "DEPED-ACA-BE", name: "Business and Entrepreneurship", track: "ACADEMIC", sourceReference: catalogSource },
-  { code: "DEPED-ACA-STEM", name: "Science, Technology, Engineering, and Mathematics", track: "ACADEMIC", sourceReference: catalogSource },
-  { code: "DEPED-ACA-SHW", name: "Sports, Health, and Wellness", track: "ACADEMIC", sourceReference: catalogSource },
-  { code: "DEPED-ACA-FE", name: "Field Experience", track: "ACADEMIC", sourceReference: catalogSource },
-  { code: "DEPED-TP-AWHC", name: "Aesthetic, Wellness, and Human Care", track: "TECHPRO", sourceReference: catalogSource },
-  { code: "DEPED-TP-AFFI", name: "Agri-Fishery Business and Food Innovation", track: "TECHPRO", sourceReference: catalogSource },
-  { code: "DEPED-TP-ACE", name: "Artisanry and Creative Enterprise", track: "TECHPRO", sourceReference: catalogSource },
-  { code: "DEPED-TP-ASET", name: "Automotive and Small Engine Technologies", track: "TECHPRO", sourceReference: catalogSource },
-  { code: "DEPED-TP-CBT", name: "Construction and Building Technology", track: "TECHPRO", sourceReference: catalogSource },
-  { code: "DEPED-TP-CADT", name: "Creative Arts and Design Technology", track: "TECHPRO", sourceReference: catalogSource },
-  { code: "DEPED-TP-HT", name: "Hospitality and Tourism", track: "TECHPRO", sourceReference: catalogSource },
-  { code: "DEPED-TP-ICT", name: "ICT Support and Computer Programming Technologies", track: "TECHPRO", sourceReference: catalogSource },
-  { code: "DEPED-TP-IT", name: "Industrial Technologies", track: "TECHPRO", sourceReference: catalogSource },
-  { code: "DEPED-TP-MAR", name: "Maritime", track: "TECHPRO", sourceReference: catalogSource },
+  { code: "DEPED-ACA-ASSH", name: "Arts, Social Science, and Humanities", track: "ACADEMIC", sourceReference: catalogSource, isSchoolFacing: true },
+  { code: "DEPED-ACA-BE", name: "Business and Entrepreneurship", track: "ACADEMIC", sourceReference: catalogSource, isSchoolFacing: true },
+  { code: "DEPED-ACA-STEM", name: "Science, Technology, Engineering, and Mathematics", track: "ACADEMIC", sourceReference: catalogSource, isSchoolFacing: true },
+  { code: "DEPED-ACA-SHW", name: "Sports, Health, and Wellness", track: "ACADEMIC", sourceReference: catalogSource, isSchoolFacing: false },
+  { code: "DEPED-ACA-FE", name: "Field Experience", track: "ACADEMIC", sourceReference: catalogSource, isSchoolFacing: false },
+  { code: "DEPED-ACA-ICT", name: "ICT Support and Computer Programming Technologies", track: "ACADEMIC", sourceReference: `${catalogSource}; DepEd DO 017, s. 2026 Annex C ICT Professionals pathway`, isSchoolFacing: true },
+  { code: "DEPED-TP-AWHC", name: "Aesthetic, Wellness, and Human Care", track: "TECHPRO", sourceReference: catalogSource, isSchoolFacing: true },
+  { code: "DEPED-TP-AFFI", name: "Agri-Fishery Business and Food Innovation", track: "TECHPRO", sourceReference: catalogSource, isSchoolFacing: true },
+  { code: "DEPED-TP-ACE", name: "Artisanry and Creative Enterprise", track: "TECHPRO", sourceReference: catalogSource, isSchoolFacing: true },
+  { code: "DEPED-TP-ASET", name: "Automotive and Small Engine Technologies", track: "TECHPRO", sourceReference: catalogSource, isSchoolFacing: true },
+  { code: "DEPED-TP-CBT", name: "Construction and Building Technology", track: "TECHPRO", sourceReference: catalogSource, isSchoolFacing: true },
+  { code: "DEPED-TP-CADT", name: "Creative Arts and Design Technology", track: "TECHPRO", sourceReference: catalogSource, isSchoolFacing: true },
+  { code: "DEPED-TP-HT", name: "Hospitality and Tourism", track: "TECHPRO", sourceReference: catalogSource, isSchoolFacing: true },
+  { code: "DEPED-TP-ICT", name: "ICT Support and Computer Programming Technologies", track: "TECHPRO", sourceReference: catalogSource, isSchoolFacing: true },
+  { code: "DEPED-TP-IT", name: "Industrial Technologies", track: "TECHPRO", sourceReference: catalogSource, isSchoolFacing: true },
+  { code: "DEPED-TP-MAR", name: "Maritime", track: "TECHPRO", sourceReference: catalogSource, isSchoolFacing: true },
 ];
 
 function entries(prefix: string, names: string[], classification: Classification, clusterCode: string | undefined, gradeLevel: "11" | "12", sourceReference: string, termApplicability: DepedShsCatalogEntry["termApplicability"], createOffering: boolean) {
-  return names.map((description, index) => ({ code: `SSHS-G${gradeLevel}-${prefix}-${String(index + 1).padStart(2, "0")}`, description, gradeLevel, classification, clusterCode, sourceReference, termApplicability, createOffering }));
+  return names.map((description, index) => ({
+    code: `SSHS-G${gradeLevel}-${prefix}-${String(index + 1).padStart(2, "0")}`,
+    description,
+    gradeLevel,
+    classification,
+    clusterCode,
+    sourceReference,
+    termApplicability,
+    termPositions: [],
+    schoolCategories: [],
+    offeringClusterCode: createOffering ? clusterCode : undefined,
+    createOffering,
+  }));
 }
 
 const core = ["Effective Communication", "General Mathematics", "General Science", "Life and Career Skills", "Mabisang Komunikasyon", "Pag-aaral ng Kasaysayan at Lipunang Pilipino"];
@@ -56,6 +78,63 @@ const academic = {
   "DEPED-ACA-SHW": ["Exercise and Sports Programming", "First Aid", "Fundamentals of Basic Life Support", "Human Movement 1 - Basic Anatomy in Sports and Exercise", "Human Movement 2 - Motor Skills Development", "Physical Education 1 - Fitness and Recreation", "Physical Education 2 - Sports and Dance", "Sports Activity Management", "Sports Coaching", "Sports Officiating"],
   "DEPED-ACA-FE": ["Arts Apprenticeship - Dance", "Arts Apprenticeship - Literary Arts", "Arts Apprenticeship - Media Arts", "Arts Apprenticeship - Music", "Arts Apprenticeship - Theater Arts", "Arts Apprenticeship - Traditional Cultural Expressions", "Arts Apprenticeship - Visual Arts", "Design and Innovation", "In-Campus Field Exposure for Sports", "Research 1", "Research 2"],
 };
+
+const categoryByCluster: Record<keyof typeof academic, AcademicSchoolCategory[]> = {
+  "DEPED-ACA-ASSH": ["ARTS_SOCIAL_SCIENCE_HUMANITIES"],
+  "DEPED-ACA-BE": ["BUSINESS_ENTREPRENEURSHIP"],
+  "DEPED-ACA-STEM": ["SCIENCE_TECHNOLOGY_ENGINEERING_MATHEMATICS"],
+  "DEPED-ACA-SHW": [],
+  "DEPED-ACA-FE": [],
+};
+
+const ictProfessionalElectives = new Set([
+  "Finite Mathematics 1", "Finite Mathematics 2",
+  "Chemistry 1", "Chemistry 2", "Chemistry 3", "Chemistry 4",
+  "Earth and Space Science 1", "Earth and Space Science 2", "Earth and Space Science 3", "Earth and Space Science 4",
+  "Physics 1", "Physics 2", "Physics 3", "Physics 4",
+  "Advanced Mathematics", "Database Management", "Fundamentals of Data Analytics", "Pre-Calculus", "Basic Calculus",
+]);
+
+const exactAcademicTerms: Record<string, { position: 1 | 2 | 3; offeringClusterCode?: string }> = {
+  "Contemporary Literature 1": { position: 1, offeringClusterCode: "DEPED-ACA-ASSH" },
+  "Biology 1": { position: 1, offeringClusterCode: "DEPED-ACA-STEM" },
+  "Human Movement 1 - Basic Anatomy in Sports and Exercise": { position: 1 },
+  "Creative Industries - Literary Arts": { position: 1, offeringClusterCode: "DEPED-ACA-ASSH" },
+  "Introduction to Organization and Management": { position: 1, offeringClusterCode: "DEPED-ACA-BE" },
+  "Contemporary Literature 2": { position: 2, offeringClusterCode: "DEPED-ACA-ASSH" },
+  "Biology 2": { position: 2, offeringClusterCode: "DEPED-ACA-STEM" },
+  "Human Movement 2 - Motor Skills Development": { position: 2 },
+  "Leadership and Management in the Arts": { position: 2, offeringClusterCode: "DEPED-ACA-ASSH" },
+  "Business 1 - Basic Accounting": { position: 2, offeringClusterCode: "DEPED-ACA-BE" },
+  "Chemistry 1": { position: 3, offeringClusterCode: "DEPED-ACA-STEM" },
+  "Biology 3": { position: 3, offeringClusterCode: "DEPED-ACA-STEM" },
+  "Sports Officiating": { position: 3 },
+  "Filipino Identity Through the Arts": { position: 3, offeringClusterCode: "DEPED-ACA-ASSH" },
+  "Business 2 - Business Finance and Income Taxation": { position: 3, offeringClusterCode: "DEPED-ACA-BE" },
+};
+
+function academicEntries() {
+  return Object.entries(academic).flatMap(([clusterCode, names], index) => names.map((description, entryIndex): DepedShsCatalogEntry => {
+    const evidence = exactAcademicTerms[description];
+    const schoolCategories = [...categoryByCluster[clusterCode as keyof typeof academic]];
+    if (ictProfessionalElectives.has(description)) schoolCategories.push("ICT_SUPPORT_COMPUTER_PROGRAMMING_TECHNOLOGIES");
+    if (clusterCode === "DEPED-ACA-FE" && description.startsWith("Arts Apprenticeship")) schoolCategories.push("ARTS_SOCIAL_SCIENCE_HUMANITIES");
+
+    return {
+      code: `SSHS-G11-AE${index + 1}-${String(entryIndex + 1).padStart(2, "0")}`,
+      description,
+      gradeLevel: "11",
+      classification: "ACADEMIC_ELECTIVE",
+      clusterCode,
+      sourceReference: catalogSource,
+      termApplicability: evidence ? "EXACT_CONFIGURED_TERMS" : "UNSPECIFIED",
+      termPositions: evidence ? [evidence.position] : [],
+      schoolCategories,
+      offeringClusterCode: evidence?.offeringClusterCode,
+      createOffering: Boolean(evidence?.offeringClusterCode),
+    };
+  }));
+}
 const techPro = {
   "DEPED-TP-AWHC": ["Aesthetic Services (Beauty Care)", "Caregiving (Adult Care)", "Caregiving (Child Care)", "Hairdressing Services"],
   "DEPED-TP-AFFI": ["Agricultural Crops Production", "Agro-Entrepreneurship", "Aquaculture", "Fish Capture", "Food Processing", "Organic Agriculture Production", "Poultry Production - Chicken", "Ruminants Production", "Swine Production"],
@@ -71,7 +150,7 @@ const techPro = {
 
 export const depedShsCatalogEntries: DepedShsCatalogEntry[] = [
   ...entries("CORE", core, "CORE", undefined, "11", `${catalogSource}; authority: ${DEPED_SSHS_DO017_URL}`, "ALL_CONFIGURED_TERMS", true),
-  ...Object.entries(academic).flatMap(([clusterCode, names], index) => entries(`AE${index + 1}`, names, "ACADEMIC_ELECTIVE", clusterCode, "11", catalogSource, "UNSPECIFIED", false)),
+  ...academicEntries(),
   ...Object.entries(techPro).flatMap(([clusterCode, names], index) => entries(`TP${index + 1}`, names, "TECHPRO_ELECTIVE", clusterCode, "11", catalogSource, "ALL_CONFIGURED_TERMS", true)),
   ...Object.entries(techPro).flatMap(([clusterCode, names], index) => entries(`TP${index + 1}`, names, "TECHPRO_ELECTIVE", clusterCode, "12", g12PilotSource, "ONE_CONFIGURED_TERM_UNRESOLVED", false)),
 ];

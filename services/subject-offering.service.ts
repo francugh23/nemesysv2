@@ -70,6 +70,7 @@ async function validate(
   if (values.shsContext?.clusterId) {
     const cluster = await findActiveShsCurriculumCluster(values.shsContext.clusterId, tx);
     if (!cluster) throw new SubjectOfferingServiceError("SHS curriculum cluster not found or archived.");
+    if (!cluster.isSchoolFacing) throw new SubjectOfferingServiceError("Source-only SHS curriculum clusters cannot be used by Subject Offerings.");
     if (values.shsContext.classification === "ACADEMIC_ELECTIVE" && cluster.track !== "ACADEMIC") throw new SubjectOfferingServiceError("Academic electives require an Academic curriculum cluster.");
     if (values.shsContext.classification === "TECHPRO_ELECTIVE" && cluster.track !== "TECHPRO") throw new SubjectOfferingServiceError("TechPro electives require a TechPro curriculum cluster.");
   }
@@ -78,6 +79,7 @@ async function validate(
 }
 
 async function validateCluster(values: CreateShsCurriculumClusterInput | UpdateShsCurriculumClusterInput, tx: Prisma.TransactionClient, exclude?: string) {
+  if (values.track === "ACADEMIC") throw new SubjectOfferingServiceError("Academic school-facing categories are fixed by the approved SSHS catalog.");
   const duplicate = await findShsCurriculumClusterDuplicate(values.code, exclude, tx);
   if (duplicate) throw new SubjectOfferingServiceError("An active SHS curriculum cluster already uses this code.");
 }
@@ -180,6 +182,7 @@ export async function updateShsCurriculumClusterService(id: string, values: Upda
   return prisma.$transaction(async (tx) => {
     const cluster = await findShsCurriculumCluster(id, tx);
     if (!cluster) throw new SubjectOfferingServiceError("SHS curriculum cluster not found.");
+    if (cluster.track === "ACADEMIC") throw new SubjectOfferingServiceError("Academic school-facing categories are fixed by the approved SSHS catalog.");
     await validateCluster(values, tx, id);
     const updated = await updateShsCurriculumCluster(id, values, tx);
     await createAuditLogs([{ userId: session.user.id, action: "UPDATE", module: "ShsCurriculumCluster", recordId: id, recordName: updated.name, description: "Updated SHS curriculum cluster." }], tx);
@@ -192,6 +195,7 @@ export async function archiveShsCurriculumClusterService(id: string) {
   return prisma.$transaction(async (tx) => {
     const cluster = await findShsCurriculumCluster(id, tx);
     if (!cluster) throw new SubjectOfferingServiceError("SHS curriculum cluster not found.");
+    if (cluster.track === "ACADEMIC") throw new SubjectOfferingServiceError("Academic school-facing categories are fixed by the approved SSHS catalog.");
     await archiveShsCurriculumCluster(id, tx);
     await createAuditLogs([{ userId: session.user.id, action: "ARCHIVE", module: "ShsCurriculumCluster", recordId: id, recordName: cluster.name, description: "Archived SHS curriculum cluster." }], tx);
     return id;

@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 
 import type { CreateSubjectOfferingInput } from "@/schemas";
 
-const clusterSelect = { id: true, code: true, name: true, track: true } satisfies Prisma.ShsCurriculumClusterSelect;
+const clusterSelect = { id: true, code: true, name: true, track: true, isSchoolFacing: true } satisfies Prisma.ShsCurriculumClusterSelect;
 const select = {
   id: true, subjectId: true, academicYearId: true, gradeLevel: true, subjectCode: true, subjectDescription: true, deletedAt: true,
   academicYear: { select: { label: true, status: true } },
@@ -81,7 +81,7 @@ export async function findOfferingFilterOptions() {
 }
 export async function findApprovedRegularJhsOfferings(academicYearId: string, gradeLevel: string, subjectCodes: string[], tx: Prisma.TransactionClient) { return tx.subjectOffering.findMany({ where: { academicYearId, gradeLevel, subjectCode: { in: subjectCodes }, deletedAt: null }, select: { id: true, gradeLevel: true, subjectCode: true, subjectDescription: true, terms: { select: { academicTermId: true }, orderBy: { academicTerm: { position: "asc" } } } }, orderBy: { subjectCode: "asc" } }); }
 
-export async function findShsCurriculumClusters(includeArchived = false) { return prisma.shsCurriculumCluster.findMany({ where: includeArchived ? undefined : { deletedAt: null }, select: clusterSelect, orderBy: [{ track: "asc" }, { name: "asc" }] }); }
+export async function findShsCurriculumClusters(includeArchived = false) { return prisma.shsCurriculumCluster.findMany({ where: includeArchived ? undefined : { deletedAt: null, isSchoolFacing: true }, select: clusterSelect, orderBy: [{ track: "asc" }, { name: "asc" }] }); }
 export async function findShsCurriculumReferences() {
   return prisma.shsCurriculumReference.findMany({
     select: {
@@ -91,14 +91,16 @@ export async function findShsCurriculumReferences() {
       curriculumStatus: true,
       sourceReference: true,
       termApplicability: true,
+      termPositions: true,
+      schoolCategories: true,
       subject: { select: { code: true, description: true } },
       cluster: { select: clusterSelect },
     },
     orderBy: [{ gradeLevel: "asc" }, { classification: "asc" }, { subject: { code: "asc" } }],
   });
 }
-export async function findActiveShsCurriculumCluster(id: string, tx: Prisma.TransactionClient) { return tx.shsCurriculumCluster.findFirst({ where: { id, deletedAt: null }, select: clusterSelect }); }
-export async function findShsCurriculumCluster(id: string, tx: Prisma.TransactionClient) { return tx.shsCurriculumCluster.findFirst({ where: { id, deletedAt: null }, select: { ...clusterSelect, createdAt: true } }); }
+export async function findActiveShsCurriculumCluster(id: string, tx: Prisma.TransactionClient) { return tx.shsCurriculumCluster.findFirst({ where: { id, deletedAt: null, isSchoolFacing: true }, select: clusterSelect }); }
+export async function findShsCurriculumCluster(id: string, tx: Prisma.TransactionClient) { return tx.shsCurriculumCluster.findFirst({ where: { id, deletedAt: null, isSchoolFacing: true }, select: { ...clusterSelect, createdAt: true, sourceReference: true } }); }
 export async function findShsCurriculumClusterDuplicate(code: string, excludeId: string | undefined, tx: Prisma.TransactionClient) { return tx.shsCurriculumCluster.findFirst({ where: { code: { equals: code, mode: "insensitive" }, deletedAt: null, id: excludeId ? { not: excludeId } : undefined }, select: { id: true } }); }
 export async function createShsCurriculumCluster(data: Prisma.ShsCurriculumClusterUncheckedCreateInput, tx: Prisma.TransactionClient) { return tx.shsCurriculumCluster.create({ data, select: clusterSelect }); }
 export async function updateShsCurriculumCluster(id: string, data: Prisma.ShsCurriculumClusterUncheckedUpdateInput, tx: Prisma.TransactionClient) { return tx.shsCurriculumCluster.update({ where: { id }, data, select: clusterSelect }); }

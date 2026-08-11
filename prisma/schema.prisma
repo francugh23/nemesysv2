@@ -81,6 +81,14 @@ enum ShsCurriculumReferenceTermApplicability {
   UNSPECIFIED
   ALL_CONFIGURED_TERMS
   ONE_CONFIGURED_TERM_UNRESOLVED
+  EXACT_CONFIGURED_TERMS
+}
+
+enum ShsAcademicSchoolCategory {
+  ARTS_SOCIAL_SCIENCE_HUMANITIES
+  BUSINESS_ENTREPRENEURSHIP
+  SCIENCE_TECHNOLOGY_ENGINEERING_MATHEMATICS
+  ICT_SUPPORT_COMPUTER_PROGRAMMING_TECHNOLOGIES
 }
 
 model User {
@@ -369,6 +377,7 @@ model ShsCurriculumCluster {
   name String
   track ShsCurriculumClusterTrack
   sourceReference String?
+  isSchoolFacing Boolean @default(true)
 
   createdById String
   createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
@@ -398,6 +407,8 @@ model ShsCurriculumReference {
 
   sourceReference String
   termApplicability ShsCurriculumReferenceTermApplicability
+  termPositions Int[] @default([])
+  schoolCategories ShsAcademicSchoolCategory[] @default([])
 
   createdById String
   createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)

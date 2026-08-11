@@ -5,19 +5,40 @@ export async function findCatalogActor(id: string, tx: Prisma.TransactionClient)
 }
 
 export async function findCatalogCluster(code: string, tx: Prisma.TransactionClient) {
-  return tx.shsCurriculumCluster.findFirst({ where: { code, deletedAt: null }, select: { id: true, track: true } });
+  return tx.shsCurriculumCluster.findFirst({
+    where: { code, deletedAt: null },
+    select: { id: true, code: true, name: true, track: true, sourceReference: true, isSchoolFacing: true },
+  });
 }
 
 export async function createCatalogCluster(data: Prisma.ShsCurriculumClusterUncheckedCreateInput, tx: Prisma.TransactionClient) {
-  return tx.shsCurriculumCluster.create({ data, select: { id: true, track: true } });
+  return tx.shsCurriculumCluster.create({ data, select: { id: true, code: true, name: true, track: true, sourceReference: true, isSchoolFacing: true } });
+}
+
+export async function updateCatalogClusterSchoolFacing(id: string, isSchoolFacing: boolean, tx: Prisma.TransactionClient) {
+  return tx.shsCurriculumCluster.update({ where: { id }, data: { isSchoolFacing }, select: { id: true } });
+}
+
+export async function findOtherAcademicSchoolFacingClusters(catalogCodes: string[], tx: Prisma.TransactionClient) {
+  return tx.shsCurriculumCluster.findMany({
+    where: { track: "ACADEMIC", deletedAt: null, isSchoolFacing: true, code: { notIn: catalogCodes } },
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      sourceReference: true,
+      _count: { select: { references: true, subjectOfferingContexts: true } },
+    },
+    orderBy: { code: "asc" },
+  });
 }
 
 export async function findCatalogSubject(code: string, tx: Prisma.TransactionClient) {
-  return tx.subject.findFirst({ where: { code, deletedAt: null }, select: { id: true, gradeLevel: true } });
+  return tx.subject.findFirst({ where: { code, deletedAt: null }, select: { id: true, code: true, description: true, gradeLevel: true } });
 }
 
 export async function createCatalogSubject(data: Prisma.SubjectUncheckedCreateInput, tx: Prisma.TransactionClient) {
-  return tx.subject.create({ data, select: { id: true, gradeLevel: true } });
+  return tx.subject.create({ data, select: { id: true, code: true, description: true, gradeLevel: true } });
 }
 
 export async function findCatalogReference(subjectId: string, tx: Prisma.TransactionClient) {
@@ -31,6 +52,8 @@ export async function findCatalogReference(subjectId: string, tx: Prisma.Transac
       clusterId: true,
       sourceReference: true,
       termApplicability: true,
+      termPositions: true,
+      schoolCategories: true,
     },
   });
 }
