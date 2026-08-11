@@ -61,6 +61,22 @@ enum AcademicYearStatus {
   ARCHIVED
 }
 
+enum ShsSubjectClassification {
+  CORE
+  ACADEMIC_ELECTIVE
+  TECHPRO_ELECTIVE
+}
+
+enum ShsCurriculumStatus {
+  PROVISIONAL_DEPED
+  SCHOOL_APPROVED
+}
+
+enum ShsCurriculumClusterTrack {
+  ACADEMIC
+  TECHPRO
+}
+
 model User {
   id String @id @default(cuid())
 
@@ -96,6 +112,8 @@ model User {
   createdAcademicYears AcademicYear[]
   createdAcademicTerms AcademicTerm[]
   createdSubjectOfferings SubjectOffering[]
+  createdShsCurriculumClusters ShsCurriculumCluster[]
+  createdSubjectOfferingShsContexts SubjectOfferingShsContext[]
   createdStudentSubjectEnrollments StudentSubjectEnrollment[]
   auditLogs            AuditLog[]
 }
@@ -329,9 +347,54 @@ model SubjectOffering {
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
   terms SubjectOfferingTerm[]
+  shsContext SubjectOfferingShsContext?
   studentSubjectEnrollments StudentSubjectEnrollment[]
   @@index([academicYearId])
   @@index([subjectId])
+}
+
+model ShsCurriculumCluster {
+  id String @id @default(cuid())
+
+  code String
+  name String
+  track ShsCurriculumClusterTrack
+
+  createdById String
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  subjectOfferingContexts SubjectOfferingShsContext[]
+
+  @@index([track])
+  @@index([createdById])
+}
+
+model SubjectOfferingShsContext {
+  subjectOfferingId String @id
+  subjectOffering SubjectOffering @relation(fields: [subjectOfferingId], references: [id], onDelete: Restrict)
+
+  classification ShsSubjectClassification
+  curriculumStatus ShsCurriculumStatus
+
+  clusterId String?
+  cluster ShsCurriculumCluster? @relation(fields: [clusterId], references: [id], onDelete: Restrict)
+
+  sourceReference String?
+  approvalReference String?
+
+  createdById String
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clusterId])
+  @@index([curriculumStatus])
+  @@index([createdById])
 }
 
 model SubjectOfferingTerm {
@@ -355,6 +418,13 @@ model StudentSubjectEnrollment {
   subjectCode String
   subjectDescription String
   gradeLevel String
+
+  shsClassification ShsSubjectClassification?
+  shsClusterCode String?
+  shsClusterName String?
+  shsCurriculumStatus ShsCurriculumStatus?
+  shsSourceReference String?
+  shsApprovalReference String?
 
   status StudentSubjectEnrollmentStatus @default(ACTIVE)
   replacedAt DateTime?

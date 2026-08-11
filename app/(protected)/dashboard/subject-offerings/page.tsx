@@ -16,6 +16,7 @@ import {
   CreateSubjectOfferingDialog,
   EditSubjectOfferingDialog,
 } from "./components/subject-offering-dialogs";
+import { ShsCurriculumClusterDialog } from "./components/shs-curriculum-cluster-dialog";
 import type { SubjectOfferingListItem } from "./components/subject-offering-types";
 
 const filterKeys = ["academicYearId", "gradeLevel"] as const;
@@ -97,7 +98,7 @@ function SubjectOfferingsPageContent() {
           <h1 className="text-2xl font-semibold">Subject Offerings</h1>
           <p className="text-sm text-muted-foreground">Manage subjects offered by grade level and academic year.</p>
         </div>
-        <CrudToolbar primaryAction={<CreateSubjectOfferingDialog />} />
+        <CrudToolbar primaryAction={<CreateSubjectOfferingDialog />} actions={<ShsCurriculumClusterDialog />} />
       </div>
 
       <Card>

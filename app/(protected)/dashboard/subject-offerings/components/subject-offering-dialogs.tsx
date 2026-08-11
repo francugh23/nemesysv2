@@ -40,9 +40,18 @@ function OfferingForm({
       ? {
           subjectId: offering.subjectId,
           academicYearId: offering.academicYearId,
-          gradeLevel: offering.gradeLevel as "7" | "8" | "9" | "10" | "11" | "12",
-          academicTermIds: offering.terms.map((term) => term.academicTermId),
-        }
+           gradeLevel: offering.gradeLevel as "7" | "8" | "9" | "10" | "11" | "12",
+           academicTermIds: offering.terms.map((term) => term.academicTermId),
+           shsContext: offering.shsContext
+             ? {
+                 classification: offering.shsContext.classification,
+                 curriculumStatus: offering.shsContext.curriculumStatus,
+                 clusterId: offering.shsContext.cluster?.id,
+                 sourceReference: offering.shsContext.sourceReference ?? undefined,
+                 approvalReference: offering.shsContext.approvalReference ?? undefined,
+               }
+             : undefined,
+         }
       : { subjectId: "", academicYearId: "", gradeLevel: undefined, academicTermIds: [] },
   });
   const mutation = offering ? updateOffering : createOffering;

@@ -12,6 +12,7 @@ const auditLogModuleRoutes: Record<string, string> = {
   AcademicYear: "/dashboard/academic-years",
   AcademicTerm: "/dashboard/academic-years",
   SubjectOffering: "/dashboard/subject-offerings",
+  ShsCurriculumCluster: "/dashboard/subject-offerings",
 };
 
 export function getAuditLogRecordHref(

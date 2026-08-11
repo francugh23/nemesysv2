@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import {
   SearchableSelect,
   type SearchableSelectOption,
@@ -28,6 +29,7 @@ interface SubjectOfferingFormProps {
 export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
   const { data: options, isLoading } = useSubjectOfferingOptions();
   const gradeLevel = form.watch("gradeLevel");
+  const classification = form.watch("shsContext.classification");
   const academicYearId = form.watch("academicYearId");
   const academicYear = options?.academicYears.find(
     (year) => year.id === academicYearId,
@@ -80,6 +82,15 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
               onValueChange={(value) => {
                 field.onChange(value);
                 form.setValue("subjectId", "");
+                if (value && ["7", "8", "9", "10"].includes(value)) {
+                  form.setValue("shsContext", undefined);
+                } else if (value && !form.getValues("shsContext")) {
+                  form.setValue("shsContext", {
+                    classification: "CORE",
+                    curriculumStatus: "PROVISIONAL_DEPED",
+                    sourceReference: "",
+                  });
+                }
               }}
             >
               <SelectTrigger>
@@ -97,6 +108,84 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
         />
         <FieldError>{form.formState.errors.gradeLevel?.message}</FieldError>
       </Field>
+
+      {["11", "12"].includes(gradeLevel ?? "") && (
+        <div className="grid gap-4 rounded-lg border p-4 md:col-span-2 md:grid-cols-2">
+          <div className="md:col-span-2">
+            <p className="font-medium">SSHS Curriculum Context</p>
+            <p className="text-sm text-muted-foreground">This describes the offering configuration. It does not create student curriculum records.</p>
+          </div>
+          <Field>
+            <FieldLabel>Classification</FieldLabel>
+            <Controller
+              name="shsContext.classification"
+              control={form.control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={(value) => {
+                  field.onChange(value);
+                  if (value === "CORE") form.setValue("shsContext.clusterId", undefined);
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Select classification" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CORE">Core Subject</SelectItem>
+                    <SelectItem value="ACADEMIC_ELECTIVE">Academic Elective</SelectItem>
+                    <SelectItem value="TECHPRO_ELECTIVE">TechPro Elective</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <FieldError>{form.formState.errors.shsContext?.classification?.message}</FieldError>
+          </Field>
+          <Field>
+            <FieldLabel>Curriculum Status</FieldLabel>
+            <Controller
+              name="shsContext.curriculumStatus"
+              control={form.control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PROVISIONAL_DEPED">Provisional DepEd</SelectItem>
+                    <SelectItem value="SCHOOL_APPROVED">School Approved</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <FieldError>{form.formState.errors.shsContext?.curriculumStatus?.message}</FieldError>
+          </Field>
+          {classification !== "CORE" && (
+            <Field>
+              <FieldLabel>Curriculum Cluster</FieldLabel>
+              <Controller
+                name="shsContext.clusterId"
+                control={form.control}
+                render={({ field }) => (
+                  <SearchableSelect
+                    value={field.value ?? ""}
+                    onValueChange={field.onChange}
+                    options={(options?.shsClusters ?? [])
+                      .filter((cluster) => classification === "ACADEMIC_ELECTIVE" ? cluster.track === "ACADEMIC" : cluster.track === "TECHPRO")
+                      .map((cluster) => ({ value: cluster.id, label: cluster.name, searchValue: `${cluster.code} ${cluster.name}` }))}
+                    placeholder="Select active cluster"
+                    disabled={isLoading}
+                  />
+                )}
+              />
+              <FieldError>{form.formState.errors.shsContext?.clusterId?.message}</FieldError>
+            </Field>
+          )}
+          <Field className={classification === "CORE" ? "md:col-span-2" : undefined}>
+            <FieldLabel>DepEd Source Reference</FieldLabel>
+            <Controller name="shsContext.sourceReference" control={form.control} render={({ field }) => <Input {...field} value={field.value ?? ""} placeholder="Required for provisional DepEd configuration" />} />
+            <FieldError>{form.formState.errors.shsContext?.sourceReference?.message}</FieldError>
+          </Field>
+          <Field className="md:col-span-2">
+            <FieldLabel>School Approval Reference</FieldLabel>
+            <Controller name="shsContext.approvalReference" control={form.control} render={({ field }) => <Input {...field} value={field.value ?? ""} placeholder="Required for school-approved configuration" />} />
+            <FieldError>{form.formState.errors.shsContext?.approvalReference?.message}</FieldError>
+          </Field>
+        </div>
+      )}
 
       <Field className="md:col-span-2">
         <FieldLabel>Subject</FieldLabel>

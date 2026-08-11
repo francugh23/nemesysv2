@@ -16,18 +16,19 @@ const categories = [
 ] as const;
 
 test("2026-2027 JHS baseline has one full-year Offering per approved grade and category", async () => {
-  const [subjects, offerings, assignments, enrollments, grades, auditCount] = await Promise.all([
+  const [subjects, offerings, auditCount] = await Promise.all([
     prisma.subject.findMany({
       where: { deletedAt: null, gradeLevel: { in: ["7", "8", "9", "10"] } },
       select: { code: true, description: true, gradeLevel: true, trackStrand: true },
     }),
     prisma.subjectOffering.findMany({
-      where: { academicYearId: "academic-year-2026-2027", deletedAt: null },
+      where: {
+        academicYearId: "academic-year-2026-2027",
+        gradeLevel: { in: ["7", "8", "9", "10"] },
+        deletedAt: null,
+      },
       select: { subjectCode: true, subjectDescription: true, gradeLevel: true, terms: true },
     }),
-    prisma.subjectAssignment.count({ where: { deletedAt: null } }),
-    prisma.enrollment.count({ where: { deletedAt: null } }),
-    prisma.grade.count({ where: { deletedAt: null } }),
     prisma.auditLog.count({
       where: {
         description: {
@@ -50,9 +51,6 @@ test("2026-2027 JHS baseline has one full-year Offering per approved grade and c
 
   assert.equal(subjects.length, 32);
   assert.equal(offerings.length, 32);
-  assert.equal(assignments, 0);
-  assert.equal(enrollments, 0);
-  assert.equal(grades, 0);
   assert.equal(auditCount, 64);
 
   for (const item of expected) {

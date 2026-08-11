@@ -5,6 +5,7 @@ import { MoreHorizontal } from "lucide-react";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +45,23 @@ export function subjectOfferingColumns({
       id: "terms",
       header: "Terms",
       cell: ({ row }) => row.original.terms.map((term) => term.academicTerm.name).join(", "),
+    },
+    {
+      id: "shsContext",
+      header: "SSHS Context",
+      cell: ({ row }) => {
+        const context = row.original.shsContext;
+        if (!context) return "-";
+        return (
+          <div className="flex flex-wrap gap-1">
+            <Badge variant="outline">{context.classification.replaceAll("_", " ")}</Badge>
+            <Badge variant={context.curriculumStatus === "SCHOOL_APPROVED" ? "default" : "secondary"}>
+              {context.curriculumStatus === "SCHOOL_APPROVED" ? "School Approved" : "Provisional DepEd"}
+            </Badge>
+            {context.cluster && <Badge variant="outline">{context.cluster.name}</Badge>}
+          </div>
+        );
+      },
     },
     {
       id: "actions",
