@@ -12,6 +12,7 @@ import { CrudToolbar } from "@/components/common/crud-toolbar";
 import { DataTable, resolveServerPagination } from "@/components/data-table";
 import { AcademicYearTableSkeleton } from "@/components/skeletons/academic-year-table-skeleton";
 import { Button } from "@/components/ui/button";
+import { useSession } from "next-auth/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAcademicYears } from "@/hooks/academic-year.hook";
 import { useTableUrlState } from "@/hooks/use-table-url-state.hook";
@@ -48,6 +49,8 @@ export default function AcademicYearsPage() {
 }
 
 function AcademicYearsPageContent() {
+  const { data: session } = useSession();
+  const canAdoptCurriculum = session?.user.role === "SUPER_ADMIN";
   const tableState = useTableUrlState({
     filterKeys: academicYearFilterKeys,
     sortableColumns: academicYearSortFields,
@@ -228,6 +231,10 @@ function AcademicYearsPageContent() {
             dialog={dialog}
             instanceId={instanceId}
             onClose={closeDialog}
+            canAdoptCurriculum={canAdoptCurriculum}
+            onAdoptCurriculum={(academicYear) =>
+              openDialog(academicYear, "adopt-curriculum")
+            }
           />
         </CardContent>
       </Card>

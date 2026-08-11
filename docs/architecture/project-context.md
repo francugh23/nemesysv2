@@ -9,11 +9,11 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-Phase 21A Academic Curriculum Configuration Hierarchy is complete; authenticated browser verification remains pending before production.
+Phase 21B Curriculum Adoption and Rollover is complete; authenticated browser verification remains pending before production.
 
 ### Current Objective
 
-Academic Year is now the canonical database-backed period identity for Enrollment and Subject Assignment, with configurable date-bounded Academic Terms, guarded lifecycle management, historical preservation, and ACTIVE-only operational selectors.
+Academic Year is the canonical period identity for academic configuration and operations, with explicit Term mapping and transactional Curriculum adoption from a stable source into a DRAFT destination while preserving source and student history.
 
 ### Completed Modules
 
@@ -37,6 +37,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 - Controlled provisional-to-school-approved SSHS Offering promotion with approval actor/reference/audit, plus explicit Grade 11/12 Enrollment curriculum selection and immutable replacement history
 - Controlled Enrollment terminal transitions with confirmation, transactional Student synchronization and audit, parent-authoritative subject operation, corrected shared pagination, targeted list filtering, and Audit Log export
 - Academic configuration hierarchy with reusable Subjects, Academic Year-owned Terms, year-specific Curriculum terminology over Subject Offerings, and Enrollment-scoped student snapshots
+- Explicit Super Admin-only Curriculum adoption from ACTIVE, LOCKED, or ARCHIVED source years into DRAFT destination years, with deliberate Term mapping, atomic conflict handling, provisional SSHS carry-forward, and audit-backed provenance
 - User Management authorized read path, URL-driven server-table UX, audited administrative account creation and administration, forced first-login completion, self-service password change, and credential-driven session invalidation
 - Audit Log Management read-only URL-driven server-table UX, authorized details, multi-action filtering, safe supported-module navigation, immutable historical actor visibility, and export-ready validated query reuse
 - Security Hardening Phase S1 centralized authorization architecture
@@ -76,6 +77,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 - [Phase 20C: SSHS Student Curriculum Selection](./milestones/phase-20c-shs-student-curriculum-selection.md)
 - [Phase 21: Enrollment Lifecycle Management And Shared UI Stabilization](./milestones/phase-21-enrollment-lifecycle-ui-stabilization.md)
 - [Phase 21A: Academic Curriculum Configuration Hierarchy](./milestones/phase-21a-academic-curriculum-hierarchy.md)
+- [Phase 21B: Curriculum Adoption And Rollover](./milestones/phase-21b-curriculum-adoption.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -131,6 +133,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 - Audit Log complete filtered CSV/XLSX export uses the shared bounded repeatable-read export architecture and excludes metadata. Student and Subject remain the only import workflows; Subject import invalidates dependent Offering options.
 - Academic configuration remains separated across Academic Year with nested Terms, Subjects, Subject Offerings, and Enrollment-scoped Student Subject Enrollment. A future route-linked Academic Setup shell is preferred over model merging or a monolithic stepper.
 - Curriculum is the user-facing module terminology for the existing `/dashboard/subject-offerings` route and `SubjectOffering` architecture. Subjects remain reusable grade-specific definitions; Curriculum connects them to an Academic Year, grade, and Terms; Enrollment owns student-specific materialization and selection. Record-level operations retain the precise Subject Offering domain name.
+- Curriculum adoption is an explicit Super Admin-only workflow from Academic Year Details. It copies selected valid active Subject Offerings from an ACTIVE, LOCKED, or ARCHIVED source into a different DRAFT destination, requires a complete explicit one-to-one mapping of configured source and destination Terms, reuses Subjects, preserves JHS and SSHS applicability, resets every copied SSHS context to provisional review, and records batch plus per-Offering provenance audits in one serializable transaction. Active destination identities are conflicts, archived source Offerings remain excluded history, and no student-specific or operational records are copied.
 - Academic Year management is available to Super Admin and Registrar through `Permissions.ACADEMIC_YEARS`; Registrar receives narrow `/dashboard/academic-years` shell access without general Dashboard permission.
 - Operational module headers own the primary Add or lifecycle action. Table toolbars contain search and filters on the left and only existing Import actions plus approved or disabled Export controls on the right.
 - The protected shell uses the shared sidebar provider and Base UI modal drawer: desktop state persists through the existing cookie, icon collapse retains tooltips, tablet/mobile navigation is transient below 1024px, and the sticky navbar supplies title, breadcrumbs, notifications placeholder, account controls, and the responsive trigger.
@@ -153,7 +156,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 
 ## Next Planned Milestone
 
-No next milestone is active or approved. Phase 21B is the proposed explicit Curriculum adoption/copy subphase and requires destination-year lifecycle, Term mapping, conflict, archived-record, SSHS approval carry-forward, transaction, and provenance decisions before implementation. Reusable cross-grade SHS Subject decisions, TermGrade, manual final grades, Teacher completion, Subject Assignment modernization, Scheduling, Semester column retirement, automatic rollover, Enrollment reopening/archive/restore, and graduation remain deferred to separately approved subphases. Existing `trackStrand` data must not be blindly migrated. Teacher and Section import workflows; Subject, Teacher, Section, User, Enrollment, and academic-configuration export integrations; Academic Setup route consolidation; MFA; recovery; detailed login history; login throttling; breached-password checks; password history; and User archive/restore remain deferred to separately approved milestones.
+No next milestone is active or approved. Reusable cross-grade SHS Subject decisions, the Academic Term selector correction, TermGrade, manual final grades, Teacher completion, Subject Assignment modernization, Scheduling, Semester column retirement, automatic unattended rollover, Enrollment reopening/archive/restore, and graduation remain deferred to separately approved subphases. Existing `trackStrand` data must not be blindly migrated. Teacher and Section import workflows; Subject, Teacher, Section, User, Enrollment, and academic-configuration export integrations; Academic Setup route consolidation; MFA; recovery; detailed login history; login throttling; breached-password checks; password history; and User archive/restore remain deferred to separately approved milestones.
 
 ## Technology Stack
 

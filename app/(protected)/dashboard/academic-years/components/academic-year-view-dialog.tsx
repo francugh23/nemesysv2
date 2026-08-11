@@ -1,6 +1,6 @@
 "use client";
 
-import { LockKeyhole } from "lucide-react";
+import { Copy, LockKeyhole } from "lucide-react";
 
 import {
   Dialog,
@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { formatDateOnly, formatDateTime } from "@/lib/format";
 import type { AcademicYearListItem } from "@/schemas";
 
@@ -18,10 +19,14 @@ export function AcademicYearViewDialog({
   academicYear,
   open,
   onOpenChange,
+  canAdoptCurriculum = false,
+  onAdoptCurriculum,
 }: {
   academicYear: AcademicYearListItem;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  canAdoptCurriculum?: boolean;
+  onAdoptCurriculum?: () => void;
 }) {
   const isReadOnly =
     academicYear.status === "LOCKED" || academicYear.status === "ARCHIVED";
@@ -70,6 +75,19 @@ export function AcademicYearViewDialog({
           academicYearId={academicYear.id}
           isDraft={academicYear.status === "DRAFT"}
         />
+        {academicYear.status === "DRAFT" && canAdoptCurriculum && (
+          <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/20 p-4">
+            <div>
+              <p className="font-medium">Curriculum Adoption</p>
+              <p className="text-sm text-muted-foreground">
+                Reuse Subjects and copy selected Offerings from a previous or current Academic Year.
+              </p>
+            </div>
+            <Button type="button" variant="outline" onClick={onAdoptCurriculum}>
+              <Copy className="size-4" /> Adopt Curriculum
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

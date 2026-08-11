@@ -5,6 +5,7 @@ import type { AcademicYearListItem } from "@/schemas";
 import { AcademicYearLifecycleDialog } from "./academic-year-lifecycle-dialog";
 import { AcademicYearViewDialog } from "./academic-year-view-dialog";
 import { EditAcademicYearDialog } from "./edit-academic-year-dialog";
+import { CurriculumAdoptionDialog } from "./curriculum-adoption-dialog";
 
 export type AcademicYearDialogType =
   | "view"
@@ -12,6 +13,7 @@ export type AcademicYearDialogType =
   | "activate"
   | "lock"
   | "archive"
+  | "adopt-curriculum"
   | null;
 
 export function AcademicYearDialogManager({
@@ -19,11 +21,15 @@ export function AcademicYearDialogManager({
   dialog,
   instanceId,
   onClose,
+  canAdoptCurriculum,
+  onAdoptCurriculum,
 }: {
   academicYear: AcademicYearListItem | null;
   dialog: AcademicYearDialogType;
   instanceId: number;
   onClose: (instanceId: number) => void;
+  canAdoptCurriculum: boolean;
+  onAdoptCurriculum: (academicYear: AcademicYearListItem) => void;
 }) {
   if (!academicYear) return null;
 
@@ -35,11 +41,20 @@ export function AcademicYearDialogManager({
         academicYear={academicYear}
         open={dialog === "view"}
         onOpenChange={handleOpenChange}
+        canAdoptCurriculum={canAdoptCurriculum}
+        onAdoptCurriculum={() => onAdoptCurriculum(academicYear)}
       />
       {academicYear.status === "DRAFT" && (
         <EditAcademicYearDialog
           academicYear={academicYear}
           open={dialog === "edit"}
+          onOpenChange={handleOpenChange}
+        />
+      )}
+      {academicYear.status === "DRAFT" && canAdoptCurriculum && (
+        <CurriculumAdoptionDialog
+          academicYear={academicYear}
+          open={dialog === "adopt-curriculum"}
           onOpenChange={handleOpenChange}
         />
       )}
