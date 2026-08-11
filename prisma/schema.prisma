@@ -119,6 +119,7 @@ model User {
   createdSubjectOfferings SubjectOffering[]
   createdShsCurriculumClusters ShsCurriculumCluster[]
   createdSubjectOfferingShsContexts SubjectOfferingShsContext[]
+  approvedSubjectOfferingShsContexts SubjectOfferingShsContext[] @relation("ShsCurriculumApprovalActor")
   createdShsCurriculumReferences ShsCurriculumReference[]
   createdStudentSubjectEnrollments StudentSubjectEnrollment[]
   auditLogs            AuditLog[]
@@ -422,6 +423,9 @@ model SubjectOfferingShsContext {
 
   sourceReference String?
   approvalReference String?
+  approvedById String?
+  approvedBy User? @relation("ShsCurriculumApprovalActor", fields: [approvedById], references: [id], onDelete: Restrict)
+  approvedAt DateTime?
 
   createdById String
   createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
@@ -432,6 +436,7 @@ model SubjectOfferingShsContext {
   @@index([clusterId])
   @@index([curriculumStatus])
   @@index([createdById])
+  @@index([approvedById])
 }
 
 model SubjectOfferingTerm {

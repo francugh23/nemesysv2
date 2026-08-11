@@ -16,7 +16,7 @@ export const ShsCurriculumClusterTrackSchema = z.enum(["ACADEMIC", "TECHPRO"]);
 export const SubjectOfferingShsContextSchema = z
   .object({
     classification: ShsSubjectClassificationSchema,
-    curriculumStatus: ShsCurriculumStatusSchema,
+    curriculumStatus: z.literal("PROVISIONAL_DEPED"),
     clusterId: z.string().trim().min(1).optional(),
     sourceReference: z.string().trim().min(1).max(500).optional(),
     approvalReference: z.string().trim().min(1).max(500).optional(),
@@ -31,9 +31,7 @@ export const SubjectOfferingShsContextSchema = z
     if (values.curriculumStatus === "PROVISIONAL_DEPED" && !values.sourceReference) {
       context.addIssue({ code: z.ZodIssueCode.custom, path: ["sourceReference"], message: "Provisional DepEd context requires a source reference." });
     }
-    if (values.curriculumStatus === "SCHOOL_APPROVED" && !values.approvalReference) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ["approvalReference"], message: "School-approved context requires an approval reference." });
-    }
+    if (values.approvalReference) context.addIssue({ code: z.ZodIssueCode.custom, path: ["approvalReference"], message: "School approval uses the controlled approval workflow." });
   });
 
 export const SubjectOfferingFieldsSchema = z
@@ -57,6 +55,12 @@ export const CreateSubjectOfferingSchema = SubjectOfferingFieldsSchema;
 export const UpdateSubjectOfferingSchema = SubjectOfferingFieldsSchema;
 export type CreateSubjectOfferingInput = z.infer<typeof CreateSubjectOfferingSchema>;
 export type UpdateSubjectOfferingInput = z.infer<typeof UpdateSubjectOfferingSchema>;
+
+export const PromoteShsSubjectOfferingSchema = z.object({
+  subjectOfferingId: z.string().min(1),
+  approvalReference: z.string().trim().min(1).max(500),
+});
+export type PromoteShsSubjectOfferingInput = z.infer<typeof PromoteShsSubjectOfferingSchema>;
 
 export const ShsCurriculumClusterFieldsSchema = z.object({
   code: z.string().trim().min(1).max(50).transform((value) => value.toUpperCase()),

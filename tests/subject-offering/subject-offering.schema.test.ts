@@ -13,5 +13,5 @@ test("Subject Offering restricts SSHS context to Grade 11-12 and validates prove
   assert.equal(CreateSubjectOfferingSchema.safeParse({ ...base, gradeLevel: "11" }).success, false);
   assert.equal(CreateSubjectOfferingSchema.safeParse({ ...base, gradeLevel: "11", shsContext: { classification: "CORE", curriculumStatus: "PROVISIONAL_DEPED", sourceReference: "DO 017" } }).success, true);
   assert.equal(CreateSubjectOfferingSchema.safeParse({ ...base, gradeLevel: "11", shsContext: { classification: "ACADEMIC_ELECTIVE", curriculumStatus: "SCHOOL_APPROVED", clusterId: "cluster" } }).success, false);
-  assert.equal(CreateSubjectOfferingSchema.safeParse({ ...base, gradeLevel: "12", shsContext: { classification: "TECHPRO_ELECTIVE", curriculumStatus: "SCHOOL_APPROVED", clusterId: "cluster", approvalReference: "Board Resolution 1" } }).success, true);
+  assert.equal(CreateSubjectOfferingSchema.safeParse({ ...base, gradeLevel: "12", shsContext: { classification: "TECHPRO_ELECTIVE", curriculumStatus: "SCHOOL_APPROVED", clusterId: "cluster", approvalReference: "Board Resolution 1" } }).success, false);
 });

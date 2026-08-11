@@ -8,7 +8,7 @@ const select = {
   id: true, subjectId: true, academicYearId: true, gradeLevel: true, subjectCode: true, subjectDescription: true, deletedAt: true,
   academicYear: { select: { label: true, status: true } },
   terms: { include: { academicTerm: true } },
-  shsContext: { select: { classification: true, curriculumStatus: true, sourceReference: true, approvalReference: true, cluster: { select: clusterSelect } } },
+  shsContext: { select: { classification: true, curriculumStatus: true, sourceReference: true, approvalReference: true, approvedById: true, approvedAt: true, cluster: { select: clusterSelect } } },
 } satisfies Prisma.SubjectOfferingSelect;
 
 type OfferingContext = CreateSubjectOfferingInput["shsContext"];
@@ -31,6 +31,9 @@ export async function updateOffering(id: string, data: Prisma.SubjectOfferingUnc
   return tx.subjectOffering.update({ where: { id }, data: { ...data, terms: { deleteMany: {}, create: termIds.map((academicTermId) => ({ academicTermId })) }, shsContext: context ? { upsert: { create: contextData(context, contextCreatedById), update: { ...context, clusterId: context.clusterId ?? null, sourceReference: context.sourceReference ?? null, approvalReference: context.approvalReference ?? null } } } : undefined }, select });
 }
 export async function archiveOffering(id: string, tx: Prisma.TransactionClient) { return tx.subjectOffering.update({ where: { id }, data: { deletedAt: new Date() }, select }); }
+export async function promoteProvisionalShsOffering(id: string, approvalReference: string, approvedById: string, approvedAt: Date, tx: Prisma.TransactionClient) {
+  return tx.subjectOfferingShsContext.updateMany({ where: { subjectOfferingId: id, curriculumStatus: "PROVISIONAL_DEPED" }, data: { curriculumStatus: "SCHOOL_APPROVED", approvalReference, approvedById, approvedAt } });
+}
 export async function findOfferingOptions() {
   return Promise.all([
     prisma.subject.findMany({ where: { deletedAt: null }, select: { id: true, code: true, description: true, gradeLevel: true }, orderBy: { code: "asc" } }),

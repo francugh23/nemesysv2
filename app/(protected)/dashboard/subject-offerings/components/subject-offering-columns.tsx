@@ -18,9 +18,13 @@ import type { SubjectOfferingListItem } from "./subject-offering-types";
 export function subjectOfferingColumns({
   onEdit,
   onArchive,
+  onApprove,
+  canManageOfferings,
 }: {
   onEdit: (offering: SubjectOfferingListItem) => void;
   onArchive: (offering: SubjectOfferingListItem) => void;
+  onApprove: (offering: SubjectOfferingListItem) => void;
+  canManageOfferings: boolean;
 }): ColumnDef<SubjectOfferingListItem>[] {
   return [
     {
@@ -67,7 +71,7 @@ export function subjectOfferingColumns({
       id: "actions",
       enableSorting: false,
       cell: ({ row }) =>
-        row.original.academicYear.status === "ACTIVE" ? (
+        row.original.academicYear.status === "ACTIVE" && (canManageOfferings || row.original.shsContext?.curriculumStatus === "PROVISIONAL_DEPED") ? (
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
@@ -77,10 +81,11 @@ export function subjectOfferingColumns({
               }
             />
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(row.original)}>Edit</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive" onClick={() => onArchive(row.original)}>
+              {canManageOfferings && row.original.shsContext?.curriculumStatus !== "SCHOOL_APPROVED" && <DropdownMenuItem onClick={() => onEdit(row.original)}>Edit</DropdownMenuItem>}
+              {row.original.shsContext?.curriculumStatus === "PROVISIONAL_DEPED" && <DropdownMenuItem onClick={() => onApprove(row.original)}>Approve for school use</DropdownMenuItem>}
+              {canManageOfferings && <DropdownMenuItem className="text-destructive" onClick={() => onArchive(row.original)}>
                 Archive
-              </DropdownMenuItem>
+              </DropdownMenuItem>}
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null,

@@ -20,6 +20,7 @@ import {
   findShsCurriculumClusterDuplicate,
   findShsCurriculumClusters,
   findShsCurriculumReferences,
+  promoteProvisionalShsOffering,
   updateOffering,
   updateShsCurriculumCluster,
 } from "@/repositories/subject-offering.repository";
@@ -30,6 +31,7 @@ import type {
   SubjectOfferingTableQuery,
   UpdateShsCurriculumClusterInput,
   UpdateSubjectOfferingInput,
+  PromoteShsSubjectOfferingInput,
 } from "@/schemas";
 
 export class SubjectOfferingServiceError extends Error {}
@@ -79,14 +81,14 @@ async function validateCluster(values: CreateShsCurriculumClusterInput | UpdateS
 }
 
 export async function getSubjectOfferings(query: SubjectOfferingTableQuery) {
-  await requirePermission(Permissions.SUBJECTS);
+  await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL);
   const totalCount = await countOfferings(query);
   const page = Math.min(query.page, Math.max(1, Math.ceil(totalCount / query.pageSize)));
   return { items: await findOfferings(query, { skip: (page - 1) * query.pageSize, take: query.pageSize }), totalCount, page, pageSize: query.pageSize, pageCount: Math.ceil(totalCount / query.pageSize) };
 }
 
 export async function getSubjectOfferingOptions() {
-  await requirePermission(Permissions.SUBJECTS);
+  await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL);
   const [[subjects, academicYears], shsClusters] = await Promise.all([
     findOfferingOptions(),
     findShsCurriculumClusters(),
@@ -109,10 +111,27 @@ export async function updateSubjectOfferingService(id: string, values: UpdateSub
   return prisma.$transaction(async (tx) => {
     const existing = await findOffering(id, tx);
     if (!existing) throw new SubjectOfferingServiceError("Subject offering not found.");
+    if (existing.shsContext?.curriculumStatus === "SCHOOL_APPROVED") throw new SubjectOfferingServiceError("School-approved SSHS offerings cannot be changed through the provisional offering workflow.");
     const { subject, year } = await validate(values, tx, id);
     const offering = await updateOffering(id, { subjectId: subject.id, academicYearId: year.id, gradeLevel: values.gradeLevel, subjectCode: subject.code, subjectDescription: subject.description }, values.academicTermIds, values.shsContext, session.user.id, tx);
     await createAuditLogs([{ userId: session.user.id, action: "UPDATE", module: "SubjectOffering", recordId: id, recordName: `${offering.subjectCode} - ${year.label}`, description: "Updated subject offering." }], tx);
     return offering;
+  });
+}
+
+export async function promoteShsSubjectOfferingService(values: PromoteShsSubjectOfferingInput) {
+  const session = await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL);
+  return prisma.$transaction(async (tx) => {
+    const offering = await findOffering(values.subjectOfferingId, tx);
+    if (!offering || offering.deletedAt || !offering.shsContext) throw new SubjectOfferingServiceError("Provisional SSHS offering not found.");
+    assertActive(offering.academicYear);
+    if (offering.gradeLevel !== "11" && offering.gradeLevel !== "12") throw new SubjectOfferingServiceError("Only Grade 11 or 12 SSHS offerings can be approved.");
+    if (offering.shsContext.curriculumStatus !== "PROVISIONAL_DEPED") throw new SubjectOfferingServiceError("Only provisional DepEd SSHS offerings can be approved.");
+    const approvedAt = new Date();
+    const promoted = await promoteProvisionalShsOffering(offering.id, values.approvalReference, session.user.id, approvedAt, tx);
+    if (promoted.count !== 1) throw new SubjectOfferingServiceError("Offering approval could not be completed.");
+    await createAuditLogs([{ userId: session.user.id, action: "UPDATE", module: "SubjectOffering", recordId: offering.id, recordName: `${offering.subjectCode} - ${offering.academicYear.label}`, description: "Approved provisional SSHS subject offering for school use.", metadata: { previousCurriculumStatus: "PROVISIONAL_DEPED", curriculumStatus: "SCHOOL_APPROVED", approvalReference: values.approvalReference, approvedAt: approvedAt.toISOString() } }], tx);
+    return offering.id;
   });
 }
 
@@ -129,12 +148,12 @@ export async function archiveSubjectOfferingService(id: string) {
 }
 
 export async function getShsCurriculumClusters() {
-  await requirePermission(Permissions.SUBJECTS);
+  await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL);
   return findShsCurriculumClusters();
 }
 
 export async function getShsCurriculumReferences() {
-  await requirePermission(Permissions.SUBJECTS);
+  await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL);
   return findShsCurriculumReferences();
 }
 

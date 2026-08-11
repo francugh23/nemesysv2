@@ -114,6 +114,7 @@ function StudentSubjectEnrollmentTable({
             <TableHead>Description</TableHead>
             <TableHead>Grade</TableHead>
             <TableHead>Academic Terms</TableHead>
+            <TableHead>SSHS Context</TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
@@ -123,6 +124,14 @@ function StudentSubjectEnrollmentTable({
               <TableCell className="font-mono font-medium">{row.subjectCode}</TableCell>
               <TableCell className="whitespace-normal">
                 {row.subjectDescription}
+              </TableCell>
+              <TableCell className="whitespace-normal">
+                {row.shsCurriculumStatus ? (
+                  <div className="space-y-1">
+                    <Badge variant={row.shsCurriculumStatus === "SCHOOL_APPROVED" ? "default" : "secondary"}>{row.shsCurriculumStatus}</Badge>
+                    <p className="text-xs text-muted-foreground">{row.shsClassification}{row.shsClusterCode ? ` | ${row.shsClusterCode}` : ""}</p>
+                  </div>
+                ) : "-"}
               </TableCell>
               <TableCell>{row.gradeLevel}</TableCell>
               <TableCell className="whitespace-normal">

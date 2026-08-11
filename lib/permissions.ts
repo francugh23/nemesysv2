@@ -14,6 +14,7 @@ export const Permissions = {
   ATTENDANCE: "ATTENDANCE",
   REPORT_CARDS: "REPORT_CARDS",
   ACADEMIC_YEARS: "ACADEMIC_YEARS",
+  SHS_CURRICULUM_APPROVAL: "SHS_CURRICULUM_APPROVAL",
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];
@@ -27,11 +28,12 @@ const PERMISSION_ROLES = {
   [Permissions.SUBJECTS]: ["SUPER_ADMIN"],
   [Permissions.SUBJECT_ASSIGNMENTS]: ["SUPER_ADMIN"],
   [Permissions.SECTIONS]: ["SUPER_ADMIN"],
-  [Permissions.ENROLLMENT]: ["SUPER_ADMIN"],
+  [Permissions.ENROLLMENT]: ["SUPER_ADMIN", "REGISTRAR"],
   [Permissions.GRADES]: ["SUPER_ADMIN"],
   [Permissions.ATTENDANCE]: ["SUPER_ADMIN"],
   [Permissions.REPORT_CARDS]: ["SUPER_ADMIN"],
   [Permissions.ACADEMIC_YEARS]: ["SUPER_ADMIN", "REGISTRAR"],
+  [Permissions.SHS_CURRICULUM_APPROVAL]: ["SUPER_ADMIN", "REGISTRAR"],
 } as const satisfies Record<Permission, readonly UserRole[]>;
 
 export function getPermissionRoles(permission: Permission) {

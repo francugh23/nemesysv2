@@ -41,7 +41,7 @@ test("Phase 20A migration is additive and fixture rollback leaves existing curri
   try {
     await prisma.$transaction(async (transaction) => {
       const fixture = await createFixture(transaction);
-      await transaction.subjectOfferingShsContext.create({ data: { subjectOfferingId: fixture.offering.id, classification: "ACADEMIC_ELECTIVE", curriculumStatus: "SCHOOL_APPROVED", clusterId: fixture.academicCluster.id, approvalReference: "School approval fixture", createdById: fixture.user.id } });
+      await transaction.subjectOfferingShsContext.create({ data: { subjectOfferingId: fixture.offering.id, classification: "ACADEMIC_ELECTIVE", curriculumStatus: "SCHOOL_APPROVED", clusterId: fixture.academicCluster.id, sourceReference: "DO 017", approvalReference: "School approval fixture", approvedById: fixture.user.id, approvedAt: new Date(), createdById: fixture.user.id } });
       throw new RollbackFixture();
     });
   } catch (error) {
@@ -63,7 +63,7 @@ test("Phase 20A database constraints reject invalid SHS context combinations", a
 
   await assert.rejects(prisma.$transaction(async (transaction) => {
     const fixture = await createFixture(transaction);
-    await transaction.subjectOfferingShsContext.create({ data: { subjectOfferingId: fixture.offering.id, classification: "ACADEMIC_ELECTIVE", curriculumStatus: "SCHOOL_APPROVED", clusterId: fixture.techProCluster.id, approvalReference: "School approval", createdById: fixture.user.id } });
+    await transaction.subjectOfferingShsContext.create({ data: { subjectOfferingId: fixture.offering.id, classification: "ACADEMIC_ELECTIVE", curriculumStatus: "SCHOOL_APPROVED", clusterId: fixture.techProCluster.id, sourceReference: "DO 017", approvalReference: "School approval", approvedById: fixture.user.id, approvedAt: new Date(), createdById: fixture.user.id } });
   }), /Academic curriculum cluster/i);
 
   await assert.rejects(prisma.$transaction(async (transaction) => {
@@ -86,11 +86,11 @@ test("provisional SHS Offerings cannot materialize Student Subject Enrollments",
 test("approved SHS snapshots remain immutable after their Offering context changes", async () => {
   await assert.rejects(prisma.$transaction(async (transaction) => {
       const fixture = await createFixture(transaction);
-      await transaction.subjectOfferingShsContext.create({ data: { subjectOfferingId: fixture.offering.id, classification: "ACADEMIC_ELECTIVE", curriculumStatus: "SCHOOL_APPROVED", clusterId: fixture.academicCluster.id, approvalReference: "School approval 1", createdById: fixture.user.id } });
+      await transaction.subjectOfferingShsContext.create({ data: { subjectOfferingId: fixture.offering.id, classification: "ACADEMIC_ELECTIVE", curriculumStatus: "SCHOOL_APPROVED", clusterId: fixture.academicCluster.id, sourceReference: "DO 017", approvalReference: "School approval 1", approvedById: fixture.user.id, approvedAt: new Date(), createdById: fixture.user.id } });
       const section = await transaction.section.create({ data: { gradeLevel: "11", sectionName: `P20A ${randomUUID()}`, createdById: fixture.user.id }, select: { id: true } });
       const student = await transaction.student.create({ data: { lrn: `P20A${randomUUID().replaceAll("-", "").slice(0, 12)}`, firstName: "Phase", lastName: "Twenty", gender: "FEMALE", barangay: "Test", municipality: "Test", province: "Test", createdById: fixture.user.id }, select: { id: true } });
       const enrollment = await transaction.enrollment.create({ data: { studentId: student.id, sectionId: section.id, academicYearId: "academic-year-2026-2027", createdById: fixture.user.id }, select: { id: true } });
-      const studentSubjectEnrollment = await transaction.studentSubjectEnrollment.create({ data: { enrollmentId: enrollment.id, subjectOfferingId: fixture.offering.id, subjectCode: "P20A", subjectDescription: "Approved", gradeLevel: "11", shsClassification: "ACADEMIC_ELECTIVE", shsClusterCode: (await transaction.shsCurriculumCluster.findUniqueOrThrow({ where: { id: fixture.academicCluster.id }, select: { code: true } })).code, shsClusterName: "Academic fixture", shsCurriculumStatus: "SCHOOL_APPROVED", shsApprovalReference: "School approval 1", createdById: fixture.user.id } });
+      const studentSubjectEnrollment = await transaction.studentSubjectEnrollment.create({ data: { enrollmentId: enrollment.id, subjectOfferingId: fixture.offering.id, subjectCode: "P20A", subjectDescription: "Approved", gradeLevel: "11", shsClassification: "ACADEMIC_ELECTIVE", shsClusterCode: (await transaction.shsCurriculumCluster.findUniqueOrThrow({ where: { id: fixture.academicCluster.id }, select: { code: true } })).code, shsClusterName: "Academic fixture", shsCurriculumStatus: "SCHOOL_APPROVED", shsSourceReference: "DO 017", shsApprovalReference: "School approval 1", createdById: fixture.user.id } });
       await transaction.subjectOfferingShsContext.update({ where: { subjectOfferingId: fixture.offering.id }, data: { approvalReference: "School approval 2" } });
       await transaction.studentSubjectEnrollment.update({ where: { id: studentSubjectEnrollment.id }, data: { status: "REPLACED", replacedAt: new Date() } });
       await transaction.studentSubjectEnrollment.update({ where: { id: studentSubjectEnrollment.id }, data: { shsClusterName: "Changed" } });

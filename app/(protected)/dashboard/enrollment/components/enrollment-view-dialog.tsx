@@ -11,6 +11,7 @@ import { displayValue, formatDateTime, formatFullName } from "@/lib/format";
 import type { EnrollmentListItem } from "@/schemas";
 
 import { StudentSubjectEnrollmentList } from "./student-subject-enrollment-list";
+import { ShsCurriculumSelection } from "./shs-curriculum-selection";
 
 const statusVariants = {
   ACTIVE: "default",
@@ -92,6 +93,7 @@ export function EnrollmentViewDialog({
           enrollmentId={enrollment.id}
           open={open}
         />
+        <ShsCurriculumSelection enrollmentId={enrollment.id} gradeLevel={enrollment.sectionGradeLevel} open={open} />
       </DialogContent>
     </Dialog>
   );

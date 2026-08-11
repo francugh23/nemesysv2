@@ -9,10 +9,12 @@ import { z } from "zod";
 import { ConfirmDeleteDialog } from "@/components/common/dialogs/confirm-delete-dialog";
 import { FormDialog } from "@/components/common/dialogs/form-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   useArchiveSubjectOffering,
   useCreateSubjectOffering,
   useUpdateSubjectOffering,
+  usePromoteShsSubjectOffering,
 } from "@/hooks/subject-offering.hook";
 import {
   CreateSubjectOfferingSchema,
@@ -45,10 +47,9 @@ function OfferingForm({
            shsContext: offering.shsContext
              ? {
                  classification: offering.shsContext.classification,
-                 curriculumStatus: offering.shsContext.curriculumStatus,
+                  curriculumStatus: "PROVISIONAL_DEPED",
                  clusterId: offering.shsContext.cluster?.id,
                  sourceReference: offering.shsContext.sourceReference ?? undefined,
-                 approvalReference: offering.shsContext.approvalReference ?? undefined,
                }
              : undefined,
          }
@@ -166,4 +167,11 @@ export function ArchiveSubjectOfferingDialog({
       onConfirm={archive}
     />
   );
+}
+
+export function ApproveShsSubjectOfferingDialog({ offering, open, onOpenChange }: { offering: SubjectOfferingListItem; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const [approvalReference, setApprovalReference] = useState("");
+  const approveOffering = usePromoteShsSubjectOffering();
+  async function approve() { const result = await approveOffering.mutateAsync({ subjectOfferingId: offering.id, approvalReference }); if ("error" in result) { toast.error(result.error); return; } toast.success(result.success); setApprovalReference(""); onOpenChange(false); }
+  return <FormDialog open={open} onOpenChange={onOpenChange} title="Approve SSHS Subject Offering"><div className="space-y-4"><p className="text-sm text-muted-foreground">Approve {offering.subjectCode} for school use. This does not select it for any student.</p><Input value={approvalReference} onChange={(event) => setApprovalReference(event.target.value)} placeholder="School approval reference" /><Button onClick={() => void approve()} disabled={!approvalReference.trim() || approveOffering.isPending}>{approveOffering.isPending ? "Approving..." : "Approve offering"}</Button></div></FormDialog>;
 }

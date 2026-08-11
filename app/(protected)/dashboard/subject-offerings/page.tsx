@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useEffectEvent, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 
 import { CrudToolbar } from "@/components/common/crud-toolbar";
 import { DataTable, DataTableFacetedFilter, type DataTableFilterOption } from "@/components/data-table";
@@ -13,6 +14,7 @@ import type { SubjectOfferingTableQueryInput } from "@/schemas";
 import { subjectOfferingColumns } from "./components/subject-offering-columns";
 import {
   ArchiveSubjectOfferingDialog,
+  ApproveShsSubjectOfferingDialog,
   CreateSubjectOfferingDialog,
   EditSubjectOfferingDialog,
 } from "./components/subject-offering-dialogs";
@@ -31,6 +33,8 @@ export default function SubjectOfferingsPage() {
 }
 
 function SubjectOfferingsPageContent() {
+  const { data: session } = useSession();
+  const canManageOfferings = session?.user.role === "SUPER_ADMIN";
   const tableState = useTableUrlState({ filterKeys, sortableColumns: [] });
   const { data: options } = useSubjectOfferingOptions();
   const gradeLevel = ["7", "8", "9", "10", "11", "12"].includes(tableState.filters.gradeLevel)
@@ -50,7 +54,7 @@ function SubjectOfferingsPageContent() {
   const { data, isLoading, isError, isFetching, isPlaceholderData, refetch } = useSubjectOfferings(query);
   const { data: references = [] } = useShsCurriculumReferences();
   const [selectedOffering, setSelectedOffering] = useState<SubjectOfferingListItem | null>(null);
-  const [dialog, setDialog] = useState<"edit" | "archive" | null>(null);
+  const [dialog, setDialog] = useState<"edit" | "archive" | "approve" | null>(null);
   const columns = useMemo(
     () =>
       subjectOfferingColumns({
@@ -62,8 +66,10 @@ function SubjectOfferingsPageContent() {
           setSelectedOffering(offering);
           setDialog("archive");
         },
+        onApprove: (offering) => { setSelectedOffering(offering); setDialog("approve"); },
+        canManageOfferings,
       }),
-    [],
+    [canManageOfferings],
   );
   const reconcilePage = useEffectEvent((page: number) => {
     tableState.onPaginationChange({ ...tableState.pagination, pageIndex: page - 1 });
@@ -104,7 +110,7 @@ function SubjectOfferingsPageContent() {
           <h1 className="text-2xl font-semibold">Subject Offerings</h1>
           <p className="text-sm text-muted-foreground">Review offering configuration and provisional DepEd reference candidates. Provisional records do not establish NVGCHS availability.</p>
         </div>
-        <CrudToolbar primaryAction={<CreateSubjectOfferingDialog />} actions={<ShsCurriculumClusterDialog />} />
+        {canManageOfferings && <CrudToolbar primaryAction={<CreateSubjectOfferingDialog />} actions={<ShsCurriculumClusterDialog />} />}
       </div>
 
       <Card>
@@ -165,7 +171,8 @@ function SubjectOfferingsPageContent() {
           {selectedOffering && (
             <>
               <EditSubjectOfferingDialog offering={selectedOffering} open={dialog === "edit"} onOpenChange={(open) => !open && setDialog(null)} />
-              <ArchiveSubjectOfferingDialog offering={selectedOffering} open={dialog === "archive"} onOpenChange={(open) => !open && setDialog(null)} />
+               <ArchiveSubjectOfferingDialog offering={selectedOffering} open={dialog === "archive"} onOpenChange={(open) => !open && setDialog(null)} />
+               <ApproveShsSubjectOfferingDialog offering={selectedOffering} open={dialog === "approve"} onOpenChange={(open) => !open && setDialog(null)} />
             </>
           )}
         </CardContent>

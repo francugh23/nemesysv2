@@ -144,9 +144,14 @@ export const navigation = {
       title: "Academics",
       items: [
         {
-          title: "Academic Years",
-          href: "/dashboard/academic-years",
-          icon: CalendarRange,
+          title: "Subject Offerings",
+          href: "/dashboard/subject-offerings",
+          icon: Layers,
+        },
+        {
+          title: "Enrollment",
+          href: "/dashboard/enrollment",
+          icon: ClipboardCheck,
         },
         {
           title: "Academic Years",

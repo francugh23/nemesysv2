@@ -9,7 +9,7 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-Phase 20B Provisional DepEd Reference Catalog is complete; authenticated browser verification for Subject Offering work remains pending before production.
+Phase 20C SSHS Student Curriculum Selection is complete; authenticated browser verification remains pending before production.
 
 ### Current Objective
 
@@ -34,6 +34,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 - Enrollment-scoped read-only Student Subject Enrollment UI with accessible replacement history
 - SSHS Subject Offering metadata foundation with classified, provenance-aware Offering contexts and soft-archivable elective clusters
 - Provisional source-backed DepEd SSHS reference catalog for Grade 11 Core and elective candidates plus Grade 12 TechPro pilot candidates, without school approval or student curriculum materialization
+- Controlled provisional-to-school-approved SSHS Offering promotion with approval actor/reference/audit, plus explicit Grade 11/12 Enrollment curriculum selection and immutable replacement history
 - User Management authorized read path, URL-driven server-table UX, audited administrative account creation and administration, forced first-login completion, self-service password change, and credential-driven session invalidation
 - Audit Log Management read-only URL-driven server-table UX, authorized details, multi-action filtering, safe supported-module navigation, immutable historical actor visibility, and export-ready validated query reuse
 - Security Hardening Phase S1 centralized authorization architecture
@@ -70,6 +71,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 - [Phase 19D: Student Subject Enrollment UI](./milestones/phase-19d-student-subject-enrollment-ui.md)
 - [Phase 20A: SSHS Metadata Foundation](./milestones/phase-20a-shs-metadata-foundation.md)
 - [Phase 20B: Provisional DepEd Reference Catalog](./milestones/phase-20b-provisional-deped-reference-catalog.md)
+- [Phase 20C: SSHS Student Curriculum Selection](./milestones/phase-20c-shs-student-curriculum-selection.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -119,6 +121,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 - Student Subject Enrollment is an additive, audit-ready foundation linking an Enrollment to a source Subject Offering while snapshotting the Offering identity and exact applicable Terms. Regular Grade 7-10 Enrollments in Sections without `trackStrand` materialize active records only from the approved Phase 18C-3 baseline Offering code matrix; creation, Terms, and audit records are transactional. Active Enrollment Section corrections compare approved regular-JHS eligibility and grade: same-context corrections retain rows, while changed contexts replace ACTIVE rows historically and derive only approved regular-JHS replacements. Enrollment Details provides the authorized read-only Enrollment-scoped view, with ACTIVE rows primary and REPLACED history accessible. SHS and specialized-program selection remain deferred.
 - Grade 11-12 Subject Offerings created through the application require an SSHS context: Core, Academic Elective, or TechPro Elective classification; provisional DepEd or school-approved provenance; and matching active Academic or TechPro clusters for electives. Cluster configuration is soft-archivable and empty by default. Existing `trackStrand` is not a source for SSHS metadata. SHS Student Subject Enrollment snapshot columns are immutable, and provisional SSHS Offerings are database-blocked from materialization. No SHS Subjects, clusters, Offerings, or Student Subject Enrollments were populated in Phase 20A.
 - Phase 20B populates a controlled `PROVISIONAL_DEPED` source-backed SSHS reference catalog from DepEd DO 017, s. 2026, DM 012, s. 2026, DM 036, s. 2026, and the DepEd Strengthened SHS Program curriculum-guide catalog. Reference records retain grade-specific existing Subjects, provenance, classification, cluster, and whether the source establishes all configured Terms. Grade 11 Core and TechPro BOW candidates plus Grade 12 TechPro pilot BOW candidates have provisional Offerings for the configured 2026-2027 three-term year. Academic Electives remain references without Offerings because DepEd identifies them as term-based without a universal Term assignment. The catalog does not assert NVGCHS availability, school approval, or Grade 12 pilot participation, and it cannot derive Student Subject Enrollments.
+- Phase 20C permits Super Admin or Registrar to promote only an active provisional Grade 11/12 Offering through `SHS_CURRICULUM_APPROVAL`, retaining its DepEd source reference and requiring a school approval reference, actor, timestamp, and audit record. Super Admin or Registrar may explicitly select active school-approved SSHS Offerings only for a matching active Grade 11/12 Enrollment Academic Year and grade. Selection never consults `trackStrand`, does not derive a curriculum, snapshots exact context and Terms, and preserves deselected rows as audited `REPLACED` history. Approval is school configuration only and does not assert that all candidates, especially Grade 12 pilot candidates, are available at NVGCHS.
 - Academic Year management is available to Super Admin and Registrar through `Permissions.ACADEMIC_YEARS`; Registrar receives narrow `/dashboard/academic-years` shell access without general Dashboard permission.
 - Operational module headers own the primary Add or lifecycle action. Table toolbars contain search and filters on the left and only existing Import actions plus approved or disabled Export controls on the right.
 - The protected shell uses the shared sidebar provider and Base UI modal drawer: desktop state persists through the existing cookie, icon collapse retains tooltips, tablet/mobile navigation is transient below 1024px, and the sticky navbar supplies title, breadcrumbs, notifications placeholder, account controls, and the responsive trigger.
