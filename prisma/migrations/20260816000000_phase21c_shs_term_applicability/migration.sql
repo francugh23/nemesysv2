@@ -1,0 +1,2 @@
+ALTER TYPE "ShsCurriculumReferenceTermApplicability"
+ADD VALUE 'ONE_CONFIGURED_TERM_UNRESOLVED';

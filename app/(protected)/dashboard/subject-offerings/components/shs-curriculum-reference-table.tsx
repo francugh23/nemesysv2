@@ -13,7 +13,15 @@ const columns: ColumnDef<Reference>[] = [
   { accessorKey: "gradeLevel", header: "Grade", cell: ({ row }) => `Grade ${row.original.gradeLevel}` },
   { accessorKey: "classification", header: "Classification", cell: ({ row }) => row.original.classification.replaceAll("_", " ") },
   { id: "cluster", header: "Cluster", cell: ({ row }) => row.original.cluster?.name ?? "Core Subject" },
-  { accessorKey: "termApplicability", header: "Term Evidence", cell: ({ row }) => row.original.termApplicability === "ALL_CONFIGURED_TERMS" ? "All configured terms" : "Not specified by DepEd" },
+  {
+    accessorKey: "termApplicability",
+    header: "Term Evidence",
+    cell: ({ row }) => {
+      if (row.original.termApplicability === "ALL_CONFIGURED_TERMS") return "All configured terms";
+      if (row.original.termApplicability === "ONE_CONFIGURED_TERM_UNRESOLVED") return "One term; exact configured Term unresolved";
+      return "Not specified by DepEd";
+    },
+  },
   {
     accessorKey: "curriculumStatus",
     header: "Status",

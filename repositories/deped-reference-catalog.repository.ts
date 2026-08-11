@@ -21,13 +21,67 @@ export async function createCatalogSubject(data: Prisma.SubjectUncheckedCreateIn
 }
 
 export async function findCatalogReference(subjectId: string, tx: Prisma.TransactionClient) {
-  return tx.shsCurriculumReference.findUnique({ where: { subjectId }, select: { id: true } });
+  return tx.shsCurriculumReference.findUnique({
+    where: { subjectId },
+    select: {
+      id: true,
+      gradeLevel: true,
+      classification: true,
+      curriculumStatus: true,
+      clusterId: true,
+      sourceReference: true,
+      termApplicability: true,
+    },
+  });
 }
 
 export async function createCatalogReference(data: Prisma.ShsCurriculumReferenceUncheckedCreateInput, tx: Prisma.TransactionClient) {
   return tx.shsCurriculumReference.create({ data, select: { id: true } });
 }
 
-export async function findCatalogOffering(subjectId: string, academicYearId: string, gradeLevel: string, tx: Prisma.TransactionClient) {
-  return tx.subjectOffering.findFirst({ where: { subjectId, academicYearId, gradeLevel, deletedAt: null }, select: { id: true } });
+export async function updateCatalogReference(id: string, data: Prisma.ShsCurriculumReferenceUncheckedUpdateInput, tx: Prisma.TransactionClient) {
+  return tx.shsCurriculumReference.update({ where: { id }, data, select: { id: true } });
+}
+
+export async function findAndLockCatalogOffering(subjectId: string, academicYearId: string, gradeLevel: string, tx: Prisma.TransactionClient) {
+  const rows = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT "id"
+    FROM "SubjectOffering"
+    WHERE "subjectId" = ${subjectId}
+      AND "academicYearId" = ${academicYearId}
+      AND "gradeLevel" = ${gradeLevel}
+      AND "deletedAt" IS NULL
+    FOR UPDATE
+  `);
+  if (!rows[0]) return null;
+
+  return tx.subjectOffering.findUnique({
+    where: { id: rows[0].id },
+    select: {
+      id: true,
+      subjectCode: true,
+      subjectDescription: true,
+      terms: { select: { academicTermId: true } },
+      shsContext: { select: { classification: true, curriculumStatus: true, clusterId: true, sourceReference: true } },
+      _count: { select: { studentSubjectEnrollments: true } },
+    },
+  });
+}
+
+export async function replaceCatalogOfferingTerms(subjectOfferingId: string, academicTermIds: string[], tx: Prisma.TransactionClient) {
+  return tx.subjectOffering.update({
+    where: { id: subjectOfferingId },
+    data: {
+      terms: {
+        deleteMany: {},
+        create: academicTermIds.map((academicTermId) => ({ academicTermId })),
+      },
+    },
+    select: { id: true },
+  });
+}
+
+export async function archiveCatalogOfferingWithoutTerms(subjectOfferingId: string, archivedAt: Date, tx: Prisma.TransactionClient) {
+  await tx.subjectOfferingTerm.deleteMany({ where: { subjectOfferingId } });
+  return tx.subjectOffering.update({ where: { id: subjectOfferingId }, data: { deletedAt: archivedAt }, select: { id: true } });
 }

@@ -19,7 +19,7 @@ export type DepedShsCatalogEntry = {
   classification: Classification;
   clusterCode?: string;
   sourceReference: string;
-  termApplicability: "UNSPECIFIED" | "ALL_CONFIGURED_TERMS";
+  termApplicability: "UNSPECIFIED" | "ALL_CONFIGURED_TERMS" | "ONE_CONFIGURED_TERM_UNRESOLVED";
   createOffering: boolean;
 };
 
@@ -73,5 +73,5 @@ export const depedShsCatalogEntries: DepedShsCatalogEntry[] = [
   ...entries("CORE", core, "CORE", undefined, "11", `${catalogSource}; authority: ${DEPED_SSHS_DO017_URL}`, "ALL_CONFIGURED_TERMS", true),
   ...Object.entries(academic).flatMap(([clusterCode, names], index) => entries(`AE${index + 1}`, names, "ACADEMIC_ELECTIVE", clusterCode, "11", catalogSource, "UNSPECIFIED", false)),
   ...Object.entries(techPro).flatMap(([clusterCode, names], index) => entries(`TP${index + 1}`, names, "TECHPRO_ELECTIVE", clusterCode, "11", catalogSource, "ALL_CONFIGURED_TERMS", true)),
-  ...Object.entries(techPro).flatMap(([clusterCode, names], index) => entries(`TP${index + 1}`, names, "TECHPRO_ELECTIVE", clusterCode, "12", g12PilotSource, "ALL_CONFIGURED_TERMS", true)),
+  ...Object.entries(techPro).flatMap(([clusterCode, names], index) => entries(`TP${index + 1}`, names, "TECHPRO_ELECTIVE", clusterCode, "12", g12PilotSource, "ONE_CONFIGURED_TERM_UNRESOLVED", false)),
 ];

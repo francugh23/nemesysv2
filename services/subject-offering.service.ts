@@ -21,6 +21,7 @@ import {
   findShsCurriculumClusterDuplicate,
   findShsCurriculumClusters,
   findShsCurriculumReferences,
+  lockOfferingForMutation,
   promoteProvisionalShsOffering,
   updateOffering,
   updateShsCurriculumCluster,
@@ -128,6 +129,7 @@ export async function updateSubjectOfferingService(id: string, values: UpdateSub
 export async function promoteShsSubjectOfferingService(values: PromoteShsSubjectOfferingInput) {
   const session = await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL);
   return prisma.$transaction(async (tx) => {
+    await lockOfferingForMutation(values.subjectOfferingId, tx);
     const offering = await findOffering(values.subjectOfferingId, tx);
     if (!offering || offering.deletedAt || !offering.shsContext) throw new SubjectOfferingServiceError("Provisional SSHS offering not found.");
     assertActive(offering.academicYear);

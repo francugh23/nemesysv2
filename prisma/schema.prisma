@@ -80,6 +80,7 @@ enum ShsCurriculumClusterTrack {
 enum ShsCurriculumReferenceTermApplicability {
   UNSPECIFIED
   ALL_CONFIGURED_TERMS
+  ONE_CONFIGURED_TERM_UNRESOLVED
 }
 
 model User {

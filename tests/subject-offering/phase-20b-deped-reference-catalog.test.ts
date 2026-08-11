@@ -39,7 +39,8 @@ test("Phase 20B catalog remains source-backed and term-safe across the approval 
   assert.ok(references.filter((reference) => reference.classification === "ACADEMIC_ELECTIVE").every((reference) => reference.cluster?.track === "ACADEMIC"));
   assert.ok(references.filter((reference) => reference.classification === "TECHPRO_ELECTIVE").every((reference) => reference.cluster?.track === "TECHPRO"));
   assert.ok(references.filter((reference) => reference.classification === "ACADEMIC_ELECTIVE").every((reference) => reference.termApplicability === "UNSPECIFIED"));
-  assert.equal(offerings.length, 94);
+  assert.equal(references.filter((reference) => reference.gradeLevel === "12" && reference.classification === "TECHPRO_ELECTIVE" && reference.termApplicability === "ONE_CONFIGURED_TERM_UNRESOLVED").length, 44);
+  assert.equal(offerings.length, 50);
   assert.ok(offerings.every((offering) => offering.academicYearId === "academic-year-2026-2027" && offering.terms.length === 3 && offering.terms.every((term) => term.academicTerm.academicYearId === offering.academicYearId)));
   assert.ok(offerings.every((offering) => {
     const context = offering.shsContext;
@@ -56,7 +57,17 @@ test("Phase 20B population is idempotent and preserves JHS and operational recor
   const actor = await prisma.user.findFirstOrThrow({ where: { deletedAt: null, status: "ACTIVE" }, select: { id: true } });
   const before = await safetySnapshot();
   const result = await populateProvisionalDepedReferenceCatalog(actor.id);
-  assert.deepEqual(result, { createdClusters: 0, createdSubjects: 0, createdReferences: 0, createdOfferings: 0 });
+  assert.deepEqual(result, {
+    createdClusters: 0,
+    createdSubjects: 0,
+    createdReferences: 0,
+    createdOfferings: 0,
+    updatedReferences: 0,
+    reconfiguredOfferings: 0,
+    archivedOfferings: 0,
+    removedOfferingTerms: 0,
+    unresolvedOperationalOfferings: 0,
+  });
   assert.deepEqual(await safetySnapshot(), before);
 });
 

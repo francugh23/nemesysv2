@@ -45,6 +45,12 @@ export async function findOfferings(q: OfferingListQuery, p: { skip: number; tak
 }
 export async function countOfferings(q: OfferingListQuery) { return prisma.subjectOffering.count({ where: getOfferingListWhere(q) }); }
 export async function findOffering(id: string, tx?: Prisma.TransactionClient) { return (tx ?? prisma).subjectOffering.findFirst({ where: { id, deletedAt: null }, select }); }
+export async function lockOfferingForMutation(id: string, tx: Prisma.TransactionClient) {
+  const rows = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT "id" FROM "SubjectOffering" WHERE "id" = ${id} FOR UPDATE
+  `);
+  return Boolean(rows[0]);
+}
 export async function findOfferingDuplicate(subjectId: string, academicYearId: string, gradeLevel: string, excludeId?: string, tx?: Prisma.TransactionClient) { return (tx ?? prisma).subjectOffering.findFirst({ where: { subjectId, academicYearId, gradeLevel, deletedAt: null, id: excludeId ? { not: excludeId } : undefined }, select: { id: true } }); }
 export async function createOffering(data: Prisma.SubjectOfferingUncheckedCreateInput, termIds: string[], context: OfferingContext, tx: Prisma.TransactionClient) {
   return tx.subjectOffering.create({ data: { ...data, terms: { create: termIds.map((academicTermId) => ({ academicTermId })) }, shsContext: context ? { create: contextData(context, data.createdById) } : undefined }, select });
