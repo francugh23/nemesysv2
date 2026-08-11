@@ -8,6 +8,7 @@ import {
   createShsCurriculumClusterAction,
   createSubjectOfferingAction,
   getShsCurriculumClustersAction,
+  getShsCurriculumReferencesAction,
   getSubjectOfferingOptionsAction,
   getSubjectOfferingsAction,
   updateShsCurriculumClusterAction,
@@ -17,6 +18,7 @@ import {
 export function useSubjectOfferings(query: Parameters<typeof getSubjectOfferingsAction>[0]) { return useQuery({ queryKey: ["subject-offerings", query], queryFn: () => getSubjectOfferingsAction(query), placeholderData: keepPreviousData }); }
 export function useSubjectOfferingOptions() { return useQuery({ queryKey: ["subject-offering-options"], queryFn: getSubjectOfferingOptionsAction }); }
 export function useShsCurriculumClusters() { return useQuery({ queryKey: ["shs-curriculum-clusters"], queryFn: getShsCurriculumClustersAction }); }
+export function useShsCurriculumReferences() { return useQuery({ queryKey: ["shs-curriculum-references"], queryFn: getShsCurriculumReferencesAction }); }
 
 function useInvalidate() {
   const queryClient = useQueryClient();
@@ -24,6 +26,7 @@ function useInvalidate() {
     queryClient.invalidateQueries({ queryKey: ["subject-offerings"] }),
     queryClient.invalidateQueries({ queryKey: ["subject-offering-options"] }),
     queryClient.invalidateQueries({ queryKey: ["shs-curriculum-clusters"] }),
+    queryClient.invalidateQueries({ queryKey: ["shs-curriculum-references"] }),
   ]);
 }
 

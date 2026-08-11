@@ -19,6 +19,7 @@ import {
   findShsCurriculumCluster,
   findShsCurriculumClusterDuplicate,
   findShsCurriculumClusters,
+  findShsCurriculumReferences,
   updateOffering,
   updateShsCurriculumCluster,
 } from "@/repositories/subject-offering.repository";
@@ -130,6 +131,11 @@ export async function archiveSubjectOfferingService(id: string) {
 export async function getShsCurriculumClusters() {
   await requirePermission(Permissions.SUBJECTS);
   return findShsCurriculumClusters();
+}
+
+export async function getShsCurriculumReferences() {
+  await requirePermission(Permissions.SUBJECTS);
+  return findShsCurriculumReferences();
 }
 
 export async function createShsCurriculumClusterService(values: CreateShsCurriculumClusterInput) {

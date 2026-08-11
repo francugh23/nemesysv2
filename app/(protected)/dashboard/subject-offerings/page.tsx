@@ -6,7 +6,7 @@ import { CrudToolbar } from "@/components/common/crud-toolbar";
 import { DataTable, DataTableFacetedFilter, type DataTableFilterOption } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useSubjectOfferingOptions, useSubjectOfferings } from "@/hooks/subject-offering.hook";
+import { useShsCurriculumReferences, useSubjectOfferingOptions, useSubjectOfferings } from "@/hooks/subject-offering.hook";
 import { useTableUrlState } from "@/hooks/use-table-url-state.hook";
 import type { SubjectOfferingTableQueryInput } from "@/schemas";
 
@@ -17,9 +17,10 @@ import {
   EditSubjectOfferingDialog,
 } from "./components/subject-offering-dialogs";
 import { ShsCurriculumClusterDialog } from "./components/shs-curriculum-cluster-dialog";
+import { ShsCurriculumReferenceTable } from "./components/shs-curriculum-reference-table";
 import type { SubjectOfferingListItem } from "./components/subject-offering-types";
 
-const filterKeys = ["academicYearId", "gradeLevel"] as const;
+const filterKeys = ["academicYearId", "gradeLevel", "curriculumStatus"] as const;
 
 export default function SubjectOfferingsPage() {
   return (
@@ -36,13 +37,18 @@ function SubjectOfferingsPageContent() {
     ? tableState.filters.gradeLevel
     : undefined;
   const academicYearId = tableState.filters.academicYearId || undefined;
+  const curriculumStatus = ["PROVISIONAL_DEPED", "SCHOOL_APPROVED"].includes(tableState.filters.curriculumStatus)
+    ? tableState.filters.curriculumStatus as "PROVISIONAL_DEPED" | "SCHOOL_APPROVED"
+    : undefined;
   const query: SubjectOfferingTableQueryInput = {
     academicYearId,
     gradeLevel,
+    curriculumStatus,
     page: tableState.query.page,
     pageSize: tableState.query.pageSize,
   };
   const { data, isLoading, isError, isFetching, isPlaceholderData, refetch } = useSubjectOfferings(query);
+  const { data: references = [] } = useShsCurriculumReferences();
   const [selectedOffering, setSelectedOffering] = useState<SubjectOfferingListItem | null>(null);
   const [dialog, setDialog] = useState<"edit" | "archive" | null>(null);
   const columns = useMemo(
@@ -89,14 +95,14 @@ function SubjectOfferingsPageContent() {
     label: `Grade ${grade}`,
     value: grade,
   }));
-  const hasFilters = Boolean(academicYearId || gradeLevel);
+  const hasFilters = Boolean(academicYearId || gradeLevel || curriculumStatus);
 
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold">Subject Offerings</h1>
-          <p className="text-sm text-muted-foreground">Manage subjects offered by grade level and academic year.</p>
+          <p className="text-sm text-muted-foreground">Review offering configuration and provisional DepEd reference candidates. Provisional records do not establish NVGCHS availability.</p>
         </div>
         <CrudToolbar primaryAction={<CreateSubjectOfferingDialog />} actions={<ShsCurriculumClusterDialog />} />
       </div>
@@ -114,6 +120,13 @@ function SubjectOfferingsPageContent() {
                   value={tableState.filters.academicYearId}
                   options={academicYearOptions}
                   onValueChange={(value) => tableState.setFilter("academicYearId", value)}
+                />
+                <DataTableFacetedFilter
+                  label="Curriculum Status"
+                  allLabel="All Statuses"
+                  value={tableState.filters.curriculumStatus}
+                  options={[{ label: "Provisional DepEd", value: "PROVISIONAL_DEPED" }, { label: "School Approved", value: "SCHOOL_APPROVED" }]}
+                  onValueChange={(value) => tableState.setFilter("curriculumStatus", value)}
                 />
                 <DataTableFacetedFilter
                   label="Grade Level"
@@ -155,6 +168,12 @@ function SubjectOfferingsPageContent() {
               <ArchiveSubjectOfferingDialog offering={selectedOffering} open={dialog === "archive"} onOpenChange={(open) => !open && setDialog(null)} />
             </>
           )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="space-y-3 pt-6">
+          <div><h2 className="font-semibold">Provisional DepEd Reference Catalog</h2><p className="text-sm text-muted-foreground">Reference candidates only. Records without term evidence are not Subject Offerings and cannot be selected for students.</p></div>
+          <ShsCurriculumReferenceTable references={references} />
         </CardContent>
       </Card>
     </div>

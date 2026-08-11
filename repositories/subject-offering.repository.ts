@@ -17,10 +17,10 @@ function contextData(context: NonNullable<OfferingContext>, createdById: string)
   return { ...context, clusterId: context.clusterId ?? null, sourceReference: context.sourceReference ?? null, approvalReference: context.approvalReference ?? null, createdById };
 }
 
-export async function findOfferings(q: { academicYearId?: string; gradeLevel?: string }, p: { skip: number; take: number }) {
-  return prisma.subjectOffering.findMany({ where: { deletedAt: null, academicYearId: q.academicYearId, gradeLevel: q.gradeLevel }, select, skip: p.skip, take: p.take, orderBy: [{ academicYear: { startDate: "desc" } }, { gradeLevel: "asc" }, { subjectCode: "asc" }] });
+export async function findOfferings(q: { academicYearId?: string; gradeLevel?: string; curriculumStatus?: "PROVISIONAL_DEPED" | "SCHOOL_APPROVED" }, p: { skip: number; take: number }) {
+  return prisma.subjectOffering.findMany({ where: { deletedAt: null, academicYearId: q.academicYearId, gradeLevel: q.gradeLevel, shsContext: q.curriculumStatus ? { curriculumStatus: q.curriculumStatus } : undefined }, select, skip: p.skip, take: p.take, orderBy: [{ academicYear: { startDate: "desc" } }, { gradeLevel: "asc" }, { subjectCode: "asc" }] });
 }
-export async function countOfferings(q: { academicYearId?: string; gradeLevel?: string }) { return prisma.subjectOffering.count({ where: { deletedAt: null, academicYearId: q.academicYearId, gradeLevel: q.gradeLevel } }); }
+export async function countOfferings(q: { academicYearId?: string; gradeLevel?: string; curriculumStatus?: "PROVISIONAL_DEPED" | "SCHOOL_APPROVED" }) { return prisma.subjectOffering.count({ where: { deletedAt: null, academicYearId: q.academicYearId, gradeLevel: q.gradeLevel, shsContext: q.curriculumStatus ? { curriculumStatus: q.curriculumStatus } : undefined } }); }
 export async function findOffering(id: string, tx?: Prisma.TransactionClient) { return (tx ?? prisma).subjectOffering.findFirst({ where: { id, deletedAt: null }, select }); }
 export async function findOfferingDuplicate(subjectId: string, academicYearId: string, gradeLevel: string, excludeId?: string, tx?: Prisma.TransactionClient) { return (tx ?? prisma).subjectOffering.findFirst({ where: { subjectId, academicYearId, gradeLevel, deletedAt: null, id: excludeId ? { not: excludeId } : undefined }, select: { id: true } }); }
 export async function createOffering(data: Prisma.SubjectOfferingUncheckedCreateInput, termIds: string[], context: OfferingContext, tx: Prisma.TransactionClient) {
@@ -43,6 +43,21 @@ export async function findOfferingOptions() {
 export async function findApprovedRegularJhsOfferings(academicYearId: string, gradeLevel: string, subjectCodes: string[], tx: Prisma.TransactionClient) { return tx.subjectOffering.findMany({ where: { academicYearId, gradeLevel, subjectCode: { in: subjectCodes }, deletedAt: null }, select: { id: true, gradeLevel: true, subjectCode: true, subjectDescription: true, terms: { select: { academicTermId: true }, orderBy: { academicTerm: { position: "asc" } } } }, orderBy: { subjectCode: "asc" } }); }
 
 export async function findShsCurriculumClusters(includeArchived = false) { return prisma.shsCurriculumCluster.findMany({ where: includeArchived ? undefined : { deletedAt: null }, select: clusterSelect, orderBy: [{ track: "asc" }, { name: "asc" }] }); }
+export async function findShsCurriculumReferences() {
+  return prisma.shsCurriculumReference.findMany({
+    select: {
+      id: true,
+      gradeLevel: true,
+      classification: true,
+      curriculumStatus: true,
+      sourceReference: true,
+      termApplicability: true,
+      subject: { select: { code: true, description: true } },
+      cluster: { select: clusterSelect },
+    },
+    orderBy: [{ gradeLevel: "asc" }, { classification: "asc" }, { subject: { code: "asc" } }],
+  });
+}
 export async function findActiveShsCurriculumCluster(id: string, tx: Prisma.TransactionClient) { return tx.shsCurriculumCluster.findFirst({ where: { id, deletedAt: null }, select: clusterSelect }); }
 export async function findShsCurriculumCluster(id: string, tx: Prisma.TransactionClient) { return tx.shsCurriculumCluster.findFirst({ where: { id, deletedAt: null }, select: { ...clusterSelect, createdAt: true } }); }
 export async function findShsCurriculumClusterDuplicate(code: string, excludeId: string | undefined, tx: Prisma.TransactionClient) { return tx.shsCurriculumCluster.findFirst({ where: { code: { equals: code, mode: "insensitive" }, deletedAt: null, id: excludeId ? { not: excludeId } : undefined }, select: { id: true } }); }

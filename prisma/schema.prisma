@@ -77,6 +77,11 @@ enum ShsCurriculumClusterTrack {
   TECHPRO
 }
 
+enum ShsCurriculumReferenceTermApplicability {
+  UNSPECIFIED
+  ALL_CONFIGURED_TERMS
+}
+
 model User {
   id String @id @default(cuid())
 
@@ -114,6 +119,7 @@ model User {
   createdSubjectOfferings SubjectOffering[]
   createdShsCurriculumClusters ShsCurriculumCluster[]
   createdSubjectOfferingShsContexts SubjectOfferingShsContext[]
+  createdShsCurriculumReferences ShsCurriculumReference[]
   createdStudentSubjectEnrollments StudentSubjectEnrollment[]
   auditLogs            AuditLog[]
 }
@@ -250,6 +256,7 @@ model Subject {
   assignments SubjectAssignment[]
   offerings   SubjectOffering[]
   grades      Grade[]
+  shsCurriculumReferences ShsCurriculumReference[]
 }
 
 model SubjectAssignment {
@@ -359,6 +366,7 @@ model ShsCurriculumCluster {
   code String
   name String
   track ShsCurriculumClusterTrack
+  sourceReference String?
 
   createdById String
   createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
@@ -368,8 +376,37 @@ model ShsCurriculumCluster {
   deletedAt DateTime?
 
   subjectOfferingContexts SubjectOfferingShsContext[]
+  references ShsCurriculumReference[]
 
   @@index([track])
+  @@index([createdById])
+}
+
+model ShsCurriculumReference {
+  id String @id @default(cuid())
+
+  subjectId String
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  gradeLevel String
+  classification ShsSubjectClassification
+  curriculumStatus ShsCurriculumStatus @default(PROVISIONAL_DEPED)
+
+  clusterId String?
+  cluster ShsCurriculumCluster? @relation(fields: [clusterId], references: [id], onDelete: Restrict)
+
+  sourceReference String
+  termApplicability ShsCurriculumReferenceTermApplicability
+
+  createdById String
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([subjectId])
+  @@index([gradeLevel, classification])
+  @@index([clusterId])
+  @@index([curriculumStatus])
   @@index([createdById])
 }
 

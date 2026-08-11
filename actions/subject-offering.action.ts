@@ -17,6 +17,7 @@ import {
   createShsCurriculumClusterService,
   createSubjectOfferingService,
   getShsCurriculumClusters,
+  getShsCurriculumReferences,
   getSubjectOfferingOptions,
   getSubjectOfferings,
   updateShsCurriculumClusterService,
@@ -29,6 +30,7 @@ async function run(fn: () => Promise<unknown>, success: string) { try { await fn
 export async function getSubjectOfferingsAction(query: SubjectOfferingTableQueryInput) { await requirePermission(Permissions.SUBJECTS); return getSubjectOfferings(SubjectOfferingTableQuerySchema.parse(query)); }
 export async function getSubjectOfferingOptionsAction() { await requirePermission(Permissions.SUBJECTS); return getSubjectOfferingOptions(); }
 export async function getShsCurriculumClustersAction() { await requirePermission(Permissions.SUBJECTS); return getShsCurriculumClusters(); }
+export async function getShsCurriculumReferencesAction() { await requirePermission(Permissions.SUBJECTS); return getShsCurriculumReferences(); }
 
 export async function createSubjectOfferingAction(values: unknown) { const authorized = await auth(); if (authorized) return authorized; const parsed = CreateSubjectOfferingSchema.safeParse(values); return parsed.success ? run(() => createSubjectOfferingService(parsed.data), "Subject offering saved successfully.") : { error: "Invalid fields." }; }
 export async function updateSubjectOfferingAction(id: string, values: unknown) { const authorized = await auth(); if (authorized) return authorized; const parsed = UpdateSubjectOfferingSchema.safeParse(values); return z.string().min(1).safeParse(id).success && parsed.success ? run(() => updateSubjectOfferingService(id, parsed.data), "Subject offering saved successfully.") : { error: "Invalid fields." }; }

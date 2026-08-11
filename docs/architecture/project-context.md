@@ -9,7 +9,7 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-Phase 20A SSHS Metadata Foundation is complete; authenticated browser verification for prior Subject Offering work remains pending before production.
+Phase 20B Provisional DepEd Reference Catalog is complete; authenticated browser verification for Subject Offering work remains pending before production.
 
 ### Current Objective
 
@@ -33,6 +33,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 - Student Subject Enrollment reconciliation history for active Enrollment Section corrections
 - Enrollment-scoped read-only Student Subject Enrollment UI with accessible replacement history
 - SSHS Subject Offering metadata foundation with classified, provenance-aware Offering contexts and soft-archivable elective clusters
+- Provisional source-backed DepEd SSHS reference catalog for Grade 11 Core and elective candidates plus Grade 12 TechPro pilot candidates, without school approval or student curriculum materialization
 - User Management authorized read path, URL-driven server-table UX, audited administrative account creation and administration, forced first-login completion, self-service password change, and credential-driven session invalidation
 - Audit Log Management read-only URL-driven server-table UX, authorized details, multi-action filtering, safe supported-module navigation, immutable historical actor visibility, and export-ready validated query reuse
 - Security Hardening Phase S1 centralized authorization architecture
@@ -68,6 +69,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 - [Phase 19C: Student Subject Enrollment Reconciliation Lifecycle](./milestones/phase-19c-student-subject-enrollment-reconciliation.md)
 - [Phase 19D: Student Subject Enrollment UI](./milestones/phase-19d-student-subject-enrollment-ui.md)
 - [Phase 20A: SSHS Metadata Foundation](./milestones/phase-20a-shs-metadata-foundation.md)
+- [Phase 20B: Provisional DepEd Reference Catalog](./milestones/phase-20b-provisional-deped-reference-catalog.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -116,6 +118,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 - The approved 2026-2027 regular JHS baseline contains grade-specific Subjects and full-year Offerings for Filipino, English, Mathematics, Science, Araling Panlipunan, MAPEH, TLE, and GMRC / Values Education in Grades 7 through 10. `FIL`, `ENG`, `MATH`, `SCI`, `AP`, `MAPEH`, `TLE`, and `GMRC` plus grade are internal NEMESYS/SOLARIS identifiers, not asserted DepEd or NVGCHS official codes.
 - Student Subject Enrollment is an additive, audit-ready foundation linking an Enrollment to a source Subject Offering while snapshotting the Offering identity and exact applicable Terms. Regular Grade 7-10 Enrollments in Sections without `trackStrand` materialize active records only from the approved Phase 18C-3 baseline Offering code matrix; creation, Terms, and audit records are transactional. Active Enrollment Section corrections compare approved regular-JHS eligibility and grade: same-context corrections retain rows, while changed contexts replace ACTIVE rows historically and derive only approved regular-JHS replacements. Enrollment Details provides the authorized read-only Enrollment-scoped view, with ACTIVE rows primary and REPLACED history accessible. SHS and specialized-program selection remain deferred.
 - Grade 11-12 Subject Offerings created through the application require an SSHS context: Core, Academic Elective, or TechPro Elective classification; provisional DepEd or school-approved provenance; and matching active Academic or TechPro clusters for electives. Cluster configuration is soft-archivable and empty by default. Existing `trackStrand` is not a source for SSHS metadata. SHS Student Subject Enrollment snapshot columns are immutable, and provisional SSHS Offerings are database-blocked from materialization. No SHS Subjects, clusters, Offerings, or Student Subject Enrollments were populated in Phase 20A.
+- Phase 20B populates a controlled `PROVISIONAL_DEPED` source-backed SSHS reference catalog from DepEd DO 017, s. 2026, DM 012, s. 2026, DM 036, s. 2026, and the DepEd Strengthened SHS Program curriculum-guide catalog. Reference records retain grade-specific existing Subjects, provenance, classification, cluster, and whether the source establishes all configured Terms. Grade 11 Core and TechPro BOW candidates plus Grade 12 TechPro pilot BOW candidates have provisional Offerings for the configured 2026-2027 three-term year. Academic Electives remain references without Offerings because DepEd identifies them as term-based without a universal Term assignment. The catalog does not assert NVGCHS availability, school approval, or Grade 12 pilot participation, and it cannot derive Student Subject Enrollments.
 - Academic Year management is available to Super Admin and Registrar through `Permissions.ACADEMIC_YEARS`; Registrar receives narrow `/dashboard/academic-years` shell access without general Dashboard permission.
 - Operational module headers own the primary Add or lifecycle action. Table toolbars contain search and filters on the left and only existing Import actions plus approved or disabled Export controls on the right.
 - The protected shell uses the shared sidebar provider and Base UI modal drawer: desktop state persists through the existing cookie, icon collapse retains tooltips, tablet/mobile navigation is transient below 1024px, and the sticky navbar supplies title, breadcrumbs, notifications placeholder, account controls, and the responsive trigger.
@@ -138,7 +141,7 @@ Academic Year is now the canonical database-backed period identity for Enrollmen
 
 ## Next Planned Milestone
 
-No next milestone is active or approved. Phase 20B provisional DepEd reference catalog, Phase 20C SHS school-approved student curriculum selection, reusable cross-grade SHS Subject decisions, TermGrade, manual final grades, Teacher completion, Subject Assignment modernization, Scheduling, Semester column retirement, and automatic rollover remain deferred to separately approved subphases. Existing `trackStrand` data must not be blindly migrated. Teacher and Section import-template integrations; Teacher, Subject, Section, User, and Audit Log export integrations; MFA; recovery; detailed login history; login throttling; breached-password checks; password history; and User archive/restore remain deferred to separately approved milestones.
+No next milestone is active or approved. Phase 20C SHS school-approved student curriculum selection, reusable cross-grade SHS Subject decisions, TermGrade, manual final grades, Teacher completion, Subject Assignment modernization, Scheduling, Semester column retirement, and automatic rollover remain deferred to separately approved subphases. Existing `trackStrand` data must not be blindly migrated. Teacher and Section import-template integrations; Teacher, Subject, Section, User, and Audit Log export integrations; MFA; recovery; detailed login history; login throttling; breached-password checks; password history; and User archive/restore remain deferred to separately approved milestones.
 
 ## Technology Stack
 

@@ -24,7 +24,7 @@ test("Subject Assignment reads preserve independent form option sources", async 
 
   assert.equal(assignments.length, 0, "baseline setup must not create Assignments");
   assert.ok(teachers.length > 0, "expected eligible Teacher options");
-  assert.equal(subjects.length, 32, "expected the JHS baseline Subjects");
+  assert.equal(subjects.filter((subject) => ["7", "8", "9", "10"].includes(subject.gradeLevel)).length, 32, "expected the JHS baseline Subjects");
   assert.ok(sections.length > 0, "expected eligible Section options");
   assert.ok(academicYears.length > 0, "expected an ACTIVE Academic Year");
 });
