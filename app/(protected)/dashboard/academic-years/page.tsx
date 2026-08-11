@@ -9,7 +9,7 @@ import {
 } from "react";
 
 import { CrudToolbar } from "@/components/common/crud-toolbar";
-import { DataTable } from "@/components/data-table";
+import { DataTable, resolveServerPagination } from "@/components/data-table";
 import { AcademicYearTableSkeleton } from "@/components/skeletons/academic-year-table-skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -119,10 +119,11 @@ function AcademicYearsPageContent() {
       pageIndex: page - 1,
     });
   });
-  const displayedPagination =
-    isPlaceholderData && data
-      ? { pageIndex: data.page - 1, pageSize: data.pageSize }
-      : tableState.pagination;
+  const serverPagination = resolveServerPagination({
+    requestedPagination: tableState.pagination,
+    resolvedPage: data,
+    isPlaceholderData,
+  });
 
   useEffect(() => {
     normalizeUrl();
@@ -130,13 +131,11 @@ function AcademicYearsPageContent() {
 
   useEffect(() => {
     if (
-      data &&
-      !isPlaceholderData &&
-      data.page !== tableState.pagination.pageIndex + 1
+      data && serverPagination.shouldReconcile
     ) {
       reconcilePage(data.page);
     }
-  }, [data, isPlaceholderData, tableState.pagination.pageIndex]);
+  }, [data, serverPagination.shouldReconcile]);
 
   function closeDialog(closingInstanceId: number) {
     setDialogState((current) =>
@@ -196,7 +195,7 @@ function AcademicYearsPageContent() {
               />
             )}
             server={{
-              pagination: displayedPagination,
+               pagination: serverPagination.pagination,
               sorting: tableState.sorting,
               pageCount: data?.pageCount ?? 0,
               totalCount: data?.totalCount ?? 0,

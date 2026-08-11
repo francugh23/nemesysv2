@@ -14,6 +14,7 @@ import {
   findActiveShsCurriculumCluster,
   findOffering,
   findOfferingDuplicate,
+  findOfferingFilterOptions,
   findOfferingOptions,
   findOfferings,
   findShsCurriculumCluster,
@@ -94,6 +95,11 @@ export async function getSubjectOfferingOptions() {
     findShsCurriculumClusters(),
   ]);
   return { subjects, academicYears, shsClusters };
+}
+
+export async function getSubjectOfferingFilterOptions() {
+  await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL);
+  return { academicYears: await findOfferingFilterOptions() };
 }
 
 export async function createSubjectOfferingService(values: CreateSubjectOfferingInput) {

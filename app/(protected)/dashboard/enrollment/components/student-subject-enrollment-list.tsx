@@ -126,14 +126,8 @@ function StudentSubjectEnrollmentTable({
                 {row.subjectDescription}
               </TableCell>
               <TableCell className="whitespace-normal">
-                {row.shsCurriculumStatus ? (
-                  <div className="space-y-1">
-                    <Badge variant={row.shsCurriculumStatus === "SCHOOL_APPROVED" ? "default" : "secondary"}>{row.shsCurriculumStatus}</Badge>
-                    <p className="text-xs text-muted-foreground">{row.shsClassification}{row.shsClusterCode ? ` | ${row.shsClusterCode}` : ""}</p>
-                  </div>
-                ) : "-"}
+                {row.gradeLevel}
               </TableCell>
-              <TableCell>{row.gradeLevel}</TableCell>
               <TableCell className="whitespace-normal">
                 <div className="flex flex-wrap gap-1">
                   {row.terms.map((term) => (
@@ -142,6 +136,14 @@ function StudentSubjectEnrollmentTable({
                     </Badge>
                   ))}
                 </div>
+              </TableCell>
+              <TableCell className="whitespace-normal">
+                {row.shsCurriculumStatus ? (
+                  <div className="space-y-1">
+                    <Badge variant={row.shsCurriculumStatus === "SCHOOL_APPROVED" ? "default" : "secondary"}>{row.shsCurriculumStatus}</Badge>
+                    <p className="text-xs text-muted-foreground">{row.shsClassification}{row.shsClusterCode ? ` | ${row.shsClusterCode}` : ""}</p>
+                  </div>
+                ) : "-"}
               </TableCell>
               <TableCell>
                 <Badge variant={statusVariants[row.status]}>{row.status}</Badge>

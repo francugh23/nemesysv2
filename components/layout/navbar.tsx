@@ -7,24 +7,7 @@ import { Bell, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-
-function formatPageTitle(pathname: string) {
-  const segments = pathname
-    .split("/")
-    .filter(Boolean)
-    .filter((segment) => !segment.startsWith("("));
-
-  if (segments.length === 0) {
-    return "Dashboard";
-  }
-
-  const last = segments[segments.length - 1];
-
-  return last
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
+import { formatPageTitle } from "@/components/layout/page-title";
 
 export function Navbar() {
   const pathname = usePathname();

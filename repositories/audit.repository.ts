@@ -36,6 +36,28 @@ const auditLogDetailSelect = {
   metadata: true,
 } satisfies Prisma.AuditLogSelect;
 
+const auditLogExportSelect = {
+  id: true,
+  action: true,
+  module: true,
+  recordId: true,
+  recordName: true,
+  description: true,
+  createdAt: true,
+  user: {
+    select: {
+      firstName: true,
+      middleName: true,
+      lastName: true,
+      username: true,
+    },
+  },
+} satisfies Prisma.AuditLogSelect;
+
+export type AuditLogExportProjection = Prisma.AuditLogGetPayload<{
+  select: typeof auditLogExportSelect;
+}>;
+
 function getPhilippineDateRange(dateFrom?: string, dateTo?: string) {
   return {
     gte: dateFrom ? new Date(`${dateFrom}T00:00:00.000+08:00`) : undefined,
@@ -97,8 +119,13 @@ export async function createAuditLogs(
   });
 }
 
-export async function countAuditLogs(filters: AuditLogListFilters) {
-  return prisma.auditLog.count({ where: getAuditLogListWhere(filters) });
+export async function countAuditLogs(
+  filters: AuditLogListFilters,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).auditLog.count({
+    where: getAuditLogListWhere(filters),
+  });
 }
 
 export async function findAuditLogs(
@@ -109,6 +136,21 @@ export async function findAuditLogs(
   return prisma.auditLog.findMany({
     where: getAuditLogListWhere(filters),
     select: auditLogListSelect,
+    orderBy,
+    skip: pagination.skip,
+    take: pagination.take,
+  });
+}
+
+export async function findAuditLogsForExport(
+  filters: AuditLogListFilters,
+  pagination: { skip: number; take: number },
+  orderBy: Prisma.AuditLogOrderByWithRelationInput[],
+  transaction?: Prisma.TransactionClient,
+): Promise<AuditLogExportProjection[]> {
+  return (transaction ?? prisma).auditLog.findMany({
+    where: getAuditLogListWhere(filters),
+    select: auditLogExportSelect,
     orderBy,
     skip: pagination.skip,
     take: pagination.take,

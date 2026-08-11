@@ -71,7 +71,16 @@ export function SubjectForm({ form }: SubjectFormProps) {
           {...form.register("trackStrand")}
         />
         <FieldError>{form.formState.errors.trackStrand?.message}</FieldError>
+        <p className="text-xs text-muted-foreground">
+          Optional legacy Subject identity context for Grades 11-12. It does
+          not determine SSHS Curriculum classification or student eligibility.
+        </p>
       </Field>
+
+      <p className="text-sm text-muted-foreground md:col-span-2">
+        Creating a Subject definition does not add it to an Academic Year or
+        enroll students. Configure year and Term applicability in Curriculum.
+      </p>
 
     </div>
   );

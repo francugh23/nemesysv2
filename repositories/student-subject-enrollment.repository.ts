@@ -153,16 +153,16 @@ export async function findEligibleShsOfferingsForEnrollment(academicYearId: stri
   });
 }
 
-export async function replaceDeselectedShsStudentSubjectEnrollments(enrollmentId: string, retainedOfferingIds: string[], replacedAt: Date, transaction: Prisma.TransactionClient) {
-  const rows = await transaction.studentSubjectEnrollment.findMany({ where: { enrollmentId, status: "ACTIVE", subjectOffering: { shsContext: { isNot: null } }, subjectOfferingId: { notIn: retainedOfferingIds } }, select: { id: true, subjectCode: true, subjectDescription: true, gradeLevel: true, subjectOfferingId: true } });
+export async function replaceChangedShsStudentSubjectEnrollments(enrollmentId: string, retainedIds: string[], replacedAt: Date, transaction: Prisma.TransactionClient) {
+  const rows = await transaction.studentSubjectEnrollment.findMany({ where: { enrollmentId, status: "ACTIVE", shsCurriculumStatus: { not: null }, id: { notIn: retainedIds } }, select: { id: true, subjectCode: true, subjectDescription: true, gradeLevel: true, subjectOfferingId: true } });
   if (rows.length) await transaction.studentSubjectEnrollment.updateMany({ where: { id: { in: rows.map((row) => row.id) }, status: "ACTIVE" }, data: { status: "REPLACED", replacedAt } });
   return rows;
 }
 
-export async function createShsStudentSubjectEnrollmentsFromOfferings(enrollmentId: string, offerings: Awaited<ReturnType<typeof findEligibleShsOfferingsForEnrollment>>, createdById: string, transaction: Prisma.TransactionClient) {
-  return Promise.all(offerings.map((offering) => transaction.studentSubjectEnrollment.create({ data: {
+export async function createShsStudentSubjectEnrollmentsFromSelections(enrollmentId: string, selections: Array<{ offering: Awaited<ReturnType<typeof findEligibleShsOfferingsForEnrollment>>[number]; academicTermIds: string[] }>, createdById: string, transaction: Prisma.TransactionClient) {
+  return Promise.all(selections.map(({ offering, academicTermIds }) => transaction.studentSubjectEnrollment.create({ data: {
     enrollmentId, subjectOfferingId: offering.id, subjectCode: offering.subjectCode, subjectDescription: offering.subjectDescription, gradeLevel: offering.gradeLevel, createdById,
     shsClassification: offering.shsContext!.classification, shsClusterCode: offering.shsContext!.cluster?.code ?? null, shsClusterName: offering.shsContext!.cluster?.name ?? null, shsCurriculumStatus: offering.shsContext!.curriculumStatus, shsSourceReference: offering.shsContext!.sourceReference, shsApprovalReference: offering.shsContext!.approvalReference,
-    terms: { create: offering.terms.map(({ academicTermId }) => ({ academicTermId })) },
+    terms: { create: academicTermIds.map((academicTermId) => ({ academicTermId })) },
   }, select: { id: true, subjectOfferingId: true, subjectCode: true } })));
 }

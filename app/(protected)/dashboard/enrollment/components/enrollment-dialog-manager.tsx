@@ -3,9 +3,16 @@
 import type { EnrollmentListItem } from "@/schemas";
 
 import { EditEnrollmentDialog } from "./edit-enrollment-dialog";
+import { EnrollmentTransitionDialog } from "./enrollment-transition-dialog";
 import { EnrollmentViewDialog } from "./enrollment-view-dialog";
 
-export type EnrollmentDialogType = "view" | "edit" | null;
+export type EnrollmentDialogType =
+  | "view"
+  | "edit"
+  | "COMPLETED"
+  | "DROPPED"
+  | "TRANSFERRED"
+  | null;
 
 interface EnrollmentDialogManagerProps {
   enrollment: EnrollmentListItem | null;
@@ -36,6 +43,16 @@ export function EnrollmentDialogManager({
         open={dialog === "edit"}
         onOpenChange={(open) => !open && onClose(instanceId)}
       />
+      {dialog === "COMPLETED" ||
+      dialog === "DROPPED" ||
+      dialog === "TRANSFERRED" ? (
+        <EnrollmentTransitionDialog
+          enrollment={enrollment}
+          status={dialog}
+          open
+          onOpenChange={(open) => !open && onClose(instanceId)}
+        />
+      ) : null}
     </>
   );
 }

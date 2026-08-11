@@ -18,6 +18,7 @@ import {
   generateExport,
 } from "../../services/export.service";
 import type { ExportDefinition } from "../../types/export";
+import { auditLogExportDefinition } from "../../lib/export/definitions/audit-log-export.definition";
 
 test("CSV uses a BOM, CRLF, escaping, and formula neutralization", () => {
   const csv = createCsv(
@@ -58,6 +59,48 @@ test("export dates and filenames use Philippine time", () => {
     createExportFileName("Student Records", "csv", date),
     "nemesys-student-records-20260803-143012-PHT.csv",
   );
+});
+
+test("Audit Log export uses only its approved safe projection", () => {
+  const row = auditLogExportDefinition.mapProjection({
+    id: "audit-1",
+    createdAt: new Date("2026-08-03T06:30:12.000Z"),
+    action: "UPDATE",
+    module: "Student",
+    recordName: "Student Record",
+    recordId: "student-1",
+    description: "Updated student record.",
+    user: {
+      firstName: "Ana",
+      middleName: "Maria",
+      lastName: "Santos",
+      username: "asantos",
+    },
+  });
+
+  assert.deepEqual(
+    auditLogExportDefinition.columns.map(({ header }) => header),
+    [
+      "Timestamp",
+      "Actor",
+      "Username",
+      "Module",
+      "Action",
+      "Record Name",
+      "Record ID",
+      "Description",
+    ],
+  );
+  assert.deepEqual(row, [
+    "2026-08-03 14:30:12 PHT",
+    "Santos Ana M.",
+    "asantos",
+    "Student",
+    "UPDATE",
+    "Student Record",
+    "student-1",
+    "Updated student record.",
+  ]);
 });
 
 test("shared export service retrieves records in bounded batches", async () => {

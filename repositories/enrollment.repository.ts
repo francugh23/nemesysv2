@@ -14,6 +14,7 @@ export interface EnrollmentListFilters {
   search?: string;
   status?: "ACTIVE" | "COMPLETED" | "DROPPED" | "TRANSFERRED";
   gradeLevel?: string;
+  trackStrand?: string;
   academicYearId?: string;
   sectionId?: string;
 }
@@ -28,9 +29,10 @@ function getEnrollmentListWhere(
     status: filters.status,
     academicYearId: filters.academicYearId,
     sectionId: filters.sectionId,
-    section: filters.gradeLevel
+    section: filters.gradeLevel || filters.trackStrand
       ? {
           gradeLevel: filters.gradeLevel,
+          trackStrand: filters.trackStrand,
         }
       : undefined,
     AND: searchTerms.map((term) => ({
@@ -143,6 +145,12 @@ function getEnrollmentGradeSortConditions(filters: EnrollmentListFilters) {
   if (filters.gradeLevel) {
     conditions.push(
       Prisma.sql`"section"."gradeLevel" = ${filters.gradeLevel}`,
+    );
+  }
+
+  if (filters.trackStrand) {
+    conditions.push(
+      Prisma.sql`"section"."trackStrand" = ${filters.trackStrand}`,
     );
   }
 

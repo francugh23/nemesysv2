@@ -73,8 +73,9 @@ export type CreateShsCurriculumClusterInput = z.infer<typeof CreateShsCurriculum
 export type UpdateShsCurriculumClusterInput = z.infer<typeof UpdateShsCurriculumClusterSchema>;
 
 export const SubjectOfferingTableQuerySchema = z.object({
-  academicYearId: z.string().optional(),
-  gradeLevel: z.string().optional(),
+  q: z.string().trim().max(100).optional(),
+  academicYearId: z.string().trim().min(1).optional(),
+  gradeLevel: z.enum(SUBJECT_GRADE_LEVELS).optional(),
   curriculumStatus: ShsCurriculumStatusSchema.optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(10),

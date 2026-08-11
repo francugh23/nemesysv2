@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import type {
+  InvalidateQueryFilters,
+  QueryClient,
+  QueryKey,
+} from "@tanstack/react-query";
 
 import {
   invalidateImportQueries,
@@ -13,14 +18,17 @@ import {
 
 function createInvalidationRecorder() {
   const queryKeys: unknown[][] = [];
+  const queryClient: Pick<QueryClient, "invalidateQueries"> = {
+    invalidateQueries: async <TTaggedQueryKey extends QueryKey = QueryKey>(
+      filters?: InvalidateQueryFilters<TTaggedQueryKey>,
+    ) => {
+      queryKeys.push([...(filters?.queryKey ?? [])]);
+    },
+  };
 
   return {
     queryKeys,
-    queryClient: {
-      invalidateQueries: async ({ queryKey }: { queryKey?: readonly unknown[] }) => {
-        queryKeys.push([...(queryKey ?? [])]);
-      },
-    },
+    queryClient,
   };
 }
 
@@ -76,11 +84,13 @@ test("Imports can add narrowly scoped dependent query invalidation", async () =>
   const { queryClient, queryKeys } = createInvalidationRecorder();
 
   await invalidateImportQueries(queryClient, ["subjects"], [
+    ["subject-offering-options"],
     ["subject-assignment-options"],
   ]);
 
   assert.deepEqual(queryKeys, [
     ["subjects"],
+    ["subject-offering-options"],
     ["subject-assignment-options"],
   ]);
 });

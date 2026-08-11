@@ -93,7 +93,13 @@ export function EnrollmentViewDialog({
           enrollmentId={enrollment.id}
           open={open}
         />
-        <ShsCurriculumSelection enrollmentId={enrollment.id} gradeLevel={enrollment.sectionGradeLevel} open={open} />
+        <ShsCurriculumSelection
+          enrollmentId={enrollment.id}
+          gradeLevel={enrollment.sectionGradeLevel}
+          enrollmentStatus={enrollment.status}
+          academicYearStatus={enrollment.academicYearStatus}
+          open={open}
+        />
       </DialogContent>
     </Dialog>
   );

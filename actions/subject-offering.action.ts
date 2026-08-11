@@ -20,6 +20,7 @@ import {
   getShsCurriculumClusters,
   getShsCurriculumReferences,
   getSubjectOfferingOptions,
+  getSubjectOfferingFilterOptions,
   getSubjectOfferings,
   updateShsCurriculumClusterService,
   updateSubjectOfferingService,
@@ -31,6 +32,7 @@ async function run(fn: () => Promise<unknown>, success: string) { try { await fn
 
 export async function getSubjectOfferingsAction(query: SubjectOfferingTableQueryInput) { await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL); return getSubjectOfferings(SubjectOfferingTableQuerySchema.parse(query)); }
 export async function getSubjectOfferingOptionsAction() { await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL); return getSubjectOfferingOptions(); }
+export async function getSubjectOfferingFilterOptionsAction() { await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL); return getSubjectOfferingFilterOptions(); }
 export async function getShsCurriculumClustersAction() { await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL); return getShsCurriculumClusters(); }
 export async function getShsCurriculumReferencesAction() { await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL); return getShsCurriculumReferences(); }
 

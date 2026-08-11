@@ -1,9 +1,10 @@
 "use client";
 
-import { Download } from "lucide-react";
 import { Suspense, useEffect, useEffectEvent, useState } from "react";
 
-import { DataTable } from "@/components/data-table";
+import { exportAuditLogsAction } from "@/actions/audit.action";
+import { ExportButton } from "@/components/common/export/export-button";
+import { DataTable, resolveServerPagination } from "@/components/data-table";
 import { AuditLogTableSkeleton } from "@/components/skeletons/audit-log-table-skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -104,10 +105,11 @@ function AuditLogsPageContent() {
       pageIndex: page - 1,
     });
   });
-  const displayedPagination =
-    isPlaceholderData && data
-      ? { pageIndex: data.page - 1, pageSize: data.pageSize }
-      : tableState.pagination;
+  const serverPagination = resolveServerPagination({
+    requestedPagination: tableState.pagination,
+    resolvedPage: data,
+    isPlaceholderData,
+  });
   const columns = auditLogColumns({
     onViewDetails: (auditLog) => setSelectedAuditLogId(auditLog.id),
   });
@@ -127,13 +129,11 @@ function AuditLogsPageContent() {
 
   useEffect(() => {
     if (
-      data &&
-      !isPlaceholderData &&
-      data.page !== tableState.pagination.pageIndex + 1
+      data && serverPagination.shouldReconcile
     ) {
       reconcilePage(data.page);
     }
-  }, [data, isPlaceholderData, tableState.pagination.pageIndex]);
+  }, [data, serverPagination.shouldReconcile]);
 
   const errorFallback = (
     <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
@@ -172,11 +172,18 @@ function AuditLogsPageContent() {
                 onReset={tableState.reset}
                 isFetching={isFetching && !isLoading}
                 searchResetKey={tableState.resetKey}
-                actions={<Button variant="outline" disabled><Download />Export</Button>}
+                actions={
+                  <ExportButton
+                    exportAction={(format) =>
+                      exportAuditLogsAction(normalizedQuery, format)
+                    }
+                    disabled={isLoading || isError}
+                  />
+                }
               />
             )}
             server={{
-              pagination: displayedPagination,
+               pagination: serverPagination.pagination,
               sorting: tableState.sorting,
               pageCount: data?.pageCount ?? 0,
               totalCount: data?.totalCount ?? 0,

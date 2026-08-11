@@ -12,15 +12,38 @@ const select = {
 } satisfies Prisma.SubjectOfferingSelect;
 
 type OfferingContext = CreateSubjectOfferingInput["shsContext"];
+type OfferingListQuery = {
+  q?: string;
+  academicYearId?: string;
+  gradeLevel?: string;
+  curriculumStatus?: "PROVISIONAL_DEPED" | "SCHOOL_APPROVED";
+};
 
 function contextData(context: NonNullable<OfferingContext>, createdById: string) {
   return { ...context, clusterId: context.clusterId ?? null, sourceReference: context.sourceReference ?? null, approvalReference: context.approvalReference ?? null, createdById };
 }
 
-export async function findOfferings(q: { academicYearId?: string; gradeLevel?: string; curriculumStatus?: "PROVISIONAL_DEPED" | "SCHOOL_APPROVED" }, p: { skip: number; take: number }) {
-  return prisma.subjectOffering.findMany({ where: { deletedAt: null, academicYearId: q.academicYearId, gradeLevel: q.gradeLevel, shsContext: q.curriculumStatus ? { curriculumStatus: q.curriculumStatus } : undefined }, select, skip: p.skip, take: p.take, orderBy: [{ academicYear: { startDate: "desc" } }, { gradeLevel: "asc" }, { subjectCode: "asc" }] });
+function getOfferingListWhere(q: OfferingListQuery): Prisma.SubjectOfferingWhereInput {
+  const searchTerms = q.q?.split(/\s+/).filter(Boolean) ?? [];
+
+  return {
+    deletedAt: null,
+    academicYearId: q.academicYearId,
+    gradeLevel: q.gradeLevel,
+    shsContext: q.curriculumStatus ? { curriculumStatus: q.curriculumStatus } : undefined,
+    AND: searchTerms.map((term) => ({
+      OR: [
+        { subjectCode: { contains: term, mode: "insensitive" } },
+        { subjectDescription: { contains: term, mode: "insensitive" } },
+      ],
+    })),
+  };
 }
-export async function countOfferings(q: { academicYearId?: string; gradeLevel?: string; curriculumStatus?: "PROVISIONAL_DEPED" | "SCHOOL_APPROVED" }) { return prisma.subjectOffering.count({ where: { deletedAt: null, academicYearId: q.academicYearId, gradeLevel: q.gradeLevel, shsContext: q.curriculumStatus ? { curriculumStatus: q.curriculumStatus } : undefined } }); }
+
+export async function findOfferings(q: OfferingListQuery, p: { skip: number; take: number }) {
+  return prisma.subjectOffering.findMany({ where: getOfferingListWhere(q), select, skip: p.skip, take: p.take, orderBy: [{ academicYear: { startDate: "desc" } }, { gradeLevel: "asc" }, { subjectCode: "asc" }] });
+}
+export async function countOfferings(q: OfferingListQuery) { return prisma.subjectOffering.count({ where: getOfferingListWhere(q) }); }
 export async function findOffering(id: string, tx?: Prisma.TransactionClient) { return (tx ?? prisma).subjectOffering.findFirst({ where: { id, deletedAt: null }, select }); }
 export async function findOfferingDuplicate(subjectId: string, academicYearId: string, gradeLevel: string, excludeId?: string, tx?: Prisma.TransactionClient) { return (tx ?? prisma).subjectOffering.findFirst({ where: { subjectId, academicYearId, gradeLevel, deletedAt: null, id: excludeId ? { not: excludeId } : undefined }, select: { id: true } }); }
 export async function createOffering(data: Prisma.SubjectOfferingUncheckedCreateInput, termIds: string[], context: OfferingContext, tx: Prisma.TransactionClient) {
@@ -42,6 +65,13 @@ export async function findOfferingOptions() {
       select: { id: true, label: true, terms: { select: { id: true, name: true, position: true }, orderBy: { position: "asc" } } },
     }),
   ]);
+}
+export async function findOfferingFilterOptions() {
+  return prisma.academicYear.findMany({
+    where: { subjectOfferings: { some: { deletedAt: null } } },
+    select: { id: true, label: true },
+    orderBy: [{ startDate: "desc" }, { id: "asc" }],
+  });
 }
 export async function findApprovedRegularJhsOfferings(academicYearId: string, gradeLevel: string, subjectCodes: string[], tx: Prisma.TransactionClient) { return tx.subjectOffering.findMany({ where: { academicYearId, gradeLevel, subjectCode: { in: subjectCodes }, deletedAt: null }, select: { id: true, gradeLevel: true, subjectCode: true, subjectDescription: true, terms: { select: { academicTermId: true }, orderBy: { academicTerm: { position: "asc" } } } }, orderBy: { subjectCode: "asc" } }); }
 

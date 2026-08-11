@@ -16,6 +16,9 @@
 
 ## UX Rules
 - Debounce search before updating the URL and reset to page one when search, filters, sorting, or page size changes.
+- Page-size controls must update the size and page index atomically so both client and server table modes return to page one.
+- The URL-requested page is authoritative during a placeholder transition so Next and Previous immediately update the footer state. Once fresh server data is available, the response's resolved page and page size are authoritative for the rows, footer range, page label, and navigation buttons. Reconcile a clamped fresh response back to the URL; never display fresh rows using stale requested pagination.
+- Pagination footer ranges end at the actual rendered row count, not the theoretical page capacity. Previous and Next are disabled at their respective boundaries, and both are disabled for a single page.
 - Preserve prior rows during query transitions and show background-fetch state without replacing the table.
 - Distinguish an empty module from a filtered query with no matches.
 - Use stable secondary ordering so records do not drift between pages.

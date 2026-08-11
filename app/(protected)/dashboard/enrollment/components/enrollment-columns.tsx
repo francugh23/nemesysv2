@@ -18,10 +18,15 @@ const statusVariants = {
 
 interface EnrollmentColumnOptions {
   onEdit: (enrollment: EnrollmentListItem) => void;
+  onTransition: (
+    enrollment: EnrollmentListItem,
+    status: "COMPLETED" | "DROPPED" | "TRANSFERRED",
+  ) => void;
 }
 
 export function enrollmentColumns({
   onEdit,
+  onTransition,
 }: EnrollmentColumnOptions): ColumnDef<EnrollmentListItem>[] {
   return [
     {
@@ -83,11 +88,13 @@ export function enrollmentColumns({
     {
       id: "actions",
       enableSorting: false,
-      cell: ({ row }) =>
-        row.original.status === "ACTIVE" &&
-        row.original.academicYearStatus === "ACTIVE" ? (
-          <EnrollmentActions enrollment={row.original} onEdit={onEdit} />
-        ) : null,
+      cell: ({ row }) => (
+        <EnrollmentActions
+          enrollment={row.original}
+          onEdit={onEdit}
+          onTransition={onTransition}
+        />
+      ),
     },
   ];
 }

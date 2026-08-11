@@ -31,33 +31,27 @@ import {
   lockStudentForEnrollmentSynchronization,
   updateStudentEnrollmentSummary,
 } from "@/repositories/student.repository";
+import {
+  EnrollmentLifecycleError,
+  transitionEnrollmentInTransaction,
+} from "@/services/enrollment-lifecycle.service";
 import type {
   CreateEnrollmentInput,
+  CorrectEnrollmentPlacementInput,
   EnrollmentFilterOptions,
   EnrollmentListItem,
   EnrollmentPage,
   EnrollmentTableQuery,
-  UpdateEnrollmentInput,
+  TransitionEnrollmentInput,
 } from "@/schemas";
 
 export class EnrollmentServiceError extends Error {}
 
-type EnrollmentStatus = UpdateEnrollmentInput["status"];
 type AuditChanges = Record<string, { from: string; to: string }>;
 type SectionSummary = {
   gradeLevel: string;
   trackStrand: string | null;
   sectionName: string;
-};
-
-const allowedStatusTransitions: Record<
-  EnrollmentStatus,
-  readonly EnrollmentStatus[]
-> = {
-  ACTIVE: ["COMPLETED", "DROPPED", "TRANSFERRED"],
-  COMPLETED: [],
-  DROPPED: [],
-  TRANSFERRED: [],
 };
 
 function getEnrollmentOrderBy(
@@ -110,6 +104,7 @@ export async function getEnrollments(
     search: query.q,
     status: query.status,
     gradeLevel: query.gradeLevel,
+    trackStrand: query.trackStrand,
     academicYearId: query.academicYearId,
     sectionId: query.sectionId,
   };
@@ -169,6 +164,13 @@ export async function getEnrollmentFilterOptions(): Promise<EnrollmentFilterOpti
     gradeLevels: [...new Set(sections.map((section) => section.gradeLevel))].sort(
       (first, second) => Number(first) - Number(second),
     ),
+    trackStrands: [
+      ...new Set(
+        sections.flatMap((section) =>
+          section.trackStrand ? [section.trackStrand] : [],
+        ),
+      ),
+    ].sort((first, second) => first.localeCompare(second)),
     sections: sections.sort((first, second) => {
       const gradeDifference = Number(first.gradeLevel) - Number(second.gradeLevel);
 
@@ -315,21 +317,6 @@ async function synchronizeStudentFromEnrollments(
   };
 }
 
-function validateStatusTransition(
-  currentStatus: EnrollmentStatus,
-  nextStatus: EnrollmentStatus,
-) {
-  if (currentStatus === nextStatus) {
-    return;
-  }
-
-  if (!allowedStatusTransitions[currentStatus].includes(nextStatus)) {
-    throw new EnrollmentServiceError(
-      `Enrollment status cannot change from ${currentStatus} to ${nextStatus}.`,
-    );
-  }
-}
-
 async function createEnrollmentInTransaction(
   values: CreateEnrollmentInput,
   actorId: string,
@@ -448,163 +435,182 @@ export async function createEnrollmentService(values: CreateEnrollmentInput) {
   }
 }
 
-export async function updateEnrollmentService(
+function getReadOnlyEnrollmentMessage(status?: string) {
+  return status === "LOCKED" || status === "ARCHIVED"
+    ? "Enrollment is read-only because its academic year is locked or archived."
+    : "Enrollment cannot be updated because its academic year is not active.";
+}
+
+export async function correctEnrollmentPlacementInTransaction(
   id: string,
-  values: UpdateEnrollmentInput,
+  values: CorrectEnrollmentPlacementInput,
+  actorId: string,
+  transaction: Prisma.TransactionClient,
+) {
+  const enrollmentReference = await findActiveEnrollmentById(id, transaction);
+
+  if (!enrollmentReference) {
+    throw new EnrollmentServiceError("Enrollment not found.");
+  }
+
+  if (!isAcademicYearWritable(enrollmentReference.academicYear.status)) {
+    throw new EnrollmentServiceError(
+      getReadOnlyEnrollmentMessage(enrollmentReference.academicYear.status),
+    );
+  }
+
+  await lockStudentForEnrollmentSynchronization(
+    enrollmentReference.studentId,
+    transaction,
+  );
+
+  const academicYearReference = await lockAcademicYearForEnrollment(
+    enrollmentReference.academicYearId,
+    transaction,
+  );
+
+  if (
+    !academicYearReference ||
+    !isAcademicYearWritable(academicYearReference.status)
+  ) {
+    throw new EnrollmentServiceError(
+      getReadOnlyEnrollmentMessage(academicYearReference?.status),
+    );
+  }
+
+  const enrollment = await findActiveEnrollmentById(id, transaction);
+
+  if (!enrollment) {
+    throw new EnrollmentServiceError("Enrollment not found.");
+  }
+
+  if (enrollment.status !== "ACTIVE") {
+    throw new EnrollmentServiceError(
+      "Only active enrollments can have their placement corrected.",
+    );
+  }
+
+  let section = enrollment.section;
+
+  if (values.sectionId !== enrollment.sectionId) {
+    const activeSection = await findActiveSectionForAssignment(
+      values.sectionId,
+      transaction,
+    );
+
+    if (!activeSection) {
+      throw new EnrollmentServiceError("Section not found or inactive.");
+    }
+
+    section = activeSection;
+  }
+
+  const changes: AuditChanges = {};
+
+  if (values.sectionId !== enrollment.sectionId) {
+    changes.section = {
+      from: `${enrollment.sectionId} | Grade ${enrollment.section.gradeLevel}${enrollment.section.trackStrand ? ` - ${enrollment.section.trackStrand}` : ""} - ${enrollment.section.sectionName}`,
+      to: `${values.sectionId} | Grade ${section.gradeLevel}${section.trackStrand ? ` - ${section.trackStrand}` : ""} - ${section.sectionName}`,
+    };
+  }
+
+  const updateResult = await updateEnrollment(
+    {
+      id: enrollment.id,
+      deletedAt: null,
+      status: "ACTIVE",
+      academicYear: { status: "ACTIVE" },
+    },
+    { sectionId: values.sectionId },
+    transaction,
+  );
+
+  if (updateResult.count !== 1) {
+    throw new EnrollmentServiceError(
+      "Enrollment is no longer active and cannot be updated.",
+    );
+  }
+
+  if (values.sectionId !== enrollment.sectionId) {
+    await reconcileApprovedRegularJhsStudentSubjectEnrollments(
+      {
+        enrollmentId: enrollment.id,
+        academicYearId: enrollment.academicYearId,
+        academicYearLabel: enrollment.academicYear.label,
+        enrollmentStatus: "ACTIVE",
+        previousSection: enrollment.section,
+        nextSection: section,
+        studentLrn: enrollment.student.lrn,
+        actorId,
+      },
+      transaction,
+    );
+  }
+
+  const synchronizedStudent = await synchronizeStudentFromEnrollments(
+    enrollment.studentId,
+    transaction,
+  );
+
+  addStudentSynchronizationChanges(
+    changes,
+    enrollment.student,
+    synchronizedStudent,
+  );
+
+  const changedFields = Object.keys(changes);
+
+  await createAuditLogs(
+    [{
+      userId: actorId,
+      action: "UPDATE",
+      module: "Enrollment",
+      recordId: enrollment.id,
+      recordName: `${enrollment.student.lrn} - ${getStudentName(enrollment.student)} - ${enrollment.academicYear.label}`,
+      description: changedFields.length
+        ? "Corrected enrollment placement."
+        : "Confirmed enrollment placement without changes.",
+      metadata: changedFields.length ? { changes } : undefined,
+    }],
+    transaction,
+  );
+
+  return enrollment.id;
+}
+
+export async function correctEnrollmentPlacementService(
+  id: string,
+  values: CorrectEnrollmentPlacementInput,
 ) {
   const session = await requirePermission(Permissions.ENROLLMENT);
-
-  return prisma.$transaction(async (transaction) => {
-    const enrollmentReference = await findActiveEnrollmentById(id, transaction);
-
-    if (!enrollmentReference) {
-      throw new EnrollmentServiceError("Enrollment not found.");
-    }
-
-    if (!isAcademicYearWritable(enrollmentReference.academicYear.status)) {
-      throw new EnrollmentServiceError(
-        enrollmentReference.academicYear.status === "LOCKED" ||
-          enrollmentReference.academicYear.status === "ARCHIVED"
-          ? "Enrollment is read-only because its academic year is locked or archived."
-          : "Enrollment cannot be updated because its academic year is not active.",
-      );
-    }
-
-    await lockStudentForEnrollmentSynchronization(
-      enrollmentReference.studentId,
+  return prisma.$transaction((transaction) =>
+    correctEnrollmentPlacementInTransaction(
+      id,
+      values,
+      session.user.id,
       transaction,
-    );
+    ),
+  );
+}
 
-    const academicYearReference = await lockAcademicYearForEnrollment(
-      enrollmentReference.academicYearId,
-      transaction,
-    );
-
-    if (
-      !academicYearReference ||
-      !isAcademicYearWritable(academicYearReference.status)
-    ) {
-      throw new EnrollmentServiceError(
-        academicYearReference?.status === "LOCKED" ||
-          academicYearReference?.status === "ARCHIVED"
-          ? "Enrollment is read-only because its academic year is locked or archived."
-          : "Enrollment cannot be updated because its academic year is not active.",
-      );
-    }
-
-    const enrollment = await findActiveEnrollmentById(id, transaction);
-
-    if (!enrollment) {
-      throw new EnrollmentServiceError("Enrollment not found.");
-    }
-
-    validateStatusTransition(enrollment.status, values.status);
-
-    if (enrollment.status !== "ACTIVE") {
-      throw new EnrollmentServiceError(
-        "Only active enrollments can be updated.",
-      );
-    }
-
-    let section = enrollment.section;
-
-    if (values.sectionId !== enrollment.sectionId) {
-      const activeSection = await findActiveSectionForAssignment(
-        values.sectionId,
+export async function transitionEnrollmentService(
+  id: string,
+  values: TransitionEnrollmentInput,
+) {
+  const session = await requirePermission(Permissions.ENROLLMENT);
+  try {
+    return await prisma.$transaction((transaction) =>
+      transitionEnrollmentInTransaction(
+        id,
+        values,
+        session.user.id,
         transaction,
-      );
-
-      if (!activeSection) {
-        throw new EnrollmentServiceError("Section not found or inactive.");
-      }
-
-      section = activeSection;
-    }
-
-    const changes: AuditChanges = {};
-
-    if (values.sectionId !== enrollment.sectionId) {
-      changes.section = {
-        from: `${enrollment.sectionId} | Grade ${enrollment.section.gradeLevel}${enrollment.section.trackStrand ? ` - ${enrollment.section.trackStrand}` : ""} - ${enrollment.section.sectionName}`,
-        to: `${values.sectionId} | Grade ${section.gradeLevel}${section.trackStrand ? ` - ${section.trackStrand}` : ""} - ${section.sectionName}`,
-      };
-    }
-
-    if (values.status !== enrollment.status) {
-      changes.status = {
-        from: enrollment.status,
-        to: values.status,
-      };
-    }
-
-    const updateResult = await updateEnrollment(
-      {
-        id: enrollment.id,
-        deletedAt: null,
-        status: "ACTIVE",
-        academicYear: { status: "ACTIVE" },
-      },
-      {
-        sectionId: values.sectionId,
-        status: values.status,
-      },
-      transaction,
+      ),
     );
-
-    if (updateResult.count !== 1) {
-      throw new EnrollmentServiceError(
-        "Enrollment is no longer active and cannot be updated.",
-      );
+  } catch (error) {
+    if (error instanceof EnrollmentLifecycleError) {
+      throw new EnrollmentServiceError(error.message);
     }
-
-    if (values.sectionId !== enrollment.sectionId) {
-      await reconcileApprovedRegularJhsStudentSubjectEnrollments(
-        {
-          enrollmentId: enrollment.id,
-          academicYearId: enrollment.academicYearId,
-          academicYearLabel: enrollment.academicYear.label,
-          enrollmentStatus: values.status,
-          previousSection: enrollment.section,
-          nextSection: section,
-          studentLrn: enrollment.student.lrn,
-          actorId: session.user.id,
-        },
-        transaction,
-      );
-    }
-
-    const synchronizedStudent = await synchronizeStudentFromEnrollments(
-      enrollment.studentId,
-      transaction,
-    );
-
-    addStudentSynchronizationChanges(
-      changes,
-      enrollment.student,
-      synchronizedStudent,
-    );
-
-    const changedFields = Object.keys(changes);
-    const description =
-      changedFields.length > 0
-        ? `Updated enrollment ${changedFields.join(" and ")}`
-        : "Updated enrollment";
-
-    await createAuditLogs(
-      [
-        {
-          userId: session.user.id,
-          action: "UPDATE",
-          module: "Enrollment",
-          recordId: enrollment.id,
-          recordName: `${enrollment.student.lrn} - ${getStudentName(enrollment.student)} - ${enrollment.academicYear.label}`,
-          description,
-          metadata: changedFields.length > 0 ? { changes } : undefined,
-        },
-      ],
-      transaction,
-    );
-
-    return enrollment.id;
-  });
+    throw error;
+  }
 }

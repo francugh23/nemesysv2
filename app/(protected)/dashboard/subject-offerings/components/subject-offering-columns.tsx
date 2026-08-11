@@ -44,6 +44,15 @@ export function subjectOfferingColumns({
       id: "academicYear",
       accessorFn: (row) => row.academicYear.label,
       header: ({ column }) => <DataTableColumnHeader column={column} title="Academic Year" />,
+      cell: ({ row }) => (
+        <div className="flex flex-col items-start gap-1">
+          <span>{row.original.academicYear.label}</span>
+          <Badge variant="outline">
+            {row.original.academicYear.status.charAt(0) +
+              row.original.academicYear.status.slice(1).toLowerCase()}
+          </Badge>
+        </div>
+      ),
     },
     {
       id: "terms",
@@ -66,6 +75,15 @@ export function subjectOfferingColumns({
           </div>
         );
       },
+    },
+    {
+      id: "offeringState",
+      header: "Offering State",
+      cell: ({ row }) => (
+        <Badge variant={row.original.deletedAt ? "secondary" : "default"}>
+          {row.original.deletedAt ? "Archived" : "Active"}
+        </Badge>
+      ),
     },
     {
       id: "actions",

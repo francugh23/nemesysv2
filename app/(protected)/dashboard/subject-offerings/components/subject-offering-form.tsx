@@ -136,23 +136,6 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
             />
             <FieldError>{form.formState.errors.shsContext?.classification?.message}</FieldError>
           </Field>
-          <Field>
-            <FieldLabel>Curriculum Status</FieldLabel>
-            <Controller
-              name="shsContext.curriculumStatus"
-              control={form.control}
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PROVISIONAL_DEPED">Provisional DepEd</SelectItem>
-                    <SelectItem value="SCHOOL_APPROVED">School Approved</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            <FieldError>{form.formState.errors.shsContext?.curriculumStatus?.message}</FieldError>
-          </Field>
           {classification !== "CORE" && (
             <Field>
               <FieldLabel>Curriculum Cluster</FieldLabel>
@@ -178,11 +161,6 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
             <FieldLabel>DepEd Source Reference</FieldLabel>
             <Controller name="shsContext.sourceReference" control={form.control} render={({ field }) => <Input {...field} value={field.value ?? ""} placeholder="Required for provisional DepEd configuration" />} />
             <FieldError>{form.formState.errors.shsContext?.sourceReference?.message}</FieldError>
-          </Field>
-          <Field className="md:col-span-2">
-            <FieldLabel>School Approval Reference</FieldLabel>
-            <Controller name="shsContext.approvalReference" control={form.control} render={({ field }) => <Input {...field} value={field.value ?? ""} placeholder="Required for school-approved configuration" />} />
-            <FieldError>{form.formState.errors.shsContext?.approvalReference?.message}</FieldError>
           </Field>
         </div>
       )}

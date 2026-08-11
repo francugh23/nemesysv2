@@ -9,10 +9,11 @@ import {
 
 import {
   createEnrollmentAction,
+  correctEnrollmentPlacementAction,
   getEnrollmentFilterOptionsAction,
   getEnrollmentFormOptionsAction,
   getEnrollmentsAction,
-  updateEnrollmentAction,
+  transitionEnrollmentAction,
 } from "@/actions/enrollment.action";
 import type { EnrollmentTableQueryInput } from "@/schemas";
 
@@ -62,7 +63,7 @@ export function useCreateEnrollment() {
   });
 }
 
-export function useUpdateEnrollment() {
+export function useCorrectEnrollmentPlacement() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -71,8 +72,8 @@ export function useUpdateEnrollment() {
       values,
     }: {
       id: string;
-      values: Parameters<typeof updateEnrollmentAction>[1];
-    }) => updateEnrollmentAction(id, values),
+      values: Parameters<typeof correctEnrollmentPlacementAction>[1];
+    }) => correctEnrollmentPlacementAction(id, values),
     onSuccess: async (result, values) => {
       if (result.error) {
         return;
@@ -87,6 +88,29 @@ export function useUpdateEnrollment() {
         queryClient.invalidateQueries({
           queryKey: ["enrollment-filter-options"],
         }),
+      ]);
+    },
+  });
+}
+
+export function useTransitionEnrollment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      values,
+    }: {
+      id: string;
+      values: Parameters<typeof transitionEnrollmentAction>[1];
+    }) => transitionEnrollmentAction(id, values),
+    onSuccess: async (result) => {
+      if (result.error) return;
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["enrollments"] }),
+        queryClient.invalidateQueries({ queryKey: ["students"] }),
+        queryClient.invalidateQueries({ queryKey: ["eligible-shs-offerings"] }),
       ]);
     },
   });

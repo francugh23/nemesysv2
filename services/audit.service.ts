@@ -7,6 +7,7 @@ import {
   findAuditLogById,
   findAuditLogFilterOptionValues,
   findAuditLogs,
+  findAuditLogsForExport,
 } from "@/repositories/audit.repository";
 import type {
   AuditLogFilterOptions,
@@ -15,6 +16,15 @@ import type {
   AuditLogPage,
   AuditLogTableQuery,
 } from "@/schemas";
+import prisma from "@/lib/prisma";
+import { auditLogExportDefinition } from "@/lib/export/definitions/audit-log-export.definition";
+import { generateExport } from "@/services/export.service";
+import type {
+  DownloadableFile,
+  ExportDefinition,
+  ExportFormat,
+} from "@/types/export";
+import type { AuditLogExportProjection } from "@/repositories/audit.repository";
 
 interface AuditLogInput {
   action: string;
@@ -95,6 +105,17 @@ function getAuditLogOrderBy(
   }
 }
 
+function getAuditLogListFilters(query: AuditLogTableQuery) {
+  return {
+    search: query.q,
+    module: query.module,
+    actions: query.action,
+    actorId: query.actor,
+    dateFrom: query.dateFrom,
+    dateTo: query.dateTo,
+  };
+}
+
 function toAuditLogListItem(
   auditLog: Awaited<ReturnType<typeof findAuditLogs>>[number],
 ): AuditLogListItem {
@@ -120,14 +141,7 @@ export async function getAuditLogs(
 ): Promise<AuditLogPage> {
   await requirePermission(Permissions.AUDIT_LOGS);
 
-  const filters = {
-    search: query.q,
-    module: query.module,
-    actions: query.action,
-    actorId: query.actor,
-    dateFrom: query.dateFrom,
-    dateTo: query.dateTo,
-  };
+  const filters = getAuditLogListFilters(query);
   const totalCount = await countAuditLogs(filters);
   const pageCount = Math.ceil(totalCount / query.pageSize);
   const page = Math.min(query.page, Math.max(pageCount, 1));
@@ -144,6 +158,39 @@ export async function getAuditLogs(
     pageSize: query.pageSize,
     pageCount,
   };
+}
+
+export async function exportAuditLogs(
+  query: AuditLogTableQuery,
+  format: ExportFormat,
+): Promise<DownloadableFile> {
+  await requirePermission(Permissions.AUDIT_LOGS);
+
+  return prisma.$transaction(
+    (transaction) => {
+      const definition: ExportDefinition<
+        AuditLogTableQuery,
+        AuditLogExportProjection
+      > = {
+        ...auditLogExportDefinition,
+        count: (exportQuery) =>
+          countAuditLogs(getAuditLogListFilters(exportQuery), transaction),
+        loadBatch: (exportQuery, pagination) =>
+          findAuditLogsForExport(
+            getAuditLogListFilters(exportQuery),
+            pagination,
+            getAuditLogOrderBy(exportQuery),
+            transaction,
+          ),
+      };
+
+      return generateExport(query, format, definition);
+    },
+    {
+      isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+      timeout: 30_000,
+    },
+  );
 }
 
 export async function getAuditLogDetail(id: string): Promise<AuditLogDetail> {

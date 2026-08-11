@@ -4,11 +4,15 @@ import { Suspense, useEffect, useEffectEvent, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 
 import { CrudToolbar } from "@/components/common/crud-toolbar";
-import { DataTable, DataTableFacetedFilter, type DataTableFilterOption } from "@/components/data-table";
+import { DataTable, DataTableFacetedFilter, DataTableToolbar, resolveServerPagination, type DataTableFilterOption } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useShsCurriculumReferences, useSubjectOfferingOptions, useSubjectOfferings } from "@/hooks/subject-offering.hook";
+import { useShsCurriculumReferences, useSubjectOfferingFilterOptions, useSubjectOfferings } from "@/hooks/subject-offering.hook";
 import { useTableUrlState } from "@/hooks/use-table-url-state.hook";
+import {
+  CURRICULUM_DESCRIPTION,
+  CURRICULUM_TITLE,
+} from "@/lib/academic-configuration";
 import type { SubjectOfferingTableQueryInput } from "@/schemas";
 
 import { subjectOfferingColumns } from "./components/subject-offering-columns";
@@ -36,15 +40,17 @@ function SubjectOfferingsPageContent() {
   const { data: session } = useSession();
   const canManageOfferings = session?.user.role === "SUPER_ADMIN";
   const tableState = useTableUrlState({ filterKeys, sortableColumns: [] });
-  const { data: options } = useSubjectOfferingOptions();
+  const { data: filterOptions } = useSubjectOfferingFilterOptions();
   const gradeLevel = ["7", "8", "9", "10", "11", "12"].includes(tableState.filters.gradeLevel)
-    ? tableState.filters.gradeLevel
+    ? tableState.filters.gradeLevel as SubjectOfferingTableQueryInput["gradeLevel"]
     : undefined;
   const academicYearId = tableState.filters.academicYearId || undefined;
+  const search = tableState.query.q?.trim().slice(0, 100);
   const curriculumStatus = ["PROVISIONAL_DEPED", "SCHOOL_APPROVED"].includes(tableState.filters.curriculumStatus)
     ? tableState.filters.curriculumStatus as "PROVISIONAL_DEPED" | "SCHOOL_APPROVED"
     : undefined;
   const query: SubjectOfferingTableQueryInput = {
+    q: search || undefined,
     academicYearId,
     gradeLevel,
     curriculumStatus,
@@ -79,21 +85,23 @@ function SubjectOfferingsPageContent() {
       tableState.setFilter("gradeLevel", "");
     }
   });
-  const displayedPagination = isPlaceholderData && data
-    ? { pageIndex: data.page - 1, pageSize: Number(data.pageSize) }
-    : tableState.pagination;
+  const serverPagination = resolveServerPagination({
+    requestedPagination: tableState.pagination,
+    resolvedPage: data,
+    isPlaceholderData,
+  });
 
   useEffect(() => {
     normalizeGradeFilter();
   }, [gradeLevel, tableState.filters.gradeLevel]);
 
   useEffect(() => {
-    if (data && !isPlaceholderData && data.page !== tableState.pagination.pageIndex + 1) {
+    if (data && serverPagination.shouldReconcile) {
       reconcilePage(data.page);
     }
-  }, [data, isPlaceholderData, tableState.pagination.pageIndex]);
+  }, [data, serverPagination.shouldReconcile]);
 
-  const academicYearOptions: DataTableFilterOption[] = options?.academicYears.map((year) => ({
+  const academicYearOptions: DataTableFilterOption[] = filterOptions?.academicYears.map((year) => ({
     label: year.label,
     value: year.id,
   })) ?? [];
@@ -101,14 +109,21 @@ function SubjectOfferingsPageContent() {
     label: `Grade ${grade}`,
     value: grade,
   }));
-  const hasFilters = Boolean(academicYearId || gradeLevel || curriculumStatus);
+  const hasFilters = Boolean(search || academicYearId || gradeLevel || curriculumStatus);
 
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold">Subject Offerings</h1>
-          <p className="text-sm text-muted-foreground">Review offering configuration and provisional DepEd reference candidates. Provisional records do not establish NVGCHS availability.</p>
+          <h1 className="text-2xl font-semibold">{CURRICULUM_TITLE}</h1>
+          <p className="max-w-3xl text-sm text-muted-foreground">
+            {CURRICULUM_DESCRIPTION} SSHS entries also show classification and
+            school-approval status.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            This table shows active Subject Offerings. Archiving removes an
+            Offering from active Curriculum while preserving historical records.
+          </p>
         </div>
         {canManageOfferings && <CrudToolbar primaryAction={<CreateSubjectOfferingDialog />} actions={<ShsCurriculumClusterDialog />} />}
       </div>
@@ -119,7 +134,15 @@ function SubjectOfferingsPageContent() {
             columns={columns}
             data={data?.items ?? []}
             toolbar={() => (
-              <div className="flex flex-wrap items-center gap-2">
+              <DataTableToolbar
+                search={tableState.search}
+                onSearchChange={tableState.setSearch}
+                searchPlaceholder="Search code or description..."
+                searchResetKey={tableState.resetKey}
+                canReset={hasFilters}
+                onReset={tableState.reset}
+                isFetching={isFetching && !isLoading}
+              >
                 <DataTableFacetedFilter
                   label="Academic Year"
                   allLabel="All Academic Years"
@@ -141,12 +164,10 @@ function SubjectOfferingsPageContent() {
                   options={gradeOptions}
                   onValueChange={(value) => tableState.setFilter("gradeLevel", value)}
                 />
-                {hasFilters && <Button variant="ghost" size="sm" onClick={tableState.reset}>Reset</Button>}
-                {isFetching && !isLoading && <span className="text-xs text-muted-foreground">Updating</span>}
-              </div>
+              </DataTableToolbar>
             )}
             server={{
-              pagination: displayedPagination,
+               pagination: serverPagination.pagination,
               sorting: tableState.sorting,
               pageCount: data?.pageCount ?? 0,
               totalCount: data?.totalCount ?? 0,
@@ -161,10 +182,10 @@ function SubjectOfferingsPageContent() {
               isFetching,
               loadingFallback: <LoadingTable />,
               errorFallback: <ErrorTable onRetry={() => void refetch()} retrying={isFetching} />,
-              emptyTitle: hasFilters ? "No matching subject offerings" : "No subject offerings yet",
+              emptyTitle: hasFilters ? "No matching Curriculum entries" : "No Curriculum entries yet",
               emptyDescription: hasFilters
-                ? "Try adjusting or clearing the current filters."
-                : "Create a subject offering to add the first record.",
+                ? "Try adjusting or clearing the current search and filters."
+                : "Create a Subject Offering to add the first Curriculum entry.",
               emptyAction: hasFilters ? <Button variant="outline" size="sm" onClick={tableState.reset}>Clear filters</Button> : undefined,
             }}
           />
@@ -188,13 +209,13 @@ function SubjectOfferingsPageContent() {
 }
 
 function LoadingTable() {
-  return <div className="flex min-h-64 items-center justify-center text-sm text-muted-foreground">Loading subject offerings...</div>;
+  return <div className="flex min-h-64 items-center justify-center text-sm text-muted-foreground">Loading Curriculum...</div>;
 }
 
 function ErrorTable({ onRetry, retrying }: { onRetry: () => void; retrying: boolean }) {
   return (
     <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
-      <div><p className="font-medium">Unable to load subject offerings</p><p className="text-sm text-muted-foreground">Check your connection and try again.</p></div>
+      <div><p className="font-medium">Unable to load Curriculum</p><p className="text-sm text-muted-foreground">Check your connection and try again.</p></div>
       <Button variant="outline" onClick={onRetry} disabled={retrying}>{retrying ? "Retrying..." : "Try again"}</Button>
     </div>
   );

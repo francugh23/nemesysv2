@@ -14,12 +14,21 @@ import type { EnrollmentListItem } from "@/schemas";
 interface EnrollmentActionsProps {
   enrollment: EnrollmentListItem;
   onEdit: (enrollment: EnrollmentListItem) => void;
+  onTransition: (
+    enrollment: EnrollmentListItem,
+    status: "COMPLETED" | "DROPPED" | "TRANSFERRED",
+  ) => void;
 }
 
 export function EnrollmentActions({
   enrollment,
   onEdit,
+  onTransition,
 }: EnrollmentActionsProps) {
+  const operational =
+    enrollment.status === "ACTIVE" &&
+    enrollment.academicYearStatus === "ACTIVE";
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -39,9 +48,44 @@ export function EnrollmentActions({
             event.stopPropagation();
             onEdit(enrollment);
           }}
+          disabled={!operational}
         >
-          Edit
+          Correct placement
         </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={!operational}
+          onClick={(event) => {
+            event.stopPropagation();
+            onTransition(enrollment, "COMPLETED");
+          }}
+        >
+          Mark completed
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={!operational}
+          onClick={(event) => {
+            event.stopPropagation();
+            onTransition(enrollment, "DROPPED");
+          }}
+        >
+          Withdraw / Unenroll
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={!operational}
+          onClick={(event) => {
+            event.stopPropagation();
+            onTransition(enrollment, "TRANSFERRED");
+          }}
+        >
+          Mark transferred
+        </DropdownMenuItem>
+        {!operational ? (
+          <DropdownMenuItem disabled>
+            {enrollment.status !== "ACTIVE"
+              ? `${enrollment.status} is terminal`
+              : "Academic year is read-only"}
+          </DropdownMenuItem>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );

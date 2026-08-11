@@ -5,66 +5,216 @@ import "dotenv/config";
 
 import { Prisma } from "../../app/generated/prisma/client";
 import prisma from "../../lib/prisma";
-import { createShsStudentSubjectEnrollmentsFromOfferings, findEligibleShsOfferingsForEnrollment, replaceDeselectedShsStudentSubjectEnrollments } from "../../repositories/student-subject-enrollment.repository";
+import { ShsStudentCurriculumSelectionSchema } from "../../schemas/student-subject-enrollment.schema";
+import { deriveApprovedRegularJhsStudentSubjectEnrollments } from "../../services/jhs-student-subject-enrollment-derivation.service";
+import { selectShsStudentCurriculumInTransaction } from "../../services/student-subject-enrollment-selection.service";
 
 class RollbackFixture extends Error {}
 
-async function fixture(tx: Prisma.TransactionClient, gradeLevel = "11") {
-  const actor = await tx.user.findFirstOrThrow({ where: { deletedAt: null }, select: { id: true } });
-  const offering = await tx.subjectOffering.findFirstOrThrow({ where: { academicYearId: "academic-year-2026-2027", gradeLevel, deletedAt: null, shsContext: { is: { curriculumStatus: "PROVISIONAL_DEPED" } } }, include: { shsContext: true } });
-  const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
-  const section = await tx.section.create({ data: { gradeLevel, sectionName: `P20C ${suffix}`, createdById: actor.id } });
-  const student = await tx.student.create({ data: { lrn: `P20C${suffix}`, firstName: "Phase", lastName: "TwentyC", gender: "FEMALE", barangay: "Test", municipality: "Test", province: "Test", createdById: actor.id } });
-  const enrollment = await tx.enrollment.create({ data: { studentId: student.id, sectionId: section.id, academicYearId: "academic-year-2026-2027", createdById: actor.id } });
-  return { actor, offering, enrollment };
-}
-
-test("Phase 20C approval requires complete metadata and preserves provisional selection blocking", async () => {
-  await assert.rejects(prisma.$transaction(async (tx) => {
-    const data = await fixture(tx);
-    await tx.subjectOfferingShsContext.update({ where: { subjectOfferingId: data.offering.id }, data: { curriculumStatus: "SCHOOL_APPROVED", approvalReference: "Board 20C" } });
-  }), /provenance_check/i);
-
-  await assert.rejects(prisma.$transaction(async (tx) => {
-    const data = await fixture(tx);
-    await tx.studentSubjectEnrollment.create({ data: { enrollmentId: data.enrollment.id, subjectOfferingId: data.offering.id, subjectCode: data.offering.subjectCode, subjectDescription: data.offering.subjectDescription, gradeLevel: "11", createdById: data.actor.id } });
-  }), /Provisional DepEd Subject Offerings cannot materialize/i);
-});
-
-test("Phase 20C approved selection copies exact Terms and SSHS snapshots and replacement preserves history", async () => {
+async function withRollback(run: (tx: Prisma.TransactionClient) => Promise<void>) {
   try {
     await prisma.$transaction(async (tx) => {
-      const data = await fixture(tx);
-      await tx.subjectOfferingShsContext.update({ where: { subjectOfferingId: data.offering.id }, data: { curriculumStatus: "SCHOOL_APPROVED", approvalReference: "Board 20C", approvedById: data.actor.id, approvedAt: new Date() } });
-      await tx.auditLog.create({ data: { userId: data.actor.id, action: "UPDATE", module: "SubjectOffering", recordId: data.offering.id, recordName: data.offering.subjectCode, description: "Approved provisional SSHS subject offering for school use." } });
-      const eligible = await findEligibleShsOfferingsForEnrollment("academic-year-2026-2027", "11", tx);
-      const selected = eligible.find((offering) => offering.id === data.offering.id)!;
-      assert.ok(selected);
-      const created = await createShsStudentSubjectEnrollmentsFromOfferings(data.enrollment.id, [selected], data.actor.id, tx);
-      await tx.auditLog.create({ data: { userId: data.actor.id, action: "CREATE", module: "StudentSubjectEnrollment", recordId: created[0].id, recordName: created[0].subjectCode, description: "Selected school-approved SSHS subject offering for enrollment." } });
-      const row = await tx.studentSubjectEnrollment.findUniqueOrThrow({ where: { id: created[0].id }, include: { terms: { orderBy: { academicTerm: { position: "asc" } } } } });
-      assert.equal(row.shsCurriculumStatus, "SCHOOL_APPROVED");
-      assert.equal(row.shsClassification, selected.shsContext!.classification);
-      assert.equal(row.shsApprovalReference, "Board 20C");
-      assert.deepEqual(row.terms.map((term) => term.academicTermId), selected.terms.map((term) => term.academicTermId));
-      const replaced = await replaceDeselectedShsStudentSubjectEnrollments(data.enrollment.id, [], new Date(), tx);
-      assert.equal(replaced.length, 1);
-      assert.equal((await tx.studentSubjectEnrollment.findUniqueOrThrow({ where: { id: row.id } })).status, "REPLACED");
-      assert.ok(await tx.auditLog.count({ where: { recordId: data.offering.id, module: "SubjectOffering" } }) >= 2);
+      await run(tx);
       throw new RollbackFixture();
     });
-  } catch (error) { if (!(error instanceof RollbackFixture)) throw error; }
+  } catch (error) {
+    if (!(error instanceof RollbackFixture)) throw error;
+  }
+}
+
+async function createEnrollmentFixture(tx: Prisma.TransactionClient, gradeLevel: string) {
+  const [actor, academicYear] = await Promise.all([
+    tx.user.findFirstOrThrow({ where: { deletedAt: null }, select: { id: true } }),
+    tx.academicYear.findFirstOrThrow({ where: { status: "ACTIVE" }, select: { id: true, label: true } }),
+  ]);
+  const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
+  const section = await tx.section.create({
+    data: { gradeLevel, sectionName: `P20C ${suffix}`, createdById: actor.id },
+  });
+  const student = await tx.student.create({
+    data: {
+      lrn: `P20C${suffix}`,
+      firstName: "Phase",
+      lastName: "TwentyC",
+      gender: "FEMALE",
+      barangay: "Test",
+      municipality: "Test",
+      province: "Test",
+      createdById: actor.id,
+    },
+  });
+  const enrollment = await tx.enrollment.create({
+    data: { studentId: student.id, sectionId: section.id, academicYearId: academicYear.id, createdById: actor.id },
+  });
+  return { actor, academicYear, enrollment, student };
+}
+
+async function getProvisionalOfferings(tx: Prisma.TransactionClient, academicYearId: string, gradeLevel: string, count = 1) {
+  const offerings = await tx.subjectOffering.findMany({
+    where: {
+      academicYearId,
+      gradeLevel,
+      deletedAt: null,
+      shsContext: { is: { curriculumStatus: "PROVISIONAL_DEPED" } },
+    },
+    select: {
+      id: true,
+      terms: {
+        select: { academicTermId: true },
+        orderBy: { academicTerm: { position: "asc" } },
+      },
+    },
+    orderBy: { id: "asc" },
+    take: count,
+  });
+  assert.equal(offerings.length, count);
+  return offerings;
+}
+
+async function approveOfferings(tx: Prisma.TransactionClient, offeringIds: string[], actorId: string) {
+  await tx.subjectOfferingShsContext.updateMany({
+    where: { subjectOfferingId: { in: offeringIds } },
+    data: {
+      curriculumStatus: "SCHOOL_APPROVED",
+      approvalReference: "Board 20C",
+      approvedById: actorId,
+      approvedAt: new Date(),
+    },
+  });
+}
+
+test("Phase 20C selection schema requires unique Offerings and nonempty unique Academic Terms", () => {
+  const selection = { subjectOfferingId: "offering-1", academicTermIds: ["term-1"] };
+  assert.equal(ShsStudentCurriculumSelectionSchema.safeParse({ enrollmentId: "enrollment-1", selections: [selection] }).success, true);
+  assert.equal(ShsStudentCurriculumSelectionSchema.safeParse({ enrollmentId: "enrollment-1", selections: [{ ...selection, academicTermIds: [] }] }).success, false);
+  assert.equal(ShsStudentCurriculumSelectionSchema.safeParse({ enrollmentId: "enrollment-1", selections: [{ ...selection, academicTermIds: ["term-1", "term-1"] }] }).success, false);
+  assert.equal(ShsStudentCurriculumSelectionSchema.safeParse({ enrollmentId: "enrollment-1", selections: [selection, selection] }).success, false);
 });
 
-test("Phase 20C eligibility remains grade and academic-year scoped, including Grade 12 candidates", async () => {
-  await prisma.$transaction(async (tx) => {
-    const gradeEleven = await fixture(tx, "11");
-    const gradeTwelve = await fixture(tx, "12");
-    await tx.subjectOfferingShsContext.updateMany({ where: { subjectOfferingId: { in: [gradeEleven.offering.id, gradeTwelve.offering.id] } }, data: { curriculumStatus: "SCHOOL_APPROVED", approvalReference: "Board 20C", approvedById: gradeEleven.actor.id, approvedAt: new Date() } });
-    const [eligibleEleven, eligibleTwelve] = await Promise.all([findEligibleShsOfferingsForEnrollment("academic-year-2026-2027", "11", tx), findEligibleShsOfferingsForEnrollment("academic-year-2026-2027", "12", tx)]);
-    assert.ok(eligibleEleven.some((offering) => offering.id === gradeEleven.offering.id));
-    assert.ok(!eligibleEleven.some((offering) => offering.id === gradeTwelve.offering.id));
-    assert.ok(eligibleTwelve.some((offering) => offering.id === gradeTwelve.offering.id));
-    throw new RollbackFixture();
-  }).catch((error) => { if (!(error instanceof RollbackFixture)) throw error; });
+test("Phase 20C persists an exact single-Term selection and retains the identical active snapshot", async () => {
+  await withRollback(async (tx) => {
+    const fixture = await createEnrollmentFixture(tx, "11");
+    const [offering] = await getProvisionalOfferings(tx, fixture.academicYear.id, "11");
+    await approveOfferings(tx, [offering.id], fixture.actor.id);
+    const values = {
+      enrollmentId: fixture.enrollment.id,
+      selections: [{ subjectOfferingId: offering.id, academicTermIds: [offering.terms[0].academicTermId] }],
+    };
+
+    assert.deepEqual(await selectShsStudentCurriculumInTransaction(values, fixture.actor.id, tx), { created: 1, replaced: 0 });
+    const first = await tx.studentSubjectEnrollment.findFirstOrThrow({
+      where: { enrollmentId: fixture.enrollment.id, status: "ACTIVE" },
+      include: { terms: true },
+    });
+    assert.deepEqual(first.terms.map(({ academicTermId }) => academicTermId), [offering.terms[0].academicTermId]);
+
+    assert.deepEqual(await selectShsStudentCurriculumInTransaction(values, fixture.actor.id, tx), { created: 0, replaced: 0 });
+    const retained = await tx.studentSubjectEnrollment.findMany({ where: { enrollmentId: fixture.enrollment.id } });
+    assert.equal(retained.length, 1);
+    assert.equal(retained[0].id, first.id);
+    assert.equal(retained[0].status, "ACTIVE");
+  });
+});
+
+test("Phase 20C persists exact multi-Term selections for multiple Offerings", async () => {
+  await withRollback(async (tx) => {
+    const fixture = await createEnrollmentFixture(tx, "11");
+    const offerings = await getProvisionalOfferings(tx, fixture.academicYear.id, "11", 2);
+    await approveOfferings(tx, offerings.map(({ id }) => id), fixture.actor.id);
+    const selections = offerings.map((offering, index) => ({
+      subjectOfferingId: offering.id,
+      academicTermIds: offering.terms.slice(0, index + 2).map(({ academicTermId }) => academicTermId),
+    }));
+
+    assert.deepEqual(await selectShsStudentCurriculumInTransaction({ enrollmentId: fixture.enrollment.id, selections }, fixture.actor.id, tx), { created: 2, replaced: 0 });
+    const rows = await tx.studentSubjectEnrollment.findMany({
+      where: { enrollmentId: fixture.enrollment.id, status: "ACTIVE" },
+      select: { subjectOfferingId: true, terms: { select: { academicTermId: true } } },
+      orderBy: { subjectOfferingId: "asc" },
+    });
+    assert.deepEqual(
+      rows.map((row) => ({ subjectOfferingId: row.subjectOfferingId, academicTermIds: row.terms.map(({ academicTermId }) => academicTermId).sort() })),
+      selections.map((selection) => ({ ...selection, academicTermIds: [...selection.academicTermIds].sort() })).sort((a, b) => a.subjectOfferingId.localeCompare(b.subjectOfferingId)),
+    );
+  });
+});
+
+test("Phase 20C Term changes replace history and create a new exact immutable snapshot with audits", async () => {
+  await withRollback(async (tx) => {
+    const fixture = await createEnrollmentFixture(tx, "11");
+    const [offering] = await getProvisionalOfferings(tx, fixture.academicYear.id, "11");
+    await approveOfferings(tx, [offering.id], fixture.actor.id);
+    const firstTerms = offering.terms.slice(0, 2).map(({ academicTermId }) => academicTermId);
+    await selectShsStudentCurriculumInTransaction({ enrollmentId: fixture.enrollment.id, selections: [{ subjectOfferingId: offering.id, academicTermIds: firstTerms }] }, fixture.actor.id, tx);
+    const previous = await tx.studentSubjectEnrollment.findFirstOrThrow({ where: { enrollmentId: fixture.enrollment.id, status: "ACTIVE" } });
+    const nextTerms = [offering.terms[2].academicTermId];
+
+    assert.deepEqual(await selectShsStudentCurriculumInTransaction({ enrollmentId: fixture.enrollment.id, selections: [{ subjectOfferingId: offering.id, academicTermIds: nextTerms }] }, fixture.actor.id, tx), { created: 1, replaced: 1 });
+    const history = await tx.studentSubjectEnrollment.findMany({
+      where: { enrollmentId: fixture.enrollment.id },
+      include: { terms: true },
+      orderBy: { createdAt: "asc" },
+    });
+    assert.equal(history.length, 2);
+    assert.equal(history[0].id, previous.id);
+    assert.equal(history[0].status, "REPLACED");
+    assert.ok(history[0].replacedAt);
+    assert.deepEqual(history[0].terms.map(({ academicTermId }) => academicTermId).sort(), firstTerms.sort());
+    assert.equal(history[1].status, "ACTIVE");
+    assert.deepEqual(history[1].terms.map(({ academicTermId }) => academicTermId), nextTerms);
+    assert.equal(await tx.auditLog.count({ where: { module: "StudentSubjectEnrollment", recordId: { in: history.map(({ id }) => id) } } }), 3);
+  });
+});
+
+test("Phase 20C removal replaces the active row without hard deletion", async () => {
+  await withRollback(async (tx) => {
+    const fixture = await createEnrollmentFixture(tx, "11");
+    const [offering] = await getProvisionalOfferings(tx, fixture.academicYear.id, "11");
+    await approveOfferings(tx, [offering.id], fixture.actor.id);
+    await selectShsStudentCurriculumInTransaction({ enrollmentId: fixture.enrollment.id, selections: [{ subjectOfferingId: offering.id, academicTermIds: [offering.terms[0].academicTermId] }] }, fixture.actor.id, tx);
+
+    assert.deepEqual(await selectShsStudentCurriculumInTransaction({ enrollmentId: fixture.enrollment.id, selections: [] }, fixture.actor.id, tx), { created: 0, replaced: 1 });
+    const rows = await tx.studentSubjectEnrollment.findMany({ where: { enrollmentId: fixture.enrollment.id } });
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].status, "REPLACED");
+    assert.ok(rows[0].replacedAt);
+  });
+});
+
+test("Phase 20C rejects provisional Offerings and Terms outside SubjectOfferingTerm configuration", async () => {
+  await withRollback(async (tx) => {
+    const fixture = await createEnrollmentFixture(tx, "11");
+    const [offering] = await getProvisionalOfferings(tx, fixture.academicYear.id, "11");
+    await assert.rejects(
+      selectShsStudentCurriculumInTransaction({ enrollmentId: fixture.enrollment.id, selections: [{ subjectOfferingId: offering.id, academicTermIds: [offering.terms[0].academicTermId] }] }, fixture.actor.id, tx),
+      /school-approved SSHS offerings/i,
+    );
+
+    await approveOfferings(tx, [offering.id], fixture.actor.id);
+    await assert.rejects(
+      selectShsStudentCurriculumInTransaction({ enrollmentId: fixture.enrollment.id, selections: [{ subjectOfferingId: offering.id, academicTermIds: [randomUUID()] }] }, fixture.actor.id, tx),
+      /configured Academic Terms/i,
+    );
+  });
+});
+
+test("Phase 20C leaves regular JHS full-three-Term derivation unchanged", async () => {
+  await withRollback(async (tx) => {
+    const fixture = await createEnrollmentFixture(tx, "10");
+    await deriveApprovedRegularJhsStudentSubjectEnrollments({
+      enrollmentId: fixture.enrollment.id,
+      academicYearId: fixture.academicYear.id,
+      academicYearLabel: fixture.academicYear.label,
+      gradeLevel: "10",
+      trackStrand: null,
+      studentLrn: fixture.student.lrn,
+      actorId: fixture.actor.id,
+    }, tx);
+    const rows = await tx.studentSubjectEnrollment.findMany({
+      where: { enrollmentId: fixture.enrollment.id, status: "ACTIVE" },
+      select: { terms: { select: { academicTermId: true } } },
+    });
+    assert.equal(rows.length, 8);
+    assert.ok(rows.every(({ terms }) => terms.length === 3));
+  });
 });

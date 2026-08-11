@@ -212,6 +212,8 @@ export function DataTable<TData, TValue>({
         <DataTablePagination
           table={table}
           totalCount={totalRows}
+          pagination={server?.pagination}
+          pageCount={server?.pageCount}
           pageSizeOptions={server?.pageSizeOptions}
           disabled={server?.disabled}
         />

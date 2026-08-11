@@ -11,7 +11,11 @@ import {
   COMPLETE_PASSWORD_ROUTE,
   INVALID_SESSION_ROUTE,
 } from "@/routes";
-import { hasPermission, Permissions } from "@/lib/permissions";
+import {
+  hasPermission,
+  Permissions,
+  type Permission,
+} from "@/lib/permissions";
 
 const { auth } = NextAuth(authConfig);
 
@@ -22,8 +26,34 @@ const userRoles = new Set<UserRole>([
   "TEACHER",
 ]);
 
+const dashboardRoutePermissions: ReadonlyArray<{
+  path: string;
+  permission: Permission;
+}> = [
+  {
+    path: "/dashboard/academic-years",
+    permission: Permissions.ACADEMIC_YEARS,
+  },
+  {
+    path: "/dashboard/enrollment",
+    permission: Permissions.ENROLLMENT,
+  },
+  {
+    path: "/dashboard/subject-offerings",
+    permission: Permissions.SHS_CURRICULUM_APPROVAL,
+  },
+];
+
 function isUserRole(value: unknown): value is UserRole {
   return typeof value === "string" && userRoles.has(value as UserRole);
+}
+
+function hasDashboardRoutePermission(role: UserRole, pathname: string) {
+  return dashboardRoutePermissions.some(
+    ({ path, permission }) =>
+      (pathname === path || pathname.startsWith(`${path}/`)) &&
+      hasPermission(role, permission),
+  );
 }
 
 export default auth((req) => {
@@ -45,10 +75,6 @@ export default auth((req) => {
   const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
   const isAuthRoute = authRoutes.includes(nextUrl.pathname);
-  const isAcademicYearsRoute =
-    nextUrl.pathname === "/dashboard/academic-years" ||
-    nextUrl.pathname.startsWith("/dashboard/academic-years/");
-
   // Allow Auth.js API routes
   if (isApiAuthRoute) {
     return NextResponse.next();
@@ -83,10 +109,7 @@ export default auth((req) => {
     authenticatedUser &&
     nextUrl.pathname.startsWith("/dashboard") &&
     !hasPermission(authenticatedUser.role, Permissions.DASHBOARD) &&
-    !(
-      isAcademicYearsRoute &&
-      hasPermission(authenticatedUser.role, Permissions.ACADEMIC_YEARS)
-    )
+    !hasDashboardRoutePermission(authenticatedUser.role, nextUrl.pathname)
   ) {
     return NextResponse.redirect(
       new URL(DEFAULT_LOGIN_REDIRECT(authenticatedUser.role), nextUrl),

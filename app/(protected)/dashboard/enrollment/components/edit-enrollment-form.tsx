@@ -11,21 +11,14 @@ import {
   type SearchableSelectOption,
 } from "@/components/ui/searchable-select";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   useEnrollmentFormOptions,
-  useUpdateEnrollment,
+  useCorrectEnrollmentPlacement,
 } from "@/hooks/enrollment.hook";
 import { formatFullName } from "@/lib/format";
 import {
   type EnrollmentListItem,
-  type UpdateEnrollmentInput,
-  UpdateEnrollmentSchema,
+  type CorrectEnrollmentPlacementInput,
+  CorrectEnrollmentPlacementSchema,
 } from "@/schemas";
 
 interface EditEnrollmentFormProps {
@@ -37,13 +30,12 @@ export function EditEnrollmentForm({
   enrollment,
   onSuccess,
 }: EditEnrollmentFormProps) {
-  const updateEnrollment = useUpdateEnrollment();
+  const correctPlacement = useCorrectEnrollmentPlacement();
   const { data: options, isLoading } = useEnrollmentFormOptions();
-  const form = useForm<UpdateEnrollmentInput>({
-    resolver: zodResolver(UpdateEnrollmentSchema),
+  const form = useForm<CorrectEnrollmentPlacementInput>({
+    resolver: zodResolver(CorrectEnrollmentPlacementSchema),
     defaultValues: {
       sectionId: enrollment.sectionId,
-      status: enrollment.status,
     },
   });
   const activeSectionOptions: SearchableSelectOption[] =
@@ -68,8 +60,8 @@ export function EditEnrollmentForm({
     enrollment.studentLastName,
   );
 
-  async function onSubmit(values: UpdateEnrollmentInput) {
-    const result = await updateEnrollment.mutateAsync({
+  async function onSubmit(values: CorrectEnrollmentPlacementInput) {
+    const result = await correctPlacement.mutateAsync({
       id: enrollment.id,
       values,
     });
@@ -92,7 +84,7 @@ export function EditEnrollmentForm({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4">
         <Field>
           <FieldLabel>Section</FieldLabel>
           <Controller
@@ -114,33 +106,10 @@ export function EditEnrollmentForm({
           />
           <FieldError>{form.formState.errors.sectionId?.message}</FieldError>
         </Field>
-
-
-        <Field>
-          <FieldLabel>Enrollment Status</FieldLabel>
-          <Controller
-            name="status"
-            control={form.control}
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
-                  <SelectItem value="DROPPED">Dropped</SelectItem>
-                  <SelectItem value="TRANSFERRED">Transferred</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          <FieldError>{form.formState.errors.status?.message}</FieldError>
-        </Field>
       </div>
 
-      <Button type="submit" disabled={updateEnrollment.isPending}>
-        {updateEnrollment.isPending ? "Saving..." : "Update Enrollment"}
+      <Button type="submit" disabled={correctPlacement.isPending}>
+        {correctPlacement.isPending ? "Saving..." : "Correct Placement"}
       </Button>
     </form>
   );

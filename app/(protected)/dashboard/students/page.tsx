@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useEffectEvent, useMemo, useState } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { DataTable } from "@/components/data-table";
+import { DataTable, resolveServerPagination } from "@/components/data-table";
 import { CrudToolbar } from "@/components/common/crud-toolbar";
 import { ExportButton } from "@/components/common/export/export-button";
 import { Button } from "@/components/ui/button";
@@ -123,13 +123,11 @@ function StudentsPageContent() {
       pageIndex: page - 1,
     });
   });
-  const displayedPagination =
-    isPlaceholderData && data
-      ? {
-          pageIndex: data.page - 1,
-          pageSize: data.pageSize,
-        }
-      : tableState.pagination;
+  const serverPagination = resolveServerPagination({
+    requestedPagination: tableState.pagination,
+    resolvedPage: data,
+    isPlaceholderData,
+  });
 
   useEffect(() => {
     normalizeUrl();
@@ -146,13 +144,11 @@ function StudentsPageContent() {
 
   useEffect(() => {
     if (
-      data &&
-      !isPlaceholderData &&
-      data.page !== tableState.pagination.pageIndex + 1
+      data && serverPagination.shouldReconcile
     ) {
       reconcilePage(data.page);
     }
-  }, [data, isPlaceholderData, tableState.pagination.pageIndex]);
+  }, [data, serverPagination.shouldReconcile]);
 
   const errorFallback = (
     <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
@@ -222,7 +218,7 @@ function StudentsPageContent() {
               />
             )}
             server={{
-              pagination: displayedPagination,
+               pagination: serverPagination.pagination,
               sorting: tableState.sorting,
               pageCount: data?.pageCount ?? 0,
               totalCount: data?.totalCount ?? 0,

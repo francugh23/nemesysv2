@@ -5,17 +5,19 @@ import * as z from "zod";
 import { Permissions, requirePermission } from "@/lib/authorization";
 import {
   CreateEnrollmentSchema,
+  CorrectEnrollmentPlacementSchema,
   EnrollmentTableQuerySchema,
-  UpdateEnrollmentSchema,
+  TransitionEnrollmentSchema,
   type EnrollmentTableQueryInput,
 } from "@/schemas";
 import {
   createEnrollmentService,
+  correctEnrollmentPlacementService,
   EnrollmentServiceError,
   getEnrollmentFilterOptions,
   getEnrollmentFormOptions,
   getEnrollments,
-  updateEnrollmentService,
+  transitionEnrollmentService,
 } from "@/services/enrollment.service";
 import type { ActionResponse } from "@/types/action-response";
 
@@ -80,9 +82,9 @@ export async function createEnrollmentAction(
   }
 }
 
-export async function updateEnrollmentAction(
+export async function correctEnrollmentPlacementAction(
   id: string,
-  values: z.infer<typeof UpdateEnrollmentSchema>,
+  values: z.infer<typeof CorrectEnrollmentPlacementSchema>,
 ): Promise<ActionResponse> {
   try {
     await requirePermission(Permissions.ENROLLMENT);
@@ -93,7 +95,7 @@ export async function updateEnrollmentAction(
   }
 
   const validatedId = z.string().min(1).safeParse(id);
-  const validatedFields = UpdateEnrollmentSchema.safeParse(values);
+  const validatedFields = CorrectEnrollmentPlacementSchema.safeParse(values);
 
   if (!validatedId.success || !validatedFields.success) {
     return {
@@ -102,10 +104,13 @@ export async function updateEnrollmentAction(
   }
 
   try {
-    await updateEnrollmentService(validatedId.data, validatedFields.data);
+    await correctEnrollmentPlacementService(
+      validatedId.data,
+      validatedFields.data,
+    );
 
     return {
-      success: "Enrollment updated successfully.",
+      success: "Enrollment placement corrected successfully.",
     };
   } catch (error) {
     if (error instanceof EnrollmentServiceError) {
@@ -117,5 +122,34 @@ export async function updateEnrollmentAction(
     return {
       error: "Something went wrong.",
     };
+  }
+}
+
+export async function transitionEnrollmentAction(
+  id: string,
+  values: z.infer<typeof TransitionEnrollmentSchema>,
+): Promise<ActionResponse> {
+  try {
+    await requirePermission(Permissions.ENROLLMENT);
+  } catch {
+    return { error: "Unauthorized." };
+  }
+
+  const validatedId = z.string().min(1).safeParse(id);
+  const validatedFields = TransitionEnrollmentSchema.safeParse(values);
+
+  if (!validatedId.success || !validatedFields.success) {
+    return { error: "Invalid fields." };
+  }
+
+  try {
+    await transitionEnrollmentService(validatedId.data, validatedFields.data);
+    return { success: "Enrollment lifecycle updated successfully." };
+  } catch (error) {
+    if (error instanceof EnrollmentServiceError) {
+      return { error: error.message };
+    }
+
+    return { error: "Something went wrong." };
   }
 }

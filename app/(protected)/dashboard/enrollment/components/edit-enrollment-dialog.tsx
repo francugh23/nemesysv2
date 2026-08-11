@@ -17,7 +17,11 @@ export function EditEnrollmentDialog({
   onOpenChange,
 }: EditEnrollmentDialogProps) {
   return (
-    <FormDialog open={open} onOpenChange={onOpenChange} title="Edit Enrollment">
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Correct Enrollment Placement"
+    >
       <EditEnrollmentForm
         enrollment={enrollment}
         onSuccess={() => onOpenChange(false)}

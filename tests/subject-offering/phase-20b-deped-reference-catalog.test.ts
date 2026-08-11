@@ -17,8 +17,8 @@ async function safetySnapshot() {
   return { jhsSubjects, jhsOfferings, studentSubjectEnrollments, enrollments, assignments, grades };
 }
 
-test("Phase 20B catalog is source-backed, provisional, and term-safe", async () => {
-  const [clusters, references, offerings, approvedContexts, shsStudentSubjectEnrollments] = await Promise.all([
+test("Phase 20B catalog remains source-backed and term-safe across the approval lifecycle", async () => {
+  const [clusters, references, offerings] = await Promise.all([
     prisma.shsCurriculumCluster.findMany({ where: { deletedAt: null }, select: { code: true, sourceReference: true } }),
     prisma.shsCurriculumReference.findMany({ select: { gradeLevel: true, classification: true, curriculumStatus: true, sourceReference: true, termApplicability: true, cluster: { select: { track: true } } } }),
     prisma.subjectOffering.findMany({
@@ -26,11 +26,9 @@ test("Phase 20B catalog is source-backed, provisional, and term-safe", async () 
       select: {
         academicYearId: true,
         terms: { select: { academicTerm: { select: { academicYearId: true } } } },
-        shsContext: { select: { classification: true, curriculumStatus: true, sourceReference: true, approvalReference: true, cluster: { select: { track: true } } } },
+        shsContext: { select: { classification: true, curriculumStatus: true, sourceReference: true, approvalReference: true, approvedById: true, approvedAt: true, cluster: { select: { track: true } } } },
       },
     }),
-    prisma.subjectOfferingShsContext.count({ where: { curriculumStatus: "SCHOOL_APPROVED" } }),
-    prisma.studentSubjectEnrollment.count({ where: { gradeLevel: { in: ["11", "12"] } } }),
   ]);
 
   assert.equal(clusters.length, 15);
@@ -43,9 +41,15 @@ test("Phase 20B catalog is source-backed, provisional, and term-safe", async () 
   assert.ok(references.filter((reference) => reference.classification === "ACADEMIC_ELECTIVE").every((reference) => reference.termApplicability === "UNSPECIFIED"));
   assert.equal(offerings.length, 94);
   assert.ok(offerings.every((offering) => offering.academicYearId === "academic-year-2026-2027" && offering.terms.length === 3 && offering.terms.every((term) => term.academicTerm.academicYearId === offering.academicYearId)));
-  assert.ok(offerings.every((offering) => offering.shsContext?.curriculumStatus === "PROVISIONAL_DEPED" && offering.shsContext.sourceReference?.includes("deped.gov.ph") && offering.shsContext.approvalReference === null));
-  assert.equal(approvedContexts, 0);
-  assert.equal(shsStudentSubjectEnrollments, 0);
+  assert.ok(offerings.every((offering) => {
+    const context = offering.shsContext;
+
+    if (!context?.sourceReference?.includes("deped.gov.ph")) return false;
+
+    return context.curriculumStatus === "PROVISIONAL_DEPED"
+      ? context.approvalReference === null && context.approvedById === null && context.approvedAt === null
+      : Boolean(context.approvalReference?.trim() && context.approvedById && context.approvedAt);
+  }));
 });
 
 test("Phase 20B population is idempotent and preserves JHS and operational records", async () => {

@@ -16,7 +16,10 @@ export function SubjectImportDialog({ trigger }: SubjectImportDialogProps) {
     <ImportWizard
       entityLabel="Subject"
       queryKey={["subjects"]}
-      dependentQueryKeys={[["subject-assignment-options"]]}
+      dependentQueryKeys={[
+        ["subject-offering-options"],
+        ["subject-assignment-options"],
+      ]}
       trigger={trigger}
       normalizeRow={normalizeSubjectImportRow}
       validateRows={validateSubjectImport}

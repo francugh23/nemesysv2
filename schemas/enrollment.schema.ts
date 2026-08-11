@@ -15,12 +15,32 @@ export const EnrollmentStatusSchema = z.enum([
   "TRANSFERRED",
 ]);
 
-export const UpdateEnrollmentSchema = z.object({
+export const CorrectEnrollmentPlacementSchema = z.object({
   sectionId: z.string().min(1, "Section is required."),
-  status: EnrollmentStatusSchema,
 });
 
-export type UpdateEnrollmentInput = z.infer<typeof UpdateEnrollmentSchema>;
+export type CorrectEnrollmentPlacementInput = z.infer<
+  typeof CorrectEnrollmentPlacementSchema
+>;
+
+export const EnrollmentTerminalStatusSchema = z.enum([
+  "COMPLETED",
+  "DROPPED",
+  "TRANSFERRED",
+]);
+
+export const TransitionEnrollmentSchema = z.object({
+  status: EnrollmentTerminalStatusSchema,
+});
+
+export type TransitionEnrollmentInput = z.infer<
+  typeof TransitionEnrollmentSchema
+>;
+
+// Retained for the legacy Semester-retirement contract; lifecycle writes use the
+// explicitly named placement and transition schemas above.
+export const UpdateEnrollmentSchema = CorrectEnrollmentPlacementSchema;
+export type UpdateEnrollmentInput = CorrectEnrollmentPlacementInput;
 
 export const EnrollmentSortFieldSchema = z.enum([
   "studentLrn",
@@ -36,6 +56,7 @@ export const EnrollmentTableQuerySchema = z.object({
   q: z.string().trim().max(100).optional(),
   status: EnrollmentStatusSchema.optional(),
   gradeLevel: z.string().trim().min(1).optional(),
+  trackStrand: z.string().trim().min(1).optional(),
   academicYearId: z.string().trim().min(1).optional(),
   sectionId: z.string().trim().min(1).optional(),
   sort: EnrollmentSortFieldSchema.optional(),
@@ -84,6 +105,7 @@ export interface EnrollmentFilterOptions {
     label: string;
   }>;
   gradeLevels: string[];
+  trackStrands: string[];
   sections: Array<{
     id: string;
     gradeLevel: string;

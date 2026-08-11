@@ -1,6 +1,6 @@
 "use client";
 
-import type { Table } from "@tanstack/react-table";
+import type { PaginationState, Table } from "@tanstack/react-table";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,9 +11,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import {
+  getFirstPagePagination,
+  getNextPagePagination,
+  getPaginationButtonState,
+  getPaginationRange,
+  getPreviousPagePagination,
+} from "./data-table-pagination.logic";
+
 interface DataTablePaginationProps<TData> {
   table: Table<TData>;
   totalCount: number;
+  pagination?: PaginationState;
+  pageCount?: number;
   pageSizeOptions?: number[];
   disabled?: boolean;
 }
@@ -21,13 +31,25 @@ interface DataTablePaginationProps<TData> {
 export function DataTablePagination<TData>({
   table,
   totalCount,
+  pagination: resolvedPagination,
+  pageCount: resolvedPageCount,
   pageSizeOptions = [10, 20, 50],
   disabled = false,
 }: DataTablePaginationProps<TData>) {
-  const { pageIndex, pageSize } = table.getState().pagination;
-  const pageCount = table.getPageCount();
-  const firstRecord = totalCount === 0 ? 0 : pageIndex * pageSize + 1;
-  const lastRecord = Math.min((pageIndex + 1) * pageSize, totalCount);
+  const { pageIndex, pageSize } =
+    resolvedPagination ?? table.getState().pagination;
+  const pageCount = resolvedPageCount ?? table.getPageCount();
+  const renderedRowCount = table.getRowModel().rows.length;
+  const { firstRecord, lastRecord } = getPaginationRange({
+    pageIndex,
+    pageSize,
+    renderedRowCount,
+    totalCount,
+  });
+  const { canGoPrevious, canGoNext } = getPaginationButtonState({
+    pageCount,
+    pageIndex,
+  });
 
   return (
     <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -40,7 +62,9 @@ export function DataTablePagination<TData>({
       <div className="flex flex-wrap items-center gap-3">
         <Select
           value={String(pageSize)}
-          onValueChange={(value) => table.setPageSize(Number(value))}
+          onValueChange={(value) =>
+            table.setPagination(getFirstPagePagination(Number(value)))
+          }
           disabled={disabled}
         >
           <SelectTrigger className="w-28">
@@ -63,16 +87,24 @@ export function DataTablePagination<TData>({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.previousPage()}
-            disabled={disabled || !table.getCanPreviousPage()}
+            onClick={() =>
+              table.setPagination(
+                getPreviousPagePagination({ pageIndex, pageSize }),
+              )
+            }
+            disabled={disabled || !canGoPrevious}
           >
             Previous
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.nextPage()}
-            disabled={disabled || !table.getCanNextPage()}
+            onClick={() =>
+              table.setPagination(
+                getNextPagePagination({ pageIndex, pageSize, pageCount }),
+              )
+            }
+            disabled={disabled || !canGoNext}
           >
             Next
           </Button>

@@ -18,6 +18,10 @@ import {
 } from "lucide-react";
 
 import { UserRole } from "@/app/generated/prisma/enums";
+import {
+  CURRICULUM_ROUTE,
+  CURRICULUM_TITLE,
+} from "@/lib/academic-configuration";
 
 export interface NavigationItem {
   title: string;
@@ -73,13 +77,18 @@ export const navigation = {
           icon: School,
         },
         {
+          title: "Academic Years",
+          href: "/dashboard/academic-years",
+          icon: CalendarRange,
+        },
+        {
           title: "Subjects",
           href: "/dashboard/subjects",
           icon: BookOpen,
         },
         {
-          title: "Subject Offerings",
-          href: "/dashboard/subject-offerings",
+          title: CURRICULUM_TITLE,
+          href: CURRICULUM_ROUTE,
           icon: Layers,
         },
         {
@@ -144,19 +153,19 @@ export const navigation = {
       title: "Academics",
       items: [
         {
-          title: "Subject Offerings",
-          href: "/dashboard/subject-offerings",
+          title: "Academic Years",
+          href: "/dashboard/academic-years",
+          icon: CalendarRange,
+        },
+        {
+          title: CURRICULUM_TITLE,
+          href: CURRICULUM_ROUTE,
           icon: Layers,
         },
         {
           title: "Enrollment",
           href: "/dashboard/enrollment",
           icon: ClipboardCheck,
-        },
-        {
-          title: "Academic Years",
-          href: "/dashboard/academic-years",
-          icon: CalendarRange,
         },
       ],
     },
