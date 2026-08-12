@@ -14,6 +14,8 @@ interface UseTableUrlStateOptions<TFilterKey extends string> {
   sortableColumns: readonly string[];
   defaultPageSize?: number;
   pageSizeOptions?: readonly number[];
+  pageParam?: string;
+  pageSizeParam?: string;
 }
 
 export function useTableUrlState<TFilterKey extends string>({
@@ -21,6 +23,8 @@ export function useTableUrlState<TFilterKey extends string>({
   sortableColumns,
   defaultPageSize = 10,
   pageSizeOptions = [10, 20, 50],
+  pageParam = "page",
+  pageSizeParam = "pageSize",
 }: UseTableUrlStateOptions<TFilterKey>) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -54,11 +58,11 @@ export function useTableUrlState<TFilterKey extends string>({
     });
   }
 
-  const requestedPage = Number(searchParams.get("page"));
+  const requestedPage = Number(searchParams.get(pageParam));
   const page = Number.isInteger(requestedPage) && requestedPage > 0
     ? requestedPage
     : 1;
-  const requestedPageSize = Number(searchParams.get("pageSize"));
+  const requestedPageSize = Number(searchParams.get(pageSizeParam));
   const pageSize = pageSizeOptions.includes(requestedPageSize)
     ? requestedPageSize
     : defaultPageSize;
@@ -82,18 +86,18 @@ export function useTableUrlState<TFilterKey extends string>({
       }
 
       if (
-        searchParams.has("page") &&
+        searchParams.has(pageParam) &&
         (!Number.isInteger(requestedPage) || requestedPage <= 1)
       ) {
-        params.delete("page");
+        params.delete(pageParam);
       }
 
       if (
-        searchParams.has("pageSize") &&
+        searchParams.has(pageSizeParam) &&
         (!pageSizeOptions.includes(requestedPageSize) ||
           requestedPageSize === defaultPageSize)
       ) {
-        params.delete("pageSize");
+        params.delete(pageSizeParam);
       }
 
       if (sort && !sortableColumns.includes(sort)) {
@@ -112,9 +116,9 @@ export function useTableUrlState<TFilterKey extends string>({
   });
   const needsNormalization =
     rawSearch !== urlSearch ||
-    (searchParams.has("page") &&
+    (searchParams.has(pageParam) &&
       (!Number.isInteger(requestedPage) || requestedPage <= 1)) ||
-    (searchParams.has("pageSize") &&
+    (searchParams.has(pageSizeParam) &&
       (!pageSizeOptions.includes(requestedPageSize) ||
         requestedPageSize === defaultPageSize)) ||
     Boolean(sort && !sortableColumns.includes(sort)) ||
@@ -137,19 +141,19 @@ export function useTableUrlState<TFilterKey extends string>({
 
     replaceParams((params) => {
       if (next.pageIndex > 0) {
-        params.set("page", String(next.pageIndex + 1));
+        params.set(pageParam, String(next.pageIndex + 1));
       } else {
-        params.delete("page");
+        params.delete(pageParam);
       }
 
       if (next.pageSize !== defaultPageSize) {
-        params.set("pageSize", String(next.pageSize));
+        params.set(pageSizeParam, String(next.pageSize));
       } else {
-        params.delete("pageSize");
+        params.delete(pageSizeParam);
       }
 
       if (next.pageSize !== pageSize) {
-        params.delete("page");
+        params.delete(pageParam);
       }
     });
   };
@@ -187,8 +191,8 @@ export function useTableUrlState<TFilterKey extends string>({
     replaceParams((params) => {
       [
         "q",
-        "page",
-        "pageSize",
+        pageParam,
+        pageSizeParam,
         "sort",
         "direction",
         ...filterKeys,

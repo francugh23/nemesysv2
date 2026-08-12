@@ -7,7 +7,7 @@ import { CrudToolbar } from "@/components/common/crud-toolbar";
 import { DataTable, DataTableFacetedFilter, DataTableToolbar, resolveServerPagination, type DataTableFilterOption } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useShsCurriculumReferences, useSubjectOfferingFilterOptions, useSubjectOfferings } from "@/hooks/subject-offering.hook";
+import { useSubjectOfferingFilterOptions, useSubjectOfferings } from "@/hooks/subject-offering.hook";
 import { useTableUrlState } from "@/hooks/use-table-url-state.hook";
 import {
   CURRICULUM_DESCRIPTION,
@@ -58,7 +58,6 @@ function SubjectOfferingsPageContent() {
     pageSize: tableState.query.pageSize,
   };
   const { data, isLoading, isError, isFetching, isPlaceholderData, refetch } = useSubjectOfferings(query);
-  const { data: references = [] } = useShsCurriculumReferences();
   const [selectedOffering, setSelectedOffering] = useState<SubjectOfferingListItem | null>(null);
   const [dialog, setDialog] = useState<"edit" | "archive" | "approve" | null>(null);
   const columns = useMemo(
@@ -201,7 +200,7 @@ function SubjectOfferingsPageContent() {
       <Card>
         <CardContent className="space-y-3 pt-6">
           <div><h2 className="font-semibold">Provisional DepEd Reference Catalog</h2><p className="text-sm text-muted-foreground">Reference candidates only. Records without term evidence are not Subject Offerings and cannot be selected for students.</p></div>
-          <ShsCurriculumReferenceTable references={references} />
+          <ShsCurriculumReferenceTable />
         </CardContent>
       </Card>
     </div>

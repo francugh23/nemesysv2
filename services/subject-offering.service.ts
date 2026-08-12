@@ -9,6 +9,7 @@ import {
   archiveOffering,
   archiveShsCurriculumCluster,
   countOfferings,
+  countShsCurriculumReferences,
   createOffering,
   createShsCurriculumCluster,
   findActiveShsCurriculumCluster,
@@ -30,6 +31,7 @@ import { findActiveSubjectById } from "@/repositories/subject.repository";
 import type {
   CreateShsCurriculumClusterInput,
   CreateSubjectOfferingInput,
+  ShsCurriculumReferenceTableQuery,
   SubjectOfferingTableQuery,
   UpdateShsCurriculumClusterInput,
   UpdateSubjectOfferingInput,
@@ -162,9 +164,17 @@ export async function getShsCurriculumClusters() {
   return findShsCurriculumClusters();
 }
 
-export async function getShsCurriculumReferences() {
+export async function getShsCurriculumReferences(query: ShsCurriculumReferenceTableQuery) {
   await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL);
-  return findShsCurriculumReferences();
+  const totalCount = await countShsCurriculumReferences();
+  const page = Math.min(query.page, Math.max(1, Math.ceil(totalCount / query.pageSize)));
+  return {
+    items: await findShsCurriculumReferences({ skip: (page - 1) * query.pageSize, take: query.pageSize }),
+    totalCount,
+    page,
+    pageSize: query.pageSize,
+    pageCount: Math.ceil(totalCount / query.pageSize),
+  };
 }
 
 export async function createShsCurriculumClusterService(values: CreateShsCurriculumClusterInput) {

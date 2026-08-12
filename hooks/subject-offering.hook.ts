@@ -2,6 +2,8 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type { ShsCurriculumReferenceTableQueryInput } from "@/schemas";
+
 import {
   archiveShsCurriculumClusterAction,
   archiveSubjectOfferingAction,
@@ -21,7 +23,7 @@ export function useSubjectOfferings(query: Parameters<typeof getSubjectOfferings
 export function useSubjectOfferingOptions() { return useQuery({ queryKey: ["subject-offering-options"], queryFn: getSubjectOfferingOptionsAction }); }
 export function useSubjectOfferingFilterOptions() { return useQuery({ queryKey: ["subject-offering-filter-options"], queryFn: getSubjectOfferingFilterOptionsAction }); }
 export function useShsCurriculumClusters() { return useQuery({ queryKey: ["shs-curriculum-clusters"], queryFn: getShsCurriculumClustersAction }); }
-export function useShsCurriculumReferences() { return useQuery({ queryKey: ["shs-curriculum-references"], queryFn: getShsCurriculumReferencesAction }); }
+export function useShsCurriculumReferences(query: ShsCurriculumReferenceTableQueryInput) { return useQuery({ queryKey: ["shs-curriculum-references", query], queryFn: () => getShsCurriculumReferencesAction(query), placeholderData: keepPreviousData }); }
 
 function useInvalidate() {
   const queryClient = useQueryClient();

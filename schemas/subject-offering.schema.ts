@@ -82,3 +82,14 @@ export const SubjectOfferingTableQuerySchema = z.object({
 });
 export type SubjectOfferingTableQueryInput = z.input<typeof SubjectOfferingTableQuerySchema>;
 export type SubjectOfferingTableQuery = z.output<typeof SubjectOfferingTableQuerySchema>;
+
+export const ShsCurriculumReferenceTableQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(10),
+});
+export type ShsCurriculumReferenceTableQueryInput = z.input<
+  typeof ShsCurriculumReferenceTableQuerySchema
+>;
+export type ShsCurriculumReferenceTableQuery = z.output<
+  typeof ShsCurriculumReferenceTableQuerySchema
+>;

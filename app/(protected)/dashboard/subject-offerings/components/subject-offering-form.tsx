@@ -1,6 +1,6 @@
 "use client";
 
-import { Controller, type UseFormReturn } from "react-hook-form";
+import { Controller, type UseFormReturn, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,9 +28,9 @@ interface SubjectOfferingFormProps {
 
 export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
   const { data: options, isLoading } = useSubjectOfferingOptions();
-  const gradeLevel = form.watch("gradeLevel");
-  const classification = form.watch("shsContext.classification");
-  const academicYearId = form.watch("academicYearId");
+  const gradeLevel = useWatch({ control: form.control, name: "gradeLevel" });
+  const classification = useWatch({ control: form.control, name: "shsContext.classification" });
+  const academicYearId = useWatch({ control: form.control, name: "academicYearId" });
   const academicYear = options?.academicYears.find(
     (year) => year.id === academicYearId,
   );
