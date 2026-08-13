@@ -57,6 +57,7 @@ enum EnrollmentShsTrack {
 enum StudentSubjectEnrollmentStatus {
   ACTIVE
   REPLACED
+  DROPPED
 }
 
 enum AcademicYearStatus {
@@ -136,6 +137,7 @@ model User {
   approvedSubjectOfferingShsContexts SubjectOfferingShsContext[] @relation("ShsCurriculumApprovalActor")
   createdShsCurriculumReferences ShsCurriculumReference[]
   createdStudentSubjectEnrollments StudentSubjectEnrollment[]
+  createdShsElectiveEnrollmentPolicies ShsElectiveEnrollmentPolicy[]
   auditLogs            AuditLog[]
 }
 
@@ -219,7 +221,9 @@ model AcademicTerm {
   updatedAt DateTime @updatedAt
   subjectOfferings SubjectOfferingTerm[]
   studentSubjectEnrollmentTerms StudentSubjectEnrollmentTerm[]
+  selectedStudentSubjectEnrollments StudentSubjectEnrollment[] @relation("StudentSubjectEnrollmentSelectionAcademicTerm")
   entryEnrollments Enrollment[] @relation("EnrollmentEntryAcademicTerm")
+  shsElectiveEnrollmentPolicies ShsElectiveEnrollmentPolicy[]
 
   @@unique([academicYearId, position])
   @@unique([id, academicYearId])
@@ -355,6 +359,7 @@ model AcademicYear {
   subjectAssignments SubjectAssignment[]
   terms              AcademicTerm[]
   subjectOfferings   SubjectOffering[]
+  shsElectiveEnrollmentPolicies ShsElectiveEnrollmentPolicy[]
 
   @@index([status])
   @@index([startDate])
@@ -481,6 +486,9 @@ model StudentSubjectEnrollment {
   subjectOfferingId String
   subjectOffering SubjectOffering @relation(fields: [subjectOfferingId], references: [id], onDelete: Restrict)
 
+  selectionAcademicTermId String?
+  selectionAcademicTerm AcademicTerm? @relation("StudentSubjectEnrollmentSelectionAcademicTerm", fields: [selectionAcademicTermId], references: [id], onDelete: Restrict)
+
   subjectCode String
   subjectDescription String
   gradeLevel String
@@ -494,6 +502,8 @@ model StudentSubjectEnrollment {
 
   status StudentSubjectEnrollmentStatus @default(ACTIVE)
   replacedAt DateTime?
+  droppedAt DateTime?
+  dropReason String?
 
   createdById String
   createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
@@ -505,6 +515,31 @@ model StudentSubjectEnrollment {
 
   @@index([enrollmentId, status])
   @@index([subjectOfferingId])
+  @@index([selectionAcademicTermId])
+  @@index([createdById])
+}
+
+model ShsElectiveEnrollmentPolicy {
+  id String @id @default(cuid())
+
+  academicYearId String
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+
+  academicTermId String
+  academicTerm AcademicTerm @relation(fields: [academicTermId, academicYearId], references: [id, academicYearId], onDelete: Restrict)
+
+  gradeLevel String
+  minimumElectives Int
+  maximumElectives Int
+
+  createdById String
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([academicYearId, academicTermId, gradeLevel], map: "ShsElectivePolicy_scope_key")
+  @@index([academicYearId, academicTermId, gradeLevel], map: "ShsElectivePolicy_scope_idx")
   @@index([createdById])
 }
 

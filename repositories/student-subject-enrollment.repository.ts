@@ -5,6 +5,7 @@ const studentSubjectEnrollmentSelect = {
   id: true,
   enrollmentId: true,
   subjectOfferingId: true,
+  selectionAcademicTermId: true,
   subjectCode: true,
   subjectDescription: true,
   gradeLevel: true,
@@ -16,6 +17,8 @@ const studentSubjectEnrollmentSelect = {
   shsApprovalReference: true,
   status: true,
   replacedAt: true,
+  droppedAt: true,
+  dropReason: true,
   createdAt: true,
   updatedAt: true,
   terms: {
@@ -30,7 +33,7 @@ const studentSubjectEnrollmentSelect = {
 } satisfies Prisma.StudentSubjectEnrollmentSelect;
 
 export async function findStudentSubjectEnrollments(
-  query: { enrollmentId: string; status?: "ACTIVE" | "REPLACED" },
+  query: { enrollmentId: string; status?: "ACTIVE" | "REPLACED" | "DROPPED" },
   transaction?: Prisma.TransactionClient,
 ) {
   return (transaction ?? prisma).studentSubjectEnrollment.findMany({

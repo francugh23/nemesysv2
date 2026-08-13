@@ -19,6 +19,7 @@ import { useStudentSubjectEnrollments } from "@/hooks/student-subject-enrollment
 const statusVariants = {
   ACTIVE: "default",
   REPLACED: "secondary",
+  DROPPED: "destructive",
 } as const;
 
 export function StudentSubjectEnrollmentList({

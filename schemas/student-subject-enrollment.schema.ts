@@ -1,6 +1,10 @@
 import * as z from "zod";
 
-export const StudentSubjectEnrollmentStatusSchema = z.enum(["ACTIVE", "REPLACED"]);
+export const StudentSubjectEnrollmentStatusSchema = z.enum([
+  "ACTIVE",
+  "REPLACED",
+  "DROPPED",
+]);
 
 export const StudentSubjectEnrollmentReadSchema = z.object({
   enrollmentId: z.string().min(1),
