@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { AcademicTermBadge } from "@/components/common/badges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -131,9 +132,11 @@ function StudentSubjectEnrollmentTable({
               <TableCell className="whitespace-normal">
                 <div className="flex flex-wrap gap-1">
                   {row.terms.map((term) => (
-                    <Badge key={term.academicTermId} variant="outline">
-                      {term.academicTerm.position}. {term.academicTerm.name}
-                    </Badge>
+                    <AcademicTermBadge
+                      key={term.academicTermId}
+                      position={term.academicTerm.position}
+                      name={term.academicTerm.name}
+                    />
                   ))}
                 </div>
               </TableCell>

@@ -4,6 +4,8 @@ export const CreateEnrollmentSchema = z.object({
   studentId: z.string().min(1, "Student is required."),
   sectionId: z.string().min(1, "Section is required."),
   academicYearId: z.string().min(1, "Academic year is required."),
+  entryAcademicTermId: z.string().min(1, "Entry Academic Term is required.").optional(),
+  shsTrack: z.enum(["ACADEMIC", "TECHPRO"]).optional(),
 });
 
 export type CreateEnrollmentInput = z.infer<typeof CreateEnrollmentSchema>;
@@ -75,6 +77,10 @@ export const EnrollmentListItemSchema = z.object({
   studentId: z.string(),
   sectionId: z.string(),
   academicYearId: z.string(),
+  shsTrack: z.enum(["ACADEMIC", "TECHPRO"]).nullable(),
+  entryAcademicTermId: z.string().nullable(),
+  entryAcademicTermName: z.string().nullable(),
+  entryAcademicTermPosition: z.number().int().nullable(),
   studentLrn: z.string(),
   studentFirstName: z.string(),
   studentMiddleName: z.string().nullable(),

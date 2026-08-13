@@ -21,7 +21,10 @@ async function createFixture(
     }),
     transaction.academicYear.findFirstOrThrow({
       where: { label: "2026-2027", status: "ACTIVE" },
-      select: { id: true },
+      select: {
+        id: true,
+        terms: { select: { id: true }, orderBy: { position: "asc" }, take: 1 },
+      },
     }),
   ]);
   const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
@@ -56,6 +59,14 @@ function createInput(fixture: Awaited<ReturnType<typeof createFixture>>) {
     studentId: fixture.student.id,
     sectionId: fixture.section.id,
     academicYearId: fixture.academicYear.id,
+    entryAcademicTermId:
+      fixture.section.gradeLevel === "11" || fixture.section.gradeLevel === "12"
+        ? fixture.academicYear.terms[0]!.id
+        : undefined,
+    shsTrack:
+      fixture.section.gradeLevel === "11" || fixture.section.gradeLevel === "12"
+        ? ("ACADEMIC" as const)
+        : undefined,
   };
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { Controller, type UseFormReturn } from "react-hook-form";
+import { useEffect, useRef } from "react";
+import { Controller, type UseFormReturn, useWatch } from "react-hook-form";
 
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import {
@@ -26,6 +27,47 @@ function getStudentName(student: {
 
 export function EnrollmentForm({ form }: EnrollmentFormProps) {
   const { data: options, isLoading } = useEnrollmentFormOptions();
+  const selectedAcademicYearId = useWatch({
+    control: form.control,
+    name: "academicYearId",
+  });
+  const selectedSectionId = useWatch({
+    control: form.control,
+    name: "sectionId",
+  });
+  const previousAcademicYearId = useRef(selectedAcademicYearId);
+  const selectedAcademicYear = options?.academicYears.find(
+    ({ id }) => id === selectedAcademicYearId,
+  );
+  const selectedSection = options?.sections.find(
+    ({ id }) => id === selectedSectionId,
+  );
+  const isShs =
+    selectedSection?.gradeLevel === "11" ||
+    selectedSection?.gradeLevel === "12";
+
+  useEffect(() => {
+    if (previousAcademicYearId.current !== selectedAcademicYearId) {
+      form.setValue("entryAcademicTermId", "", {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      previousAcademicYearId.current = selectedAcademicYearId;
+    }
+  }, [form, selectedAcademicYearId]);
+
+  useEffect(() => {
+    if (!isShs) {
+      form.setValue("entryAcademicTermId", undefined, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      form.setValue("shsTrack", undefined, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+  }, [form, isShs]);
   const studentOptions: SearchableSelectOption[] =
     options?.students.map((student) => ({
       value: student.id,
@@ -43,6 +85,16 @@ export function EnrollmentForm({ form }: EnrollmentFormProps) {
       value: academicYear.id,
       label: academicYear.label,
     })) ?? [];
+  const academicTermOptions: SearchableSelectOption[] =
+    selectedAcademicYear?.terms.map((term) => ({
+      value: term.id,
+      label: `Term ${term.position}`,
+      searchValue: `${term.position} ${term.name}`,
+    })) ?? [];
+  const shsTrackOptions: SearchableSelectOption[] = [
+    { value: "ACADEMIC", label: "Academic" },
+    { value: "TECHPRO", label: "TechPro" },
+  ];
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -102,6 +154,51 @@ export function EnrollmentForm({ form }: EnrollmentFormProps) {
         <FieldError>{form.formState.errors.academicYearId?.message}</FieldError>
       </Field>
 
+      {isShs && selectedAcademicYearId ? (
+        <Field>
+          <FieldLabel>Entry Academic Term</FieldLabel>
+          <Controller
+            name="entryAcademicTermId"
+            control={form.control}
+            render={({ field }) => (
+              <SearchableSelect
+                value={field.value}
+                onValueChange={field.onChange}
+                options={academicTermOptions}
+                placeholder={
+                  isLoading
+                    ? "Loading Academic Terms..."
+                    : "Select entry Academic Term"
+                }
+                disabled={isLoading || !academicTermOptions.length}
+              />
+            )}
+          />
+          <FieldError>
+            {form.formState.errors.entryAcademicTermId?.message}
+          </FieldError>
+        </Field>
+      ) : null}
+
+      {isShs ? (
+        <Field>
+          <FieldLabel>SHS Track</FieldLabel>
+          <Controller
+            name="shsTrack"
+            control={form.control}
+            render={({ field }) => (
+              <SearchableSelect
+                value={field.value ?? ""}
+                onValueChange={field.onChange}
+                options={shsTrackOptions}
+                placeholder="Select SHS Track"
+                disabled={isLoading}
+              />
+            )}
+          />
+          <FieldError>{form.formState.errors.shsTrack?.message}</FieldError>
+        </Field>
+      ) : null}
     </div>
   );
 }

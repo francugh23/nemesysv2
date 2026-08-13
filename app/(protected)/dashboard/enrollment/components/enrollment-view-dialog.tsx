@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { AcademicTermBadge } from "@/components/common/badges";
 import { displayValue, formatDateTime, formatFullName } from "@/lib/format";
 import type { EnrollmentListItem } from "@/schemas";
 
@@ -64,9 +65,32 @@ export function EnrollmentViewDialog({
             value={enrollment.sectionGradeLevel}
           />
           <EnrollmentInfoItem
-            label="Track / Strand"
+            label="Section Track / Strand"
             value={enrollment.sectionTrackStrand}
           />
+          <EnrollmentInfoItem
+            label="SHS Track"
+            value={
+              enrollment.shsTrack === "TECHPRO"
+                ? "TechPro"
+                : enrollment.shsTrack === "ACADEMIC"
+                  ? "Academic"
+                  : null
+            }
+          />
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-muted-foreground">
+              Entry Academic Term
+            </p>
+            {enrollment.entryAcademicTermPosition ? (
+              <AcademicTermBadge
+                position={enrollment.entryAcademicTermPosition}
+                name={enrollment.entryAcademicTermName ?? undefined}
+              />
+            ) : (
+              <p>{displayValue(null)}</p>
+            )}
+          </div>
           <EnrollmentInfoItem label="Section" value={enrollment.sectionName} />
           <EnrollmentInfoItem
             label="Academic Year"

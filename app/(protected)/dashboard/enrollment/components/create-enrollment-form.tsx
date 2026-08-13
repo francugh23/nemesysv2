@@ -27,6 +27,8 @@ export function CreateEnrollmentForm({
       studentId: "",
       sectionId: "",
       academicYearId: "",
+      entryAcademicTermId: undefined,
+      shsTrack: undefined,
     },
   });
 

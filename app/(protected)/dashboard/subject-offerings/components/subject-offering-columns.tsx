@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal } from "lucide-react";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { AcademicTermBadge } from "@/components/common/badges";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -57,7 +58,17 @@ export function subjectOfferingColumns({
     {
       id: "terms",
       header: "Terms",
-      cell: ({ row }) => row.original.terms.map((term) => term.academicTerm.name).join(", "),
+      cell: ({ row }) => (
+        <div className="flex flex-wrap gap-1">
+          {row.original.terms.map((term) => (
+            <AcademicTermBadge
+              key={term.academicTermId}
+              position={term.academicTerm.position}
+              name={term.academicTerm.name}
+            />
+          ))}
+        </div>
+      ),
     },
     {
       id: "shsContext",

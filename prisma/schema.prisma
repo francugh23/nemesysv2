@@ -49,6 +49,11 @@ enum EnrollmentStatus {
   TRANSFERRED
 }
 
+enum EnrollmentShsTrack {
+  ACADEMIC
+  TECHPRO
+}
+
 enum StudentSubjectEnrollmentStatus {
   ACTIVE
   REPLACED
@@ -214,8 +219,10 @@ model AcademicTerm {
   updatedAt DateTime @updatedAt
   subjectOfferings SubjectOfferingTerm[]
   studentSubjectEnrollmentTerms StudentSubjectEnrollmentTerm[]
+  entryEnrollments Enrollment[] @relation("EnrollmentEntryAcademicTerm")
 
   @@unique([academicYearId, position])
+  @@unique([id, academicYearId])
   @@index([academicYearId])
   @@index([createdById])
 }
@@ -307,6 +314,10 @@ model Enrollment {
   academicYearId String
   academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
 
+  shsTrack            EnrollmentShsTrack?
+  entryAcademicTermId String?
+  entryAcademicTerm   AcademicTerm?      @relation("EnrollmentEntryAcademicTerm", fields: [entryAcademicTermId, academicYearId], references: [id, academicYearId], onDelete: Restrict)
+
   semester Semester?
 
   status EnrollmentStatus @default(ACTIVE)
@@ -323,6 +334,7 @@ model Enrollment {
 
   @@unique([studentId, academicYearId])
   @@index([academicYearId])
+  @@index([entryAcademicTermId])
 }
 
 model AcademicYear {

@@ -15,12 +15,17 @@ import {
   findNonArchivedEnrollments,
   findNonArchivedEnrollmentsByGrade,
   lockAcademicYearForEnrollment,
+  lockAcademicTermForEnrollment,
   updateEnrollment,
 } from "@/repositories/enrollment.repository";
 import {
   deriveApprovedRegularJhsStudentSubjectEnrollments,
   reconcileApprovedRegularJhsStudentSubjectEnrollments,
 } from "@/services/jhs-student-subject-enrollment-derivation.service";
+import {
+  getEnrollmentFoundationValidationError,
+  getEnrollmentPlacementCompatibilityError,
+} from "@/services/enrollment-foundation.service";
 import {
   findActiveSectionForAssignment,
   findActiveSectionsForAssignment,
@@ -134,6 +139,10 @@ export async function getEnrollments(
       studentId: enrollment.studentId,
       sectionId: enrollment.sectionId,
       academicYearId: enrollment.academicYearId,
+      shsTrack: enrollment.shsTrack,
+      entryAcademicTermId: enrollment.entryAcademicTermId,
+      entryAcademicTermName: enrollment.entryAcademicTerm?.name ?? null,
+      entryAcademicTermPosition: enrollment.entryAcademicTerm?.position ?? null,
       studentLrn: enrollment.student.lrn,
       studentFirstName: enrollment.student.firstName,
       studentMiddleName: enrollment.student.middleName,
@@ -327,10 +336,13 @@ async function createEnrollmentInTransaction(
     transaction,
   );
 
-  const [student, section, academicYear] = await Promise.all([
+  const [student, section, academicYear, entryAcademicTerm] = await Promise.all([
     findActiveStudentForEnrollment(values.studentId, transaction),
     findActiveSectionForAssignment(values.sectionId, transaction),
     lockAcademicYearForEnrollment(values.academicYearId, transaction),
+    values.entryAcademicTermId
+      ? lockAcademicTermForEnrollment(values.entryAcademicTermId, transaction)
+      : Promise.resolve(null),
   ]);
 
   if (!student) {
@@ -345,6 +357,16 @@ async function createEnrollmentInTransaction(
     throw new EnrollmentServiceError(
       "Academic year not found or is not active.",
     );
+  }
+
+  const foundationValidationError = getEnrollmentFoundationValidationError({
+    academicYearId: academicYear.id,
+    entryAcademicTerm,
+    gradeLevel: section.gradeLevel,
+    shsTrack: values.shsTrack,
+  });
+  if (foundationValidationError) {
+    throw new EnrollmentServiceError(foundationValidationError);
   }
 
   const duplicate = await findEnrollmentByIdentity(
@@ -366,6 +388,8 @@ async function createEnrollmentInTransaction(
       studentId: student.id,
       sectionId: section.id,
       academicYearId: academicYear.id,
+      entryAcademicTermId: entryAcademicTerm?.id ?? null,
+      shsTrack: values.shsTrack ?? null,
       createdById: actorId,
     },
     transaction,
@@ -394,6 +418,15 @@ async function createEnrollmentInTransaction(
   );
 
   const changes: AuditChanges = {};
+  if (entryAcademicTerm) {
+    changes.entryAcademicTerm = {
+      from: "NONE",
+      to: `${entryAcademicTerm.id} | ${entryAcademicTerm.name}`,
+    };
+  }
+  if (values.shsTrack) {
+    changes.shsTrack = { from: "NONE", to: values.shsTrack };
+  }
 
   addStudentSynchronizationChanges(
     changes,
@@ -503,6 +536,16 @@ export async function correctEnrollmentPlacementInTransaction(
     }
 
     section = activeSection;
+  }
+
+
+  const placementCompatibilityError = getEnrollmentPlacementCompatibilityError({
+    destinationGradeLevel: section.gradeLevel,
+    entryAcademicTermId: enrollment.entryAcademicTermId,
+    shsTrack: enrollment.shsTrack,
+  });
+  if (placementCompatibilityError) {
+    throw new EnrollmentServiceError(placementCompatibilityError);
   }
 
   const changes: AuditChanges = {};

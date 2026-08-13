@@ -41,7 +41,11 @@ async function createFixture(
     }),
     transaction.academicYear.findFirstOrThrow({
       where: { label: "2026-2027", status: "ACTIVE" },
-      select: { id: true, label: true },
+      select: {
+        id: true,
+        label: true,
+        terms: { select: { id: true }, orderBy: { position: "asc" }, take: 1 },
+      },
     }),
   ]);
   const [section, student] = await Promise.all([
@@ -65,6 +69,12 @@ async function createFixture(
       studentId: student.id,
       sectionId: section.id,
       academicYearId: academicYear.id,
+      entryAcademicTermId:
+        gradeLevel === "11" || gradeLevel === "12"
+          ? academicYear.terms[0]!.id
+          : undefined,
+      shsTrack:
+        gradeLevel === "11" || gradeLevel === "12" ? "ACADEMIC" : undefined,
       createdById: actor.id,
     },
     select: { id: true },

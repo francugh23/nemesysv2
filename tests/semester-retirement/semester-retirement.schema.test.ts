@@ -33,6 +33,7 @@ test("Enrollment writes ignore legacy Semester input", () => {
     studentId: "student",
     sectionId: "section",
     academicYearId: "academic-year",
+    entryAcademicTermId: "academic-term",
     semester: "FIRST",
   });
   const update = UpdateEnrollmentSchema.parse({

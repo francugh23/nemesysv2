@@ -94,7 +94,7 @@ async function createEnrollment(gradeLevel: "11" | "12", fixture: Awaited<Return
     select: { id: true },
   });
   return tx.enrollment.create({
-    data: { studentId: student.id, sectionId: section.id, academicYearId: fixture.academicYear.id, createdById: fixture.actor.id },
+    data: { studentId: student.id, sectionId: section.id, academicYearId: fixture.academicYear.id, entryAcademicTermId: fixture.academicYear.terms[0]!.id, shsTrack: "ACADEMIC", createdById: fixture.actor.id },
     select: { id: true },
   });
 }

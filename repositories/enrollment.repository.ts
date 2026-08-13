@@ -1,6 +1,7 @@
 import {
   Prisma,
   type AcademicYearStatus,
+  type EnrollmentShsTrack,
   type EnrollmentStatus,
 } from "@/app/generated/prisma/client";
 import prisma from "@/lib/prisma";
@@ -88,6 +89,8 @@ export async function findNonArchivedEnrollments(
       studentId: true,
       sectionId: true,
       academicYearId: true,
+      shsTrack: true,
+      entryAcademicTermId: true,
       status: true,
       createdAt: true,
       updatedAt: true,
@@ -110,6 +113,12 @@ export async function findNonArchivedEnrollments(
         select: {
           label: true,
           status: true,
+        },
+      },
+      entryAcademicTerm: {
+        select: {
+          name: true,
+          position: true,
         },
       },
     },
@@ -184,6 +193,10 @@ export async function findNonArchivedEnrollmentsByGrade(
       academicYearId: string;
       academicYear: string;
       academicYearStatus: AcademicYearStatus;
+      shsTrack: EnrollmentShsTrack | null;
+      entryAcademicTermId: string | null;
+      entryAcademicTermName: string | null;
+      entryAcademicTermPosition: number | null;
       status: EnrollmentStatus;
       createdAt: Date;
       updatedAt: Date;
@@ -201,6 +214,10 @@ export async function findNonArchivedEnrollmentsByGrade(
       "enrollment"."studentId",
       "enrollment"."sectionId",
       "enrollment"."academicYearId",
+      "enrollment"."shsTrack",
+      "enrollment"."entryAcademicTermId",
+      "entryAcademicTerm"."name" AS "entryAcademicTermName",
+      "entryAcademicTerm"."position" AS "entryAcademicTermPosition",
       "academicYear"."label" AS "academicYear",
       "academicYear"."status" AS "academicYearStatus",
       "enrollment"."status",
@@ -220,6 +237,8 @@ export async function findNonArchivedEnrollmentsByGrade(
       ON "section"."id" = "enrollment"."sectionId"
     INNER JOIN "AcademicYear" AS "academicYear"
       ON "academicYear"."id" = "enrollment"."academicYearId"
+    LEFT JOIN "AcademicTerm" AS "entryAcademicTerm"
+      ON "entryAcademicTerm"."id" = "enrollment"."entryAcademicTermId"
     WHERE ${Prisma.join(getEnrollmentGradeSortConditions(filters), " AND ")}
     ORDER BY CASE BTRIM("section"."gradeLevel")
       WHEN '7' THEN 7
@@ -239,6 +258,8 @@ export async function findNonArchivedEnrollmentsByGrade(
     studentId: enrollment.studentId,
     sectionId: enrollment.sectionId,
     academicYearId: enrollment.academicYearId,
+    shsTrack: enrollment.shsTrack,
+    entryAcademicTermId: enrollment.entryAcademicTermId,
     status: enrollment.status,
     createdAt: enrollment.createdAt,
     updatedAt: enrollment.updatedAt,
@@ -257,6 +278,12 @@ export async function findNonArchivedEnrollmentsByGrade(
       label: enrollment.academicYear,
       status: enrollment.academicYearStatus,
     },
+    entryAcademicTerm: enrollment.entryAcademicTermId
+      ? {
+          name: enrollment.entryAcademicTermName!,
+          position: enrollment.entryAcademicTermPosition!,
+        }
+      : null,
   }));
 }
 
@@ -337,6 +364,8 @@ export async function findActiveEnrollmentById(
       sectionId: true,
       academicYearId: true,
       status: true,
+      shsTrack: true,
+      entryAcademicTermId: true,
       student: {
         select: {
           lrn: true,
@@ -367,6 +396,12 @@ export async function findActiveEnrollmentById(
           status: true,
         },
       },
+      entryAcademicTerm: {
+        select: {
+          name: true,
+          position: true,
+        },
+      },
     },
   });
 }
@@ -377,6 +412,14 @@ export async function findActiveAcademicYearsForEnrollment() {
     select: {
       id: true,
       label: true,
+      terms: {
+        select: {
+          id: true,
+          name: true,
+          position: true,
+        },
+        orderBy: [{ position: "asc" }, { id: "asc" }],
+      },
     },
     orderBy: [{ startDate: "desc" }, { id: "asc" }],
   });
@@ -400,6 +443,27 @@ export async function lockAcademicYearForEnrollment(
   `);
 
   return academicYears[0] ?? null;
+}
+
+export async function lockAcademicTermForEnrollment(
+  id: string,
+  transaction: Prisma.TransactionClient,
+) {
+  const terms = await transaction.$queryRaw<
+    Array<{
+      id: string;
+      academicYearId: string;
+      name: string;
+      position: number;
+    }>
+  >(Prisma.sql`
+    SELECT "id", "academicYearId", "name", "position"
+    FROM "AcademicTerm"
+    WHERE "id" = ${id}
+    FOR SHARE
+  `);
+
+  return terms[0] ?? null;
 }
 
 export async function updateEnrollment(

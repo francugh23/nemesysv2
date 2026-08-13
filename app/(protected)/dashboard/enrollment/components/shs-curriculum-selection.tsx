@@ -123,7 +123,9 @@ function ShsCurriculumSelectionDialog({ enrollmentId, open, onOpenChange, initia
                           disabled={!selected}
                           onCheckedChange={(value) => toggleTerm(offering.id, term.academicTermId, value === true)}
                         />
-                        {term.academicTerm.position}. {term.academicTerm.name}
+                        <span aria-label={`Term ${term.academicTerm.position}: ${term.academicTerm.name}`}>
+                          Term {term.academicTerm.position}
+                        </span>
                       </label>
                     ))}
                   </div>

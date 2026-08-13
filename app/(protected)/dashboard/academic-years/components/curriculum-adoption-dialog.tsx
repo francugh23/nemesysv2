@@ -5,6 +5,7 @@ import { ArrowRight, Copy, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { AcademicYearStatusBadge } from "@/app/(protected)/dashboard/academic-years/components/academic-year-status-badge";
+import { AcademicTermBadge } from "@/components/common/badges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -252,17 +253,17 @@ export function CurriculumAdoptionDialog({
                   <div className="grid gap-3 md:grid-cols-2">
                     {sourceYear.terms.map((sourceTerm) => (
                       <div key={sourceTerm.id} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-lg border p-3">
-                        <div>
-                          <p className="font-medium">{sourceTerm.name}</p>
-                          <p className="text-xs text-muted-foreground">Source position {sourceTerm.position}</p>
-                        </div>
+                        <AcademicTermBadge
+                          position={sourceTerm.position}
+                          name={sourceTerm.name}
+                        />
                         <ArrowRight className="size-4 text-muted-foreground" />
                         <Select
                           value={termMappingBySourceId[sourceTerm.id] || null}
                           onValueChange={(value) => handleMappingChange(sourceTerm.id, value)}
                           disabled={adoption.isPending}
                         >
-                          <SelectTrigger className="w-full" aria-label={`Destination Term for ${sourceTerm.name}`}>
+                            <SelectTrigger className="w-full" aria-label={`Destination Term for Term ${sourceTerm.position}: ${sourceTerm.name}`}>
                             <SelectValue placeholder="Choose Term" />
                           </SelectTrigger>
                           <SelectContent>
@@ -273,7 +274,7 @@ export function CurriculumAdoptionDialog({
                               );
                               return (
                                 <SelectItem key={destinationTerm.id} value={destinationTerm.id} disabled={usedByAnother}>
-                                  {destinationTerm.name} (position {destinationTerm.position})
+                                  Term {destinationTerm.position}
                                 </SelectItem>
                               );
                             })}
@@ -352,7 +353,15 @@ export function CurriculumAdoptionDialog({
                             </TableCell>
                             <TableCell>{row.gradeLevel}</TableCell>
                             <TableCell>
-                              {row.mappedTerms.map(({ destination }) => destination.name).join(", ")}
+                              <div className="flex flex-wrap gap-1">
+                                {row.mappedTerms.map(({ destination }) => (
+                                  <AcademicTermBadge
+                                    key={destination.id}
+                                    position={destination.position}
+                                    name={destination.name}
+                                  />
+                                ))}
+                              </div>
                             </TableCell>
                             <TableCell>
                               <Badge variant={status === "Conflict" ? "destructive" : status === "Eligible" ? "default" : "outline"}>

@@ -32,6 +32,7 @@ import {
   type AcademicTermListItem,
   type CreateAcademicTermInput,
 } from "@/schemas";
+import { AcademicTermBadge } from "@/components/common/badges";
 
 export function AcademicTermManager({
   academicYearId,
@@ -84,9 +85,7 @@ export function AcademicTermManager({
               className="flex items-center justify-between gap-3 rounded-md bg-muted/40 px-3 py-2"
             >
               <div>
-                <p className="font-medium">
-                  {term.position}. {term.name}
-                </p>
+                <AcademicTermBadge position={term.position} name={term.name} />
                 <p className="text-sm text-muted-foreground">
                   {formatDateOnly(term.startDate)} to {formatDateOnly(term.endDate)}
                 </p>

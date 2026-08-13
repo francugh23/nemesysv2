@@ -14,7 +14,10 @@ async function createFixture(transaction: Prisma.TransactionClient) {
     transaction.user.findFirstOrThrow({ where: { deletedAt: null }, select: { id: true } }),
     transaction.academicYear.findUniqueOrThrow({
       where: { id: "academic-year-2026-2027" },
-      select: { id: true },
+      select: {
+        id: true,
+        terms: { select: { id: true }, orderBy: { position: "asc" }, take: 1 },
+      },
     }),
     transaction.subjectOffering.findFirstOrThrow({
       where: {

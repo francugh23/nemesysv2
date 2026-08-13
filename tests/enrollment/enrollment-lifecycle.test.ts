@@ -19,7 +19,11 @@ async function createFixture(transaction: Prisma.TransactionClient) {
     }),
     transaction.academicYear.findFirstOrThrow({
       where: { status: "ACTIVE" },
-      select: { id: true, label: true },
+      select: {
+        id: true,
+        label: true,
+        terms: { select: { id: true }, orderBy: { position: "asc" }, take: 1 },
+      },
     }),
   ]);
   const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
@@ -100,7 +104,12 @@ for (const expected of [
         const [enrollment, student, childrenAfter, audit] = await Promise.all([
           transaction.enrollment.findUniqueOrThrow({
             where: { id: fixture.enrollment.id },
-            select: { status: true, sectionId: true },
+            select: {
+              status: true,
+              sectionId: true,
+              shsTrack: true,
+              entryAcademicTermId: true,
+            },
           }),
           transaction.student.findUniqueOrThrow({
             where: { id: fixture.student.id },
@@ -122,6 +131,11 @@ for (const expected of [
 
         assert.equal(enrollment.status, expected[0]);
         assert.equal(enrollment.sectionId, fixture.section.id);
+        assert.equal(enrollment.shsTrack, null);
+        assert.equal(
+          enrollment.entryAcademicTermId,
+          null,
+        );
         assert.deepEqual(student, {
           status: expected[1],
           currentSectionId: null,

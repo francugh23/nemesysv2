@@ -25,7 +25,7 @@ async function withRollback(run: (tx: Prisma.TransactionClient) => Promise<void>
 async function createEnrollmentFixture(tx: Prisma.TransactionClient, gradeLevel: string) {
   const [actor, academicYear] = await Promise.all([
     tx.user.findFirstOrThrow({ where: { deletedAt: null }, select: { id: true } }),
-    tx.academicYear.findFirstOrThrow({ where: { status: "ACTIVE" }, select: { id: true, label: true } }),
+    tx.academicYear.findFirstOrThrow({ where: { status: "ACTIVE" }, select: { id: true, label: true, terms: { select: { id: true }, orderBy: { position: "asc" }, take: 1 } } }),
   ]);
   const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
   const section = await tx.section.create({
@@ -44,7 +44,18 @@ async function createEnrollmentFixture(tx: Prisma.TransactionClient, gradeLevel:
     },
   });
   const enrollment = await tx.enrollment.create({
-    data: { studentId: student.id, sectionId: section.id, academicYearId: academicYear.id, createdById: actor.id },
+    data: {
+      studentId: student.id,
+      sectionId: section.id,
+      academicYearId: academicYear.id,
+      entryAcademicTermId:
+        gradeLevel === "11" || gradeLevel === "12"
+          ? academicYear.terms[0]!.id
+          : undefined,
+      shsTrack:
+        gradeLevel === "11" || gradeLevel === "12" ? "ACADEMIC" : undefined,
+      createdById: actor.id,
+    },
   });
   return { actor, academicYear, enrollment, student };
 }

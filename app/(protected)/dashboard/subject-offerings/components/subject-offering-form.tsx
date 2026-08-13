@@ -216,7 +216,9 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
                           )
                         }
                       />
-                      {term.name}
+                      <span aria-label={`Term ${term.position}: ${term.name}`}>
+                        Term {term.position}
+                      </span>
                     </label>
                   );
                 })
