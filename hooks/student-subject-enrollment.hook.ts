@@ -8,8 +8,14 @@ import {
   getStudentSubjectEnrollmentsAction,
   progressShsCurrentTermAction,
 } from "@/actions/student-subject-enrollment.action";
+import {
+  finalizeShsTermResultAction,
+  saveShsTermResultDraftAction,
+} from "@/actions/shs-term-result.action";
 import type {
   DropStudentSubjectEnrollmentInput,
+  FinalizeShsTermResultInput,
+  SaveShsTermResultDraftInput,
   ShsCurrentTermProgressionInput,
 } from "@/schemas";
 
@@ -71,6 +77,35 @@ export function useDropShsStudentSubjectEnrollment(enrollmentId: string) {
   return useMutation({
     mutationFn: (values: DropStudentSubjectEnrollmentInput) =>
       dropShsStudentSubjectEnrollmentAction(values),
+    onSuccess: async (result) => {
+      if (!result.error) await invalidate();
+    },
+  });
+}
+
+function useShsTermResultInvalidation(enrollmentId: string) {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({
+    queryKey: ["student-subject-enrollments", enrollmentId],
+  });
+}
+
+export function useSaveShsTermResultDraft(enrollmentId: string) {
+  const invalidate = useShsTermResultInvalidation(enrollmentId);
+  return useMutation({
+    mutationFn: (values: SaveShsTermResultDraftInput) =>
+      saveShsTermResultDraftAction(values),
+    onSuccess: async (result) => {
+      if (!result.error) await invalidate();
+    },
+  });
+}
+
+export function useFinalizeShsTermResult(enrollmentId: string) {
+  const invalidate = useShsTermResultInvalidation(enrollmentId);
+  return useMutation({
+    mutationFn: (values: FinalizeShsTermResultInput) =>
+      finalizeShsTermResultAction(values),
     onSuccess: async (result) => {
       if (!result.error) await invalidate();
     },

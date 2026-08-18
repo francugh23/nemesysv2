@@ -9,7 +9,7 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-Phase 21C SSHS Curriculum Term Applicability, the focused Curriculum UI bug fixes, Phase 21D-A SHS Enrollment Foundation, Phase 21D-B1 Progressive SHS Foundation, and Phase 21D-B2 Progressive SHS Current-Term Enrollment are complete; authenticated browser verification remains pending before production.
+Phase 21C SSHS Curriculum Term Applicability, the focused Curriculum UI bug fixes, Phase 21D-A SHS Enrollment Foundation, Phase 21D-B Progressive SHS Current-Term Enrollment, and Phase 21D-C Immutable SHS Term Result Foundation are complete; authenticated browser verification remains pending before production.
 
 ### Current Objective
 
@@ -42,6 +42,7 @@ Academic Year is the canonical period identity for academic configuration and op
 - Enrollment-owned actual entry Academic Term and explicit Academic or TechPro SHS Track, with legacy-safe null preservation and no Term Enrollment model
 - Progressive SHS backend foundation with Term-scoped elective identity, subject-level DROPPED lifecycle integrity, immutable participation Terms, configurable per-Term elective policies, and Philippine current-Term resolution
 - Progressive SHS current-Term Enrollment with additive server-resolved selection, entry-safe Core materialization, combined elective-policy enforcement, whole-row subject DROP, complete history UI, and policy administration
+- Immutable SHS Term Result evidence owned by exact Student Subject Enrollment Term membership, with draft/finalized lifecycle, historical date eligibility, Super Admin authority, and database-protected finalization
 - Explicit Super Admin-only Curriculum adoption from ACTIVE, LOCKED, or ARCHIVED source years into DRAFT destination years, with deliberate Term mapping, atomic conflict handling, provisional SSHS carry-forward, and audit-backed provenance
 - User Management authorized read path, URL-driven server-table UX, audited administrative account creation and administration, forced first-login completion, self-service password change, and credential-driven session invalidation
 - Audit Log Management read-only URL-driven server-table UX, authorized details, multi-action filtering, safe supported-module navigation, immutable historical actor visibility, and export-ready validated query reuse
@@ -88,6 +89,7 @@ Academic Year is the canonical period identity for academic configuration and op
 - [Phase 21D-A: SHS Enrollment Foundation](./milestones/phase-21d-a-shs-enrollment-foundation.md)
 - [Phase 21D-B1: Progressive SHS Foundation](./milestones/phase-21d-b1-progressive-shs-foundation.md)
 - [Phase 21D-B2: Progressive SHS Current-Term Enrollment](./milestones/phase-21d-b2-progressive-shs-enrollment.md)
+- [Phase 21D-C: Immutable SHS Term Result Foundation](./milestones/phase-21d-c-immutable-shs-term-results.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -145,6 +147,8 @@ Academic Year is the canonical period identity for academic configuration and op
 - Current Academic Term resolution uses the single active Academic Year, inclusive configured Term dates, and the Philippine calendar date in `Asia/Manila`; inter-Term gaps return no current Term and ambiguous configuration fails. Position, Semester, timestamps, Track/Strand, and client input are not current-Term authority.
 - Grade 11/12 current-Term progression requires active annual Enrollment facts, initial entry in the resolved current Term, and an exact per-Term/grade policy. Core is materialized from actual local entry/current participation forward, electives are additive one-Term rows, Academic and TechPro counts are combined, SHS Track does not filter eligibility, omission preserves history, and same-Term re-selection after DROP is prohibited.
 - Subject DROP is an explicit whole-row `ACTIVE -> DROPPED` command for current-Term SHS participation. It preserves every snapshot and Term, never changes Enrollment/Student or creates a replacement, and reports but permits a below-minimum elective result.
+- SHS Term Results are additive evidence records owned directly by immutable Student Subject Enrollment Term composite identity. DRAFT may hold a nullable `DECIMAL(5,2)` value from 0.00 through 100.00; FINALIZED requires a value and finalization facts and is database-immutable. Only ACTIVE Grade 11/12 SHS participation may receive a result. Draft entry begins on the target Term start date, finalization begins on its end date, historical years remain eligible, and current-Term resolution is not result-entry authority.
+- Existing `Permissions.GRADES` remains Super Admin-only and protects SHS Term Result mutations at Action and Service boundaries. Enrollment Details displays exact-Term evidence and permits only DRAFT editing/finalization; terminal participation remains readable without controls. Results do not infer passing, completion, credits, prerequisites, progression, promotion, or graduation.
 - Academic Year Details manages Grade 11/12 elective policies for configured Terms. Locked and archived years are read-only, and policies are never seeded, copied, or inferred.
 - Shared pagination resets to page one when page size changes, supports 50 rendered rows, immediately reflects URL-requested Next/Previous state during placeholder transitions, and uses the server-resolved page that produced fresh records for page labels, ranges, and boundary controls. Independent tables on one route may opt into distinct URL page keys. Enrollment includes represented Track / Strand filtering, Subject Offering includes server-side code/description search with historical represented Academic Year filters, and the provisional DepEd reference catalog uses URL-driven server pagination.
 - Audit Log complete filtered CSV/XLSX export uses the shared bounded repeatable-read export architecture and excludes metadata. Student and Subject remain the only import workflows; Subject import invalidates dependent Offering options.
@@ -173,7 +177,7 @@ Academic Year is the canonical period identity for academic configuration and op
 
 ## Next Planned Milestone
 
-No next milestone is active or approved. Prerequisites; results and passing rules; transferred credits; reusable cross-grade SHS Subject decisions; subject reinstatement; partial-Term Core withdrawal; completed subject status; TermGrade; manual final grades; Teacher completion; Subject Assignment modernization; Scheduling; Attendance; Curriculum locking; Semester column retirement; automatic unattended progression/rollover; Enrollment reopening/archive/restore; and graduation remain deferred to separately approved subphases. Existing `trackStrand` data must not be blindly migrated. Teacher and Section import workflows; Subject, Teacher, Section, User, Enrollment, and academic-configuration export integrations; Academic Setup route consolidation; MFA; recovery; detailed login history; login throttling; breached-password checks; password history; and User archive/restore remain deferred to separately approved milestones.
+No next milestone is active or approved. Prerequisites; passing and completion rules; transferred credits; reusable cross-grade SHS Subject decisions; subject reinstatement; partial-Term Core withdrawal; completed subject status; result correction/revision; Teacher completion; Subject Assignment modernization; JHS result modernization; legacy Grade migration; Scheduling; Attendance; Curriculum locking; Semester column retirement; automatic unattended progression/rollover; Enrollment reopening/archive/restore; and graduation remain deferred to separately approved subphases. Existing `trackStrand` data must not be blindly migrated. Teacher and Section import workflows; Subject, Teacher, Section, User, Enrollment, and academic-configuration export integrations; Academic Setup route consolidation; MFA; recovery; detailed login history; login throttling; breached-password checks; password history; and User archive/restore remain deferred to separately approved milestones.
 
 ## Technology Stack
 

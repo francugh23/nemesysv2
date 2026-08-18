@@ -25,7 +25,17 @@ const studentSubjectEnrollmentSelect = {
     select: {
       academicTermId: true,
       academicTerm: {
-        select: { name: true, position: true },
+        select: { name: true, position: true, startDate: true, endDate: true },
+      },
+      result: {
+        select: {
+          id: true,
+          finalResult: true,
+          status: true,
+          finalizedAt: true,
+          createdAt: true,
+          updatedAt: true,
+        },
       },
     },
     orderBy: { academicTerm: { position: "asc" } },

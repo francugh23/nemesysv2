@@ -44,7 +44,19 @@ async function runSerializableMutation<T>(operation: (transaction: Prisma.Transa
 
 export async function getStudentSubjectEnrollments(query: StudentSubjectEnrollmentRead) {
   await requirePermission(Permissions.ENROLLMENT);
-  return findStudentSubjectEnrollments(query);
+  const rows = await findStudentSubjectEnrollments(query);
+  return rows.map((row) => ({
+    ...row,
+    terms: row.terms.map((term) => ({
+      ...term,
+      result: term.result
+        ? {
+            ...term.result,
+            finalResult: term.result.finalResult?.toNumber() ?? null,
+          }
+        : null,
+    })),
+  }));
 }
 
 export async function getShsCurrentTermProgressionContext(enrollmentId: string, clock: () => Date = () => new Date()) {

@@ -60,6 +60,11 @@ enum StudentSubjectEnrollmentStatus {
   DROPPED
 }
 
+enum ShsTermResultStatus {
+  DRAFT
+  FINALIZED
+}
+
 enum AcademicYearStatus {
   DRAFT
   ACTIVE
@@ -123,22 +128,24 @@ model User {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  teacher              Teacher?
-  createdStudents      Student[]
-  createdSections      Section[]
-  createdSubjects      Subject[]
-  createdEnrollments   Enrollment[]
-  createdGrades        Grade[]
-  createdAcademicYears AcademicYear[]
-  createdAcademicTerms AcademicTerm[]
-  createdSubjectOfferings SubjectOffering[]
-  createdShsCurriculumClusters ShsCurriculumCluster[]
-  createdSubjectOfferingShsContexts SubjectOfferingShsContext[]
-  approvedSubjectOfferingShsContexts SubjectOfferingShsContext[] @relation("ShsCurriculumApprovalActor")
-  createdShsCurriculumReferences ShsCurriculumReference[]
-  createdStudentSubjectEnrollments StudentSubjectEnrollment[]
+  teacher                              Teacher?
+  createdStudents                      Student[]
+  createdSections                      Section[]
+  createdSubjects                      Subject[]
+  createdEnrollments                   Enrollment[]
+  createdGrades                        Grade[]
+  createdAcademicYears                 AcademicYear[]
+  createdAcademicTerms                 AcademicTerm[]
+  createdSubjectOfferings              SubjectOffering[]
+  createdShsCurriculumClusters         ShsCurriculumCluster[]
+  createdSubjectOfferingShsContexts    SubjectOfferingShsContext[]
+  approvedSubjectOfferingShsContexts   SubjectOfferingShsContext[]   @relation("ShsCurriculumApprovalActor")
+  createdShsCurriculumReferences       ShsCurriculumReference[]
+  createdStudentSubjectEnrollments     StudentSubjectEnrollment[]
   createdShsElectiveEnrollmentPolicies ShsElectiveEnrollmentPolicy[]
-  auditLogs            AuditLog[]
+  createdShsTermResults                ShsTermResult[]               @relation("ShsTermResultCreator")
+  finalizedShsTermResults              ShsTermResult[]               @relation("ShsTermResultFinalizer")
+  auditLogs                            AuditLog[]
 }
 
 model Student {
@@ -217,13 +224,13 @@ model AcademicTerm {
   createdById String?
   createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  subjectOfferings SubjectOfferingTerm[]
-  studentSubjectEnrollmentTerms StudentSubjectEnrollmentTerm[]
-  selectedStudentSubjectEnrollments StudentSubjectEnrollment[] @relation("StudentSubjectEnrollmentSelectionAcademicTerm")
-  entryEnrollments Enrollment[] @relation("EnrollmentEntryAcademicTerm")
-  shsElectiveEnrollmentPolicies ShsElectiveEnrollmentPolicy[]
+  createdAt                         DateTime                       @default(now())
+  updatedAt                         DateTime                       @updatedAt
+  subjectOfferings                  SubjectOfferingTerm[]
+  studentSubjectEnrollmentTerms     StudentSubjectEnrollmentTerm[]
+  selectedStudentSubjectEnrollments StudentSubjectEnrollment[]     @relation("StudentSubjectEnrollmentSelectionAcademicTerm")
+  entryEnrollments                  Enrollment[]                   @relation("EnrollmentEntryAcademicTerm")
+  shsElectiveEnrollmentPolicies     ShsElectiveEnrollmentPolicy[]
 
   @@unique([academicYearId, position])
   @@unique([id, academicYearId])
@@ -274,9 +281,9 @@ model Subject {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  assignments SubjectAssignment[]
-  offerings   SubjectOffering[]
-  grades      Grade[]
+  assignments             SubjectAssignment[]
+  offerings               SubjectOffering[]
+  grades                  Grade[]
   shsCurriculumReferences ShsCurriculumReference[]
 }
 
@@ -320,7 +327,7 @@ model Enrollment {
 
   shsTrack            EnrollmentShsTrack?
   entryAcademicTermId String?
-  entryAcademicTerm   AcademicTerm?      @relation("EnrollmentEntryAcademicTerm", fields: [entryAcademicTermId, academicYearId], references: [id, academicYearId], onDelete: Restrict)
+  entryAcademicTerm   AcademicTerm?       @relation("EnrollmentEntryAcademicTerm", fields: [entryAcademicTermId, academicYearId], references: [id, academicYearId], onDelete: Restrict)
 
   semester Semester?
 
@@ -333,7 +340,7 @@ model Enrollment {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  grades Grade[]
+  grades                    Grade[]
   studentSubjectEnrollments StudentSubjectEnrollment[]
 
   @@unique([studentId, academicYearId])
@@ -355,10 +362,10 @@ model AcademicYear {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  enrollments        Enrollment[]
-  subjectAssignments SubjectAssignment[]
-  terms              AcademicTerm[]
-  subjectOfferings   SubjectOffering[]
+  enrollments                   Enrollment[]
+  subjectAssignments            SubjectAssignment[]
+  terms                         AcademicTerm[]
+  subjectOfferings              SubjectOffering[]
   shsElectiveEnrollmentPolicies ShsElectiveEnrollmentPolicy[]
 
   @@index([status])
@@ -367,22 +374,23 @@ model AcademicYear {
 }
 
 model SubjectOffering {
-  id String @id @default(cuid())
-  subjectId String
-  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
-  academicYearId String
-  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
-  gradeLevel String
-  subjectCode String
-  subjectDescription String
-  createdById String
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-  terms SubjectOfferingTerm[]
-  shsContext SubjectOfferingShsContext?
+  id                        String                     @id @default(cuid())
+  subjectId                 String
+  subject                   Subject                    @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  academicYearId            String
+  academicYear              AcademicYear               @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+  gradeLevel                String
+  subjectCode               String
+  subjectDescription        String
+  createdById               String
+  createdBy                 User                       @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  deletedAt                 DateTime?
+  terms                     SubjectOfferingTerm[]
+  shsContext                SubjectOfferingShsContext?
   studentSubjectEnrollments StudentSubjectEnrollment[]
+
   @@index([academicYearId])
   @@index([subjectId])
 }
@@ -390,21 +398,21 @@ model SubjectOffering {
 model ShsCurriculumCluster {
   id String @id @default(cuid())
 
-  code String
-  name String
-  track ShsCurriculumClusterTrack
+  code            String
+  name            String
+  track           ShsCurriculumClusterTrack
   sourceReference String?
-  isSchoolFacing Boolean @default(true)
+  isSchoolFacing  Boolean                   @default(true)
 
   createdById String
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   subjectOfferingContexts SubjectOfferingShsContext[]
-  references ShsCurriculumReference[]
+  references              ShsCurriculumReference[]
 
   @@index([track])
   @@index([createdById])
@@ -413,22 +421,22 @@ model ShsCurriculumCluster {
 model ShsCurriculumReference {
   id String @id @default(cuid())
 
-  subjectId String
-  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
-  gradeLevel String
-  classification ShsSubjectClassification
-  curriculumStatus ShsCurriculumStatus @default(PROVISIONAL_DEPED)
+  subjectId        String
+  subject          Subject                  @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  gradeLevel       String
+  classification   ShsSubjectClassification
+  curriculumStatus ShsCurriculumStatus      @default(PROVISIONAL_DEPED)
 
   clusterId String?
-  cluster ShsCurriculumCluster? @relation(fields: [clusterId], references: [id], onDelete: Restrict)
+  cluster   ShsCurriculumCluster? @relation(fields: [clusterId], references: [id], onDelete: Restrict)
 
-  sourceReference String
+  sourceReference   String
   termApplicability ShsCurriculumReferenceTermApplicability
-  termPositions Int[] @default([])
-  schoolCategories ShsAcademicSchoolCategory[] @default([])
+  termPositions     Int[]                                   @default([])
+  schoolCategories  ShsAcademicSchoolCategory[]             @default([])
 
   createdById String
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -441,23 +449,23 @@ model ShsCurriculumReference {
 }
 
 model SubjectOfferingShsContext {
-  subjectOfferingId String @id
-  subjectOffering SubjectOffering @relation(fields: [subjectOfferingId], references: [id], onDelete: Restrict)
+  subjectOfferingId String          @id
+  subjectOffering   SubjectOffering @relation(fields: [subjectOfferingId], references: [id], onDelete: Restrict)
 
-  classification ShsSubjectClassification
+  classification   ShsSubjectClassification
   curriculumStatus ShsCurriculumStatus
 
   clusterId String?
-  cluster ShsCurriculumCluster? @relation(fields: [clusterId], references: [id], onDelete: Restrict)
+  cluster   ShsCurriculumCluster? @relation(fields: [clusterId], references: [id], onDelete: Restrict)
 
-  sourceReference String?
+  sourceReference   String?
   approvalReference String?
-  approvedById String?
-  approvedBy User? @relation("ShsCurriculumApprovalActor", fields: [approvedById], references: [id], onDelete: Restrict)
-  approvedAt DateTime?
+  approvedById      String?
+  approvedBy        User?     @relation("ShsCurriculumApprovalActor", fields: [approvedById], references: [id], onDelete: Restrict)
+  approvedAt        DateTime?
 
   createdById String
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -470,9 +478,10 @@ model SubjectOfferingShsContext {
 
 model SubjectOfferingTerm {
   subjectOfferingId String
-  subjectOffering SubjectOffering @relation(fields: [subjectOfferingId], references: [id], onDelete: Restrict)
-  academicTermId String
-  academicTerm AcademicTerm @relation(fields: [academicTermId], references: [id], onDelete: Restrict)
+  subjectOffering   SubjectOffering @relation(fields: [subjectOfferingId], references: [id], onDelete: Restrict)
+  academicTermId    String
+  academicTerm      AcademicTerm    @relation(fields: [academicTermId], references: [id], onDelete: Restrict)
+
   @@id([subjectOfferingId, academicTermId])
   @@index([academicTermId])
 }
@@ -481,32 +490,32 @@ model StudentSubjectEnrollment {
   id String @id @default(cuid())
 
   enrollmentId String
-  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
 
   subjectOfferingId String
-  subjectOffering SubjectOffering @relation(fields: [subjectOfferingId], references: [id], onDelete: Restrict)
+  subjectOffering   SubjectOffering @relation(fields: [subjectOfferingId], references: [id], onDelete: Restrict)
 
   selectionAcademicTermId String?
-  selectionAcademicTerm AcademicTerm? @relation("StudentSubjectEnrollmentSelectionAcademicTerm", fields: [selectionAcademicTermId], references: [id], onDelete: Restrict)
+  selectionAcademicTerm   AcademicTerm? @relation("StudentSubjectEnrollmentSelectionAcademicTerm", fields: [selectionAcademicTermId], references: [id], onDelete: Restrict)
 
-  subjectCode String
+  subjectCode        String
   subjectDescription String
-  gradeLevel String
+  gradeLevel         String
 
-  shsClassification ShsSubjectClassification?
-  shsClusterCode String?
-  shsClusterName String?
-  shsCurriculumStatus ShsCurriculumStatus?
-  shsSourceReference String?
+  shsClassification    ShsSubjectClassification?
+  shsClusterCode       String?
+  shsClusterName       String?
+  shsCurriculumStatus  ShsCurriculumStatus?
+  shsSourceReference   String?
   shsApprovalReference String?
 
-  status StudentSubjectEnrollmentStatus @default(ACTIVE)
+  status     StudentSubjectEnrollmentStatus @default(ACTIVE)
   replacedAt DateTime?
-  droppedAt DateTime?
+  droppedAt  DateTime?
   dropReason String?
 
   createdById String
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -523,17 +532,17 @@ model ShsElectiveEnrollmentPolicy {
   id String @id @default(cuid())
 
   academicYearId String
-  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
 
   academicTermId String
-  academicTerm AcademicTerm @relation(fields: [academicTermId, academicYearId], references: [id, academicYearId], onDelete: Restrict)
+  academicTerm   AcademicTerm @relation(fields: [academicTermId, academicYearId], references: [id, academicYearId], onDelete: Restrict)
 
-  gradeLevel String
+  gradeLevel       String
   minimumElectives Int
   maximumElectives Int
 
   createdById String
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -545,13 +554,41 @@ model ShsElectiveEnrollmentPolicy {
 
 model StudentSubjectEnrollmentTerm {
   studentSubjectEnrollmentId String
-  studentSubjectEnrollment StudentSubjectEnrollment @relation(fields: [studentSubjectEnrollmentId], references: [id], onDelete: Restrict)
+  studentSubjectEnrollment   StudentSubjectEnrollment @relation(fields: [studentSubjectEnrollmentId], references: [id], onDelete: Restrict)
 
   academicTermId String
-  academicTerm AcademicTerm @relation(fields: [academicTermId], references: [id], onDelete: Restrict)
+  academicTerm   AcademicTerm @relation(fields: [academicTermId], references: [id], onDelete: Restrict)
+
+  result ShsTermResult?
 
   @@id([studentSubjectEnrollmentId, academicTermId])
   @@index([academicTermId])
+}
+
+model ShsTermResult {
+  id String @id @default(cuid())
+
+  studentSubjectEnrollmentId   String
+  academicTermId               String
+  studentSubjectEnrollmentTerm StudentSubjectEnrollmentTerm @relation(fields: [studentSubjectEnrollmentId, academicTermId], references: [studentSubjectEnrollmentId, academicTermId], onDelete: Restrict)
+
+  finalResult Decimal?            @db.Decimal(5, 2)
+  status      ShsTermResultStatus @default(DRAFT)
+
+  createdById String
+  createdBy   User   @relation("ShsTermResultCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  finalizedById String?
+  finalizedBy   User?     @relation("ShsTermResultFinalizer", fields: [finalizedById], references: [id], onDelete: Restrict)
+  finalizedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentSubjectEnrollmentId, academicTermId])
+  @@index([academicTermId])
+  @@index([createdById])
+  @@index([finalizedById])
 }
 
 model Grade {

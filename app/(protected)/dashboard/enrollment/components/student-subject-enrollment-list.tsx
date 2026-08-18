@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 
 import { AcademicTermBadge } from "@/components/common/badges";
 import { Badge } from "@/components/ui/badge";
@@ -19,8 +20,13 @@ import {
   useStudentSubjectEnrollments,
 } from "@/hooks/student-subject-enrollment.hook";
 import { formatDateTime } from "@/lib/format";
+import { getPhilippineCalendarDate } from "@/lib/academic-term-current";
 
 import { DropStudentSubjectEnrollmentDialog } from "./drop-student-subject-enrollment-dialog";
+import {
+  ShsTermResultDialog,
+  type ShsTermResultTarget,
+} from "./shs-term-result-dialog";
 
 const statusVariants = {
   ACTIVE: "default",
@@ -44,6 +50,8 @@ export function StudentSubjectEnrollmentList({
   const [showReplacementHistory, setShowReplacementHistory] = useState(false);
   const [showDroppedHistory, setShowDroppedHistory] = useState(false);
   const [dropRow, setDropRow] = useState<StudentSubjectEnrollmentRow | null>(null);
+  const [resultTarget, setResultTarget] = useState<ShsTermResultTarget | null>(null);
+  const { data: session } = useSession();
   const { data, isLoading, isError, isFetching, refetch } =
     useStudentSubjectEnrollments(enrollmentId, open);
   const isShs = gradeLevel === "11" || gradeLevel === "12";
@@ -78,6 +86,7 @@ export function StudentSubjectEnrollmentList({
     enrollmentStatus === "ACTIVE" &&
     academicYearStatus === "ACTIVE" &&
     Boolean(currentTerm);
+  const canManageResults = isShs && session?.user.role === "SUPER_ADMIN";
 
   return (
     <section className="space-y-3">
@@ -137,6 +146,9 @@ export function StudentSubjectEnrollmentList({
           rows={currentActiveRows}
           currentAcademicTermId={currentTerm?.id}
           canManageDrops={canManageDrops}
+          showResults={isShs}
+          canManageResults={canManageResults}
+          onManageResult={setResultTarget}
           onDrop={setDropRow}
         />
       ) : (
@@ -153,7 +165,12 @@ export function StudentSubjectEnrollmentList({
               Active participation outside the current Term remains read-only history here.
             </p>
           </div>
-          <StudentSubjectEnrollmentTable rows={previousActiveRows} />
+          <StudentSubjectEnrollmentTable
+            rows={previousActiveRows}
+            showResults={isShs}
+            canManageResults={canManageResults}
+            onManageResult={setResultTarget}
+          />
         </div>
       )}
 
@@ -165,7 +182,7 @@ export function StudentSubjectEnrollmentList({
               Replaced subject enrollments are preserved as read-only history.
             </p>
           </div>
-          <StudentSubjectEnrollmentTable rows={replacedRows} />
+          <StudentSubjectEnrollmentTable rows={replacedRows} showResults={isShs} />
         </div>
       )}
 
@@ -177,7 +194,7 @@ export function StudentSubjectEnrollmentList({
               Dropped rows retain their immutable Terms and recorded reason.
             </p>
           </div>
-          <StudentSubjectEnrollmentTable rows={droppedRows} showDropDetails />
+          <StudentSubjectEnrollmentTable rows={droppedRows} showDropDetails showResults={isShs} />
         </div>
       )}
 
@@ -194,6 +211,14 @@ export function StudentSubjectEnrollmentList({
           onOpenChange={(nextOpen) => !nextOpen && setDropRow(null)}
         />
       )}
+      {resultTarget && (
+        <ShsTermResultDialog
+          enrollmentId={enrollmentId}
+          target={resultTarget}
+          open
+          onOpenChange={(nextOpen) => !nextOpen && setResultTarget(null)}
+        />
+      )}
     </section>
   );
 }
@@ -207,14 +232,21 @@ function StudentSubjectEnrollmentTable({
   currentAcademicTermId,
   canManageDrops = false,
   showDropDetails = false,
+  showResults = false,
+  canManageResults = false,
   onDrop,
+  onManageResult,
 }: {
   rows: StudentSubjectEnrollmentRow[];
   currentAcademicTermId?: string;
   canManageDrops?: boolean;
   showDropDetails?: boolean;
+  showResults?: boolean;
+  canManageResults?: boolean;
   onDrop?: (row: StudentSubjectEnrollmentRow) => void;
+  onManageResult?: (target: ShsTermResultTarget) => void;
 }) {
+  const operationalDate = getPhilippineCalendarDate();
   return (
     <div className="rounded-md border">
       <Table>
@@ -224,6 +256,7 @@ function StudentSubjectEnrollmentTable({
             <TableHead>Description</TableHead>
             <TableHead>Grade</TableHead>
             <TableHead>Academic Terms</TableHead>
+            {showResults && <TableHead>Term Results</TableHead>}
             <TableHead>SSHS Context</TableHead>
             <TableHead>Status</TableHead>
             {showDropDetails && <TableHead>Drop Details</TableHead>}
@@ -251,6 +284,41 @@ function StudentSubjectEnrollmentTable({
                   ))}
                 </div>
               </TableCell>
+              {showResults && (
+                <TableCell className="whitespace-normal">
+                  <div className="space-y-2">
+                    {row.terms.map((term) => (
+                      <div key={term.academicTermId} className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-medium">{term.academicTerm.name}:</span>
+                        {term.result ? (
+                          <Badge variant={term.result.status === "FINALIZED" ? "default" : "secondary"}>
+                            {term.result.status} | {term.result.finalResult?.toFixed(2) ?? "No result"}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No result</span>
+                        )}
+                        {canManageResults && row.status === "ACTIVE" && term.result?.status !== "FINALIZED" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={operationalDate < term.academicTerm.startDate.toISOString().slice(0, 10)}
+                            onClick={() => onManageResult?.({
+                              studentSubjectEnrollmentId: row.id,
+                              subjectCode: row.subjectCode,
+                              subjectDescription: row.subjectDescription,
+                              academicTermId: term.academicTermId,
+                              academicTerm: term.academicTerm,
+                              result: term.result,
+                            })}
+                          >
+                            {term.result ? "Edit Draft" : "Add Draft"}
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </TableCell>
+              )}
               <TableCell className="whitespace-normal">
                 {row.shsCurriculumStatus ? (
                   <div className="space-y-1">
