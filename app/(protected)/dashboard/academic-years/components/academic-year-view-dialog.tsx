@@ -14,6 +14,7 @@ import type { AcademicYearListItem } from "@/schemas";
 
 import { AcademicYearStatusBadge } from "./academic-year-status-badge";
 import { AcademicTermManager } from "./academic-term-manager";
+import { ShsElectiveEnrollmentPolicyManager } from "./shs-elective-enrollment-policy-manager";
 
 export function AcademicYearViewDialog({
   academicYear,
@@ -33,7 +34,7 @@ export function AcademicYearViewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-2xl!">
+      <DialogContent className="max-h-[90vh] w-[95vw] max-w-3xl! overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Academic Year Details</DialogTitle>
         </DialogHeader>
@@ -74,6 +75,11 @@ export function AcademicYearViewDialog({
         <AcademicTermManager
           academicYearId={academicYear.id}
           isDraft={academicYear.status === "DRAFT"}
+        />
+        <ShsElectiveEnrollmentPolicyManager
+          academicYearId={academicYear.id}
+          open={open}
+          readOnly={isReadOnly}
         />
         {academicYear.status === "DRAFT" && canAdoptCurriculum && (
           <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/20 p-4">

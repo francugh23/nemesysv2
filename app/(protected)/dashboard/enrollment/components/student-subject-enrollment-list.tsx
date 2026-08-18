@@ -14,7 +14,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useStudentSubjectEnrollments } from "@/hooks/student-subject-enrollment.hook";
+import {
+  useShsCurrentTermProgression,
+  useStudentSubjectEnrollments,
+} from "@/hooks/student-subject-enrollment.hook";
+import { formatDateTime } from "@/lib/format";
+
+import { DropStudentSubjectEnrollmentDialog } from "./drop-student-subject-enrollment-dialog";
 
 const statusVariants = {
   ACTIVE: "default",
@@ -24,16 +30,54 @@ const statusVariants = {
 
 export function StudentSubjectEnrollmentList({
   enrollmentId,
+  gradeLevel,
+  enrollmentStatus,
+  academicYearStatus,
   open,
 }: {
   enrollmentId: string;
+  gradeLevel: string;
+  enrollmentStatus: "ACTIVE" | "COMPLETED" | "DROPPED" | "TRANSFERRED";
+  academicYearStatus: "DRAFT" | "ACTIVE" | "LOCKED" | "ARCHIVED";
   open: boolean;
 }) {
   const [showReplacementHistory, setShowReplacementHistory] = useState(false);
+  const [showDroppedHistory, setShowDroppedHistory] = useState(false);
+  const [dropRow, setDropRow] = useState<StudentSubjectEnrollmentRow | null>(null);
   const { data, isLoading, isError, isFetching, refetch } =
     useStudentSubjectEnrollments(enrollmentId, open);
+  const isShs = gradeLevel === "11" || gradeLevel === "12";
+  const progression = useShsCurrentTermProgression(
+    enrollmentId,
+    open && isShs,
+  );
   const activeRows = data?.filter((row) => row.status === "ACTIVE") ?? [];
   const replacedRows = data?.filter((row) => row.status === "REPLACED") ?? [];
+  const droppedRows = data?.filter((row) => row.status === "DROPPED") ?? [];
+  const currentTerm =
+    progression.data && "currentTerm" in progression.data
+      ? progression.data.currentTerm
+      : null;
+  const currentActiveRows = currentTerm
+    ? activeRows.filter((row) =>
+        row.terms.some(
+          ({ academicTermId }) => academicTermId === currentTerm.id,
+        ),
+      )
+    : activeRows;
+  const previousActiveRows = currentTerm
+    ? activeRows.filter(
+        (row) =>
+          !row.terms.some(
+            ({ academicTermId }) => academicTermId === currentTerm.id,
+          ),
+      )
+    : [];
+  const canManageDrops =
+    isShs &&
+    enrollmentStatus === "ACTIVE" &&
+    academicYearStatus === "ACTIVE" &&
+    Boolean(currentTerm);
 
   return (
     <section className="space-y-3">
@@ -41,20 +85,33 @@ export function StudentSubjectEnrollmentList({
         <div>
           <h3 className="font-semibold">Student Subject Enrollments</h3>
           <p className="text-sm text-muted-foreground">
-            Active subject enrollments for this Enrollment record.
+            Current-Term participation and preserved subject enrollment history.
           </p>
         </div>
-        {replacedRows.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowReplacementHistory((current) => !current)}
-          >
-            {showReplacementHistory
-              ? "Hide replacement history"
-              : `Show replacement history (${replacedRows.length})`}
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {replacedRows.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowReplacementHistory((current) => !current)}
+            >
+              {showReplacementHistory
+                ? "Hide replaced history"
+                : `Show replaced history (${replacedRows.length})`}
+            </Button>
+          )}
+          {droppedRows.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDroppedHistory((current) => !current)}
+            >
+              {showDroppedHistory
+                ? "Hide dropped history"
+                : `Show dropped history (${droppedRows.length})`}
+            </Button>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
@@ -75,11 +132,28 @@ export function StudentSubjectEnrollmentList({
             {isFetching ? "Retrying..." : "Try again"}
           </Button>
         </div>
-      ) : activeRows.length ? (
-        <StudentSubjectEnrollmentTable rows={activeRows} />
+      ) : currentActiveRows.length ? (
+        <StudentSubjectEnrollmentTable
+          rows={currentActiveRows}
+          currentAcademicTermId={currentTerm?.id}
+          canManageDrops={canManageDrops}
+          onDrop={setDropRow}
+        />
       ) : (
         <div className="rounded-lg border p-4 text-sm text-muted-foreground">
-          No active subject enrollments are available for this Enrollment.
+          No current-Term subject enrollments are available for this Enrollment.
+        </div>
+      )}
+
+      {previousActiveRows.length > 0 && (
+        <div className="space-y-2 pt-2">
+          <div>
+            <h4 className="font-medium">Active Prior-Term History</h4>
+            <p className="text-sm text-muted-foreground">
+              Active participation outside the current Term remains read-only history here.
+            </p>
+          </div>
+          <StudentSubjectEnrollmentTable rows={previousActiveRows} />
         </div>
       )}
 
@@ -94,6 +168,32 @@ export function StudentSubjectEnrollmentList({
           <StudentSubjectEnrollmentTable rows={replacedRows} />
         </div>
       )}
+
+      {showDroppedHistory && droppedRows.length > 0 && (
+        <div className="space-y-2 pt-2">
+          <div>
+            <h4 className="font-medium">Dropped History</h4>
+            <p className="text-sm text-muted-foreground">
+              Dropped rows retain their immutable Terms and recorded reason.
+            </p>
+          </div>
+          <StudentSubjectEnrollmentTable rows={droppedRows} showDropDetails />
+        </div>
+      )}
+
+      {dropRow && (
+        <DropStudentSubjectEnrollmentDialog
+          enrollmentId={enrollmentId}
+          subject={{
+            id: dropRow.id,
+            code: dropRow.subjectCode,
+            description: dropRow.subjectDescription,
+            terms: dropRow.terms,
+          }}
+          open
+          onOpenChange={(nextOpen) => !nextOpen && setDropRow(null)}
+        />
+      )}
     </section>
   );
 }
@@ -104,8 +204,16 @@ type StudentSubjectEnrollmentRow = NonNullable<
 
 function StudentSubjectEnrollmentTable({
   rows,
+  currentAcademicTermId,
+  canManageDrops = false,
+  showDropDetails = false,
+  onDrop,
 }: {
   rows: StudentSubjectEnrollmentRow[];
+  currentAcademicTermId?: string;
+  canManageDrops?: boolean;
+  showDropDetails?: boolean;
+  onDrop?: (row: StudentSubjectEnrollmentRow) => void;
 }) {
   return (
     <div className="rounded-md border">
@@ -118,6 +226,8 @@ function StudentSubjectEnrollmentTable({
             <TableHead>Academic Terms</TableHead>
             <TableHead>SSHS Context</TableHead>
             <TableHead>Status</TableHead>
+            {showDropDetails && <TableHead>Drop Details</TableHead>}
+            {canManageDrops && <TableHead className="text-right">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -152,6 +262,31 @@ function StudentSubjectEnrollmentTable({
               <TableCell>
                 <Badge variant={statusVariants[row.status]}>{row.status}</Badge>
               </TableCell>
+              {showDropDetails && (
+                <TableCell className="max-w-xs whitespace-normal">
+                  <p className="text-sm">{formatDateTime(row.droppedAt)}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {row.dropReason}
+                  </p>
+                </TableCell>
+              )}
+              {canManageDrops && (
+                <TableCell className="text-right">
+                  {row.shsCurriculumStatus &&
+                  row.terms.some(
+                    ({ academicTermId }) =>
+                      academicTermId === currentAcademicTermId,
+                  ) ? (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => onDrop?.(row)}
+                    >
+                      Drop
+                    </Button>
+                  ) : null}
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>

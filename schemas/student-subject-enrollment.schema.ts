@@ -18,16 +18,18 @@ export type StudentSubjectEnrollmentRead = z.output<
   typeof StudentSubjectEnrollmentReadSchema
 >;
 
-export const ShsStudentCurriculumSelectionSchema = z.object({
+export const ShsCurrentTermProgressionSchema = z.object({
   enrollmentId: z.string().min(1),
-  selections: z.array(z.object({
-    subjectOfferingId: z.string().min(1),
-    academicTermIds: z.array(z.string().min(1)).min(1, "Select at least one Academic Term.").superRefine((ids, context) => {
-      if (new Set(ids).size !== ids.length) context.addIssue({ code: z.ZodIssueCode.custom, message: "Academic Terms must be unique." });
-    }),
-  })).superRefine((selections, context) => {
-    const offeringIds = selections.map(({ subjectOfferingId }) => subjectOfferingId);
+  subjectOfferingIds: z.array(z.string().min(1)).superRefine((offeringIds, context) => {
     if (new Set(offeringIds).size !== offeringIds.length) context.addIssue({ code: z.ZodIssueCode.custom, message: "Offerings must be unique." });
   }),
-});
-export type ShsStudentCurriculumSelectionInput = z.infer<typeof ShsStudentCurriculumSelectionSchema>;
+}).strict();
+
+export const DropStudentSubjectEnrollmentSchema = z.object({
+  enrollmentId: z.string().min(1),
+  studentSubjectEnrollmentId: z.string().min(1),
+  reason: z.string().trim().min(1, "Drop reason is required.").max(500, "Drop reason must not exceed 500 characters."),
+}).strict();
+
+export type ShsCurrentTermProgressionInput = z.infer<typeof ShsCurrentTermProgressionSchema>;
+export type DropStudentSubjectEnrollmentInput = z.infer<typeof DropStudentSubjectEnrollmentSchema>;

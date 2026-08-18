@@ -23,8 +23,12 @@ async function validatePolicyTerm(
   values: CreateShsElectiveEnrollmentPolicyInput,
   transaction: Prisma.TransactionClient,
 ) {
-  if (!(await lockShsElectiveEnrollmentPolicyScope(values.academicYearId, transaction))) {
+  const academicYear = await lockShsElectiveEnrollmentPolicyScope(values.academicYearId, transaction);
+  if (!academicYear) {
     throw new ShsElectiveEnrollmentPolicyServiceError("Academic year not found.");
+  }
+  if (academicYear.status === "LOCKED" || academicYear.status === "ARCHIVED") {
+    throw new ShsElectiveEnrollmentPolicyServiceError("Elective policies are read-only for locked or archived academic years.");
   }
   const term = await findAcademicTermForShsElectiveEnrollmentPolicy(
     values.academicTermId,

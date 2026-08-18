@@ -12,7 +12,7 @@ import { displayValue, formatDateTime, formatFullName } from "@/lib/format";
 import type { EnrollmentListItem } from "@/schemas";
 
 import { StudentSubjectEnrollmentList } from "./student-subject-enrollment-list";
-import { ShsCurriculumSelection } from "./shs-curriculum-selection";
+import { ShsCurrentTermSubjectSelection } from "./shs-current-term-subject-selection";
 
 const statusVariants = {
   ACTIVE: "default",
@@ -113,17 +113,21 @@ export function EnrollmentViewDialog({
         </div>
 
         <StudentSubjectEnrollmentList
-          key={enrollment.id}
-          enrollmentId={enrollment.id}
-          open={open}
-        />
-        <ShsCurriculumSelection
           enrollmentId={enrollment.id}
           gradeLevel={enrollment.sectionGradeLevel}
           enrollmentStatus={enrollment.status}
           academicYearStatus={enrollment.academicYearStatus}
           open={open}
         />
+        {open && (
+          <ShsCurrentTermSubjectSelection
+            enrollmentId={enrollment.id}
+            gradeLevel={enrollment.sectionGradeLevel}
+            enrollmentStatus={enrollment.status}
+            academicYearStatus={enrollment.academicYearStatus}
+            open
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

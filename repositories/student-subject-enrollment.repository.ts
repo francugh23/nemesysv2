@@ -128,8 +128,8 @@ export async function createStudentSubjectEnrollmentsFromOfferings(
 }
 
 export async function lockActiveShsEnrollmentForCurriculumSelection(id: string, transaction: Prisma.TransactionClient) {
-  const rows = await transaction.$queryRaw<Array<{ id: string; academicYearId: string; status: "ACTIVE" | "COMPLETED" | "DROPPED" | "TRANSFERRED"; academicYearStatus: string; gradeLevel: string }>>(Prisma.sql`
-    SELECT "Enrollment"."id", "Enrollment"."academicYearId", "Enrollment"."status", "AcademicYear"."status" AS "academicYearStatus", "Section"."gradeLevel"
+  const rows = await transaction.$queryRaw<Array<{ id: string; academicYearId: string; entryAcademicTermId: string | null; shsTrack: "ACADEMIC" | "TECHPRO" | null; status: "ACTIVE" | "COMPLETED" | "DROPPED" | "TRANSFERRED"; academicYearStatus: string; gradeLevel: string }>>(Prisma.sql`
+    SELECT "Enrollment"."id", "Enrollment"."academicYearId", "Enrollment"."entryAcademicTermId", "Enrollment"."shsTrack", "Enrollment"."status", "AcademicYear"."status" AS "academicYearStatus", "Section"."gradeLevel"
     FROM "Enrollment"
     INNER JOIN "AcademicYear" ON "AcademicYear"."id" = "Enrollment"."academicYearId"
     INNER JOIN "Section" ON "Section"."id" = "Enrollment"."sectionId"
@@ -139,13 +139,77 @@ export async function lockActiveShsEnrollmentForCurriculumSelection(id: string, 
   return rows[0] ?? null;
 }
 
+export function findShsEnrollmentForCurrentTerm(id: string, transaction?: Prisma.TransactionClient) {
+  return (transaction ?? prisma).enrollment.findFirst({
+    where: { id, deletedAt: null },
+    select: {
+      id: true,
+      academicYearId: true,
+      entryAcademicTermId: true,
+      shsTrack: true,
+      status: true,
+      academicYear: { select: { status: true } },
+      entryAcademicTerm: { select: { id: true, name: true, position: true } },
+      section: { select: { gradeLevel: true } },
+    },
+  });
+}
+
+export function findActiveAcademicYearCalendars(transaction?: Prisma.TransactionClient) {
+  return (transaction ?? prisma).academicYear.findMany({
+    where: { status: "ACTIVE" },
+    select: {
+      id: true,
+      label: true,
+      status: true,
+      terms: {
+        select: { id: true, name: true, position: true, startDate: true, endDate: true },
+        orderBy: { position: "asc" },
+      },
+    },
+    orderBy: { startDate: "asc" },
+  });
+}
+
+export async function lockActiveShsStudentSubjectEnrollments(
+  enrollmentId: string,
+  transaction: Prisma.TransactionClient,
+) {
+  const rows = await transaction.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT "id"
+    FROM "StudentSubjectEnrollment"
+    WHERE "enrollmentId" = ${enrollmentId} AND "status" = 'ACTIVE'
+    ORDER BY "id"
+    FOR UPDATE
+  `);
+  if (!rows.length) return [];
+  return transaction.studentSubjectEnrollment.findMany({
+    where: { id: { in: rows.map(({ id }) => id) } },
+    select: studentSubjectEnrollmentSelect,
+    orderBy: { id: "asc" },
+  });
+}
+
+export function findShsStudentSubjectEnrollmentHistory(
+  enrollmentId: string,
+  transaction: Prisma.TransactionClient,
+) {
+  return transaction.studentSubjectEnrollment.findMany({
+    where: { enrollmentId, shsCurriculumStatus: { not: null } },
+    select: studentSubjectEnrollmentSelect,
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+  });
+}
+
 const shsOfferingSelection = {
   id: true,
+  academicYearId: true,
   gradeLevel: true,
+  deletedAt: true,
   subjectCode: true,
   subjectDescription: true,
   terms: { select: { academicTermId: true, academicTerm: { select: { name: true, position: true } } }, orderBy: { academicTerm: { position: "asc" } } },
-  shsContext: { select: { classification: true, curriculumStatus: true, sourceReference: true, approvalReference: true, cluster: { select: { code: true, name: true } } } },
+  shsContext: { select: { classification: true, curriculumStatus: true, sourceReference: true, approvalReference: true, cluster: { select: { code: true, name: true, deletedAt: true } } } },
 } satisfies Prisma.SubjectOfferingSelect;
 
 export async function findEligibleShsOfferingsForEnrollment(academicYearId: string, gradeLevel: string, transaction?: Prisma.TransactionClient) {
@@ -156,16 +220,122 @@ export async function findEligibleShsOfferingsForEnrollment(academicYearId: stri
   });
 }
 
-export async function replaceChangedShsStudentSubjectEnrollments(enrollmentId: string, retainedIds: string[], replacedAt: Date, transaction: Prisma.TransactionClient) {
-  const rows = await transaction.studentSubjectEnrollment.findMany({ where: { enrollmentId, status: "ACTIVE", shsCurriculumStatus: { not: null }, id: { notIn: retainedIds } }, select: { id: true, subjectCode: true, subjectDescription: true, gradeLevel: true, subjectOfferingId: true } });
-  if (rows.length) await transaction.studentSubjectEnrollment.updateMany({ where: { id: { in: rows.map((row) => row.id) }, status: "ACTIVE" }, data: { status: "REPLACED", replacedAt } });
-  return rows;
+export async function lockShsOfferingsById(
+  ids: string[],
+  transaction: Prisma.TransactionClient,
+) {
+  const orderedIds = [...new Set(ids)].sort();
+  if (!orderedIds.length) return [];
+  const rows = await transaction.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT "id"
+    FROM "SubjectOffering"
+    WHERE "id" IN (${Prisma.join(orderedIds)})
+    ORDER BY "id"
+    FOR UPDATE
+  `);
+  return transaction.subjectOffering.findMany({
+    where: { id: { in: rows.map(({ id }) => id) } },
+    select: shsOfferingSelection,
+    orderBy: { id: "asc" },
+  });
 }
 
-export async function createShsStudentSubjectEnrollmentsFromSelections(enrollmentId: string, selections: Array<{ offering: Awaited<ReturnType<typeof findEligibleShsOfferingsForEnrollment>>[number]; academicTermIds: string[] }>, createdById: string, transaction: Prisma.TransactionClient) {
-  return Promise.all(selections.map(({ offering, academicTermIds }) => transaction.studentSubjectEnrollment.create({ data: {
-    enrollmentId, subjectOfferingId: offering.id, subjectCode: offering.subjectCode, subjectDescription: offering.subjectDescription, gradeLevel: offering.gradeLevel, createdById,
-    shsClassification: offering.shsContext!.classification, shsClusterCode: offering.shsContext!.cluster?.code ?? null, shsClusterName: offering.shsContext!.cluster?.name ?? null, shsCurriculumStatus: offering.shsContext!.curriculumStatus, shsSourceReference: offering.shsContext!.sourceReference, shsApprovalReference: offering.shsContext!.approvalReference,
-    terms: { create: academicTermIds.map((academicTermId) => ({ academicTermId })) },
-  }, select: { id: true, subjectOfferingId: true, subjectCode: true } })));
+export function findApprovedShsCoreOfferingIds(
+  academicYearId: string,
+  gradeLevel: string,
+  transaction: Prisma.TransactionClient,
+) {
+  return transaction.subjectOffering.findMany({
+    where: {
+      academicYearId,
+      gradeLevel,
+      deletedAt: null,
+      shsContext: { is: { classification: "CORE", curriculumStatus: "SCHOOL_APPROVED" } },
+    },
+    select: { id: true },
+    orderBy: { id: "asc" },
+  });
+}
+
+type LockedShsOffering = Awaited<ReturnType<typeof lockShsOfferingsById>>[number];
+
+function shsSnapshotData(offering: LockedShsOffering) {
+  return {
+    subjectOfferingId: offering.id,
+    subjectCode: offering.subjectCode,
+    subjectDescription: offering.subjectDescription,
+    gradeLevel: offering.gradeLevel,
+    shsClassification: offering.shsContext!.classification,
+    shsClusterCode: offering.shsContext!.cluster?.code ?? null,
+    shsClusterName: offering.shsContext!.cluster?.name ?? null,
+    shsCurriculumStatus: offering.shsContext!.curriculumStatus,
+    shsSourceReference: offering.shsContext!.sourceReference,
+    shsApprovalReference: offering.shsContext!.approvalReference,
+  };
+}
+
+export function createProgressiveShsCoreParticipation(
+  enrollmentId: string,
+  offering: LockedShsOffering,
+  academicTermIds: string[],
+  actorId: string,
+  transaction: Prisma.TransactionClient,
+) {
+  return transaction.studentSubjectEnrollment.create({
+    data: {
+      enrollmentId,
+      ...shsSnapshotData(offering),
+      createdById: actorId,
+      terms: { create: academicTermIds.map((academicTermId) => ({ academicTermId })) },
+    },
+    select: { id: true, subjectOfferingId: true, subjectCode: true, subjectDescription: true },
+  });
+}
+
+export function createProgressiveShsElectiveParticipation(
+  enrollmentId: string,
+  offering: LockedShsOffering,
+  academicTermId: string,
+  actorId: string,
+  transaction: Prisma.TransactionClient,
+) {
+  return transaction.studentSubjectEnrollment.create({
+    data: {
+      enrollmentId,
+      ...shsSnapshotData(offering),
+      selectionAcademicTermId: academicTermId,
+      createdById: actorId,
+      terms: { create: { academicTermId } },
+    },
+    select: { id: true, subjectOfferingId: true, subjectCode: true, subjectDescription: true },
+  });
+}
+
+export async function dropActiveStudentSubjectEnrollment(
+  id: string,
+  droppedAt: Date,
+  dropReason: string,
+  transaction: Prisma.TransactionClient,
+) {
+  const result = await transaction.studentSubjectEnrollment.updateMany({
+    where: { id, status: "ACTIVE" },
+    data: { status: "DROPPED", droppedAt, dropReason },
+  });
+  if (result.count !== 1) return null;
+  return transaction.studentSubjectEnrollment.findUnique({
+    where: { id },
+    select: studentSubjectEnrollmentSelect,
+  });
+}
+
+export async function replaceActiveStudentSubjectEnrollment(
+  id: string,
+  replacedAt: Date,
+  transaction: Prisma.TransactionClient,
+) {
+  const result = await transaction.studentSubjectEnrollment.updateMany({
+    where: { id, status: "ACTIVE" },
+    data: { status: "REPLACED", replacedAt },
+  });
+  return result.count === 1;
 }

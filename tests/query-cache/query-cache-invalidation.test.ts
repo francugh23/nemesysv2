@@ -110,6 +110,7 @@ test("Academic Year mutations refresh only management and operational selectors"
     ["subject-assignment-options"],
     ["enrollment-form-options"],
     ["subject-offering-options"],
+    ["shs-current-term-progression"],
   ]);
 });
 

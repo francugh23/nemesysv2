@@ -86,6 +86,9 @@ export function useCorrectEnrollmentPlacement() {
           queryKey: ["student-subject-enrollments", values.id],
         }),
         queryClient.invalidateQueries({
+          queryKey: ["shs-current-term-progression", values.id],
+        }),
+        queryClient.invalidateQueries({
           queryKey: ["enrollment-filter-options"],
         }),
       ]);
@@ -104,13 +107,13 @@ export function useTransitionEnrollment() {
       id: string;
       values: Parameters<typeof transitionEnrollmentAction>[1];
     }) => transitionEnrollmentAction(id, values),
-    onSuccess: async (result) => {
+    onSuccess: async (result, { id }) => {
       if (result.error) return;
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["enrollments"] }),
         queryClient.invalidateQueries({ queryKey: ["students"] }),
-        queryClient.invalidateQueries({ queryKey: ["eligible-shs-offerings"] }),
+        queryClient.invalidateQueries({ queryKey: ["shs-current-term-progression", id] }),
       ]);
     },
   });

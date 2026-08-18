@@ -6,10 +6,10 @@ type AcademicTermCalendar = {
   endDate: Date;
 };
 
-type ActiveAcademicYearCalendar = {
+type ActiveAcademicYearCalendar<TTerm extends AcademicTermCalendar> = {
   id: string;
   status: string;
-  terms: AcademicTermCalendar[];
+  terms: TTerm[];
 };
 
 export class CurrentAcademicTermConfigurationError extends Error {}
@@ -29,10 +29,16 @@ function toDateOnly(value: Date) {
   return value.toISOString().slice(0, 10);
 }
 
-export function resolveCurrentAcademicTerm(
-  academicYears: ActiveAcademicYearCalendar[],
+export function resolveCurrentAcademicTerm<
+  TYear extends ActiveAcademicYearCalendar<AcademicTermCalendar>,
+>(
+  academicYears: TYear[],
   clock: () => Date = () => new Date(),
-) {
+): {
+  academicYear: TYear;
+  academicTerm: TYear["terms"][number];
+  operationalDate: string;
+} | null {
   const activeYears = academicYears.filter(({ status }) => status === "ACTIVE");
   if (activeYears.length > 1) {
     throw new CurrentAcademicTermConfigurationError(
@@ -54,6 +60,6 @@ export function resolveCurrentAcademicTerm(
     );
   }
   return matchingTerms[0]
-    ? { academicYear, academicTerm: matchingTerms[0], operationalDate }
+    ? { academicYear, academicTerm: matchingTerms[0] as TYear["terms"][number], operationalDate }
     : null;
 }

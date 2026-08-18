@@ -23,6 +23,7 @@ test("Academic Term read surfaces use the shared badge", () => {
     "app/(protected)/dashboard/academic-years/components/academic-term-manager.tsx",
     "app/(protected)/dashboard/academic-years/components/curriculum-adoption-dialog.tsx",
     "app/(protected)/dashboard/enrollment/components/enrollment-view-dialog.tsx",
+    "app/(protected)/dashboard/enrollment/components/shs-current-term-subject-selection.tsx",
     "app/(protected)/dashboard/enrollment/components/student-subject-enrollment-list.tsx",
     "app/(protected)/dashboard/subject-offerings/components/subject-offering-columns.tsx",
   ]) {
@@ -47,16 +48,7 @@ test("Academic Term selectors remain textual, ordered, and searchable", () => {
     ),
     "utf8",
   );
-  const shsSelection = readFileSync(
-    path.join(
-      root,
-      "app/(protected)/dashboard/enrollment/components/shs-curriculum-selection.tsx",
-    ),
-    "utf8",
-  );
-
   assert.match(enrollmentForm, /label: `Term \$\{term\.position\}`/);
   assert.match(enrollmentForm, /searchValue: `\$\{term\.position\} \$\{term\.name\}`/);
   assert.match(offeringForm, /Term \{term\.position\}/);
-  assert.match(shsSelection, /Term \{term\.academicTerm\.position\}/);
 });

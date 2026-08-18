@@ -50,6 +50,7 @@ export async function invalidateAcademicYearQueries(
     }),
     queryClient.invalidateQueries({ queryKey: ["enrollment-form-options"] }),
     queryClient.invalidateQueries({ queryKey: ["subject-offering-options"] }),
+    queryClient.invalidateQueries({ queryKey: ["shs-current-term-progression"] }),
   ]);
 }
 

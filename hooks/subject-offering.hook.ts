@@ -33,6 +33,7 @@ function useInvalidate() {
     queryClient.invalidateQueries({ queryKey: ["subject-offering-filter-options"] }),
     queryClient.invalidateQueries({ queryKey: ["shs-curriculum-clusters"] }),
     queryClient.invalidateQueries({ queryKey: ["shs-curriculum-references"] }),
+    queryClient.invalidateQueries({ queryKey: ["shs-current-term-progression"] }),
   ]);
 }
 

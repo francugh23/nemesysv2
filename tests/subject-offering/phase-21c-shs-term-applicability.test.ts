@@ -9,7 +9,6 @@ import { Prisma } from "../../app/generated/prisma/client";
 import prisma from "../../lib/prisma";
 import { depedShsCatalogEntries } from "../../lib/shs-deped-catalog";
 import { populateInTransaction, populateProvisionalDepedReferenceCatalog } from "../../services/deped-reference-catalog.service";
-import { selectShsStudentCurriculumInTransaction } from "../../services/student-subject-enrollment-selection.service";
 
 class RollbackFixture extends Error {}
 
@@ -312,9 +311,28 @@ test("Phase 21C population preserves school-approved Grade 12 Offerings and exac
     const enrollment = await createEnrollment("12", fixture, tx);
     const firstTermId = fixture.academicYear.terms[0].id;
     const secondTermId = fixture.academicYear.terms[1].id;
-
-    await selectShsStudentCurriculumInTransaction({ enrollmentId: enrollment.id, selections: [{ subjectOfferingId: offering.id, academicTermIds: [firstTermId] }] }, fixture.actor.id, tx);
-    await selectShsStudentCurriculumInTransaction({ enrollmentId: enrollment.id, selections: [{ subjectOfferingId: offering.id, academicTermIds: [secondTermId] }] }, fixture.actor.id, tx);
+    const source = await tx.subjectOffering.findUniqueOrThrow({
+      where: { id: offering.id },
+      select: { subjectCode: true, subjectDescription: true, gradeLevel: true, shsContext: { include: { cluster: true } } },
+    });
+    const createLegacySnapshot = (academicTermId: string) => tx.studentSubjectEnrollment.create({ data: {
+      enrollmentId: enrollment.id,
+      subjectOfferingId: offering.id,
+      subjectCode: source.subjectCode,
+      subjectDescription: source.subjectDescription,
+      gradeLevel: source.gradeLevel,
+      shsClassification: source.shsContext!.classification,
+      shsClusterCode: source.shsContext!.cluster?.code,
+      shsClusterName: source.shsContext!.cluster?.name,
+      shsCurriculumStatus: source.shsContext!.curriculumStatus,
+      shsSourceReference: source.shsContext!.sourceReference,
+      shsApprovalReference: source.shsContext!.approvalReference,
+      createdById: fixture.actor.id,
+      terms: { create: { academicTermId } },
+    } });
+    const first = await createLegacySnapshot(firstTermId);
+    await tx.studentSubjectEnrollment.update({ where: { id: first.id }, data: { status: "REPLACED", replacedAt: new Date() } });
+    await createLegacySnapshot(secondTermId);
     const before = await tx.studentSubjectEnrollment.findMany({
       where: { enrollmentId: enrollment.id },
       select: { id: true, status: true, subjectCode: true, subjectDescription: true, gradeLevel: true, terms: { select: { academicTermId: true } } },
@@ -377,7 +395,7 @@ test("Phase 21C corrects only an exact provisional Academic catalog signature an
   });
 });
 
-test("Phase 21C approved one-Term Academic selection copies its configured Term and preserves replacement history", async () => {
+test("Phase 21C approval preserves exact one-Term Academic Offering applicability", async () => {
   await withRollback(async (tx) => {
     const offering = await tx.subjectOffering.findFirstOrThrow({
       where: {
@@ -394,18 +412,7 @@ test("Phase 21C approved one-Term Academic selection copies its configured Term 
       where: { subjectOfferingId: offering.id },
       data: { curriculumStatus: "SCHOOL_APPROVED", approvalReference: "Phase 21C Academic approval", approvedById: offering.createdById, approvedAt: new Date() },
     });
-    const fixture = await getCatalogFixture(tx, "11");
-    const enrollment = await createEnrollment("11", fixture, tx);
-
-    assert.deepEqual(await selectShsStudentCurriculumInTransaction({ enrollmentId: enrollment.id, selections: [{ subjectOfferingId: offering.id, academicTermIds: [offering.terms[0].academicTermId] }] }, offering.createdById, tx), { created: 1, replaced: 0 });
-    const selected = await tx.studentSubjectEnrollment.findFirstOrThrow({ where: { enrollmentId: enrollment.id, status: "ACTIVE" }, select: { id: true, terms: { select: { academicTermId: true } } } });
-    assert.deepEqual(selected.terms, [{ academicTermId: offering.terms[0].academicTermId }]);
-
-    assert.deepEqual(await selectShsStudentCurriculumInTransaction({ enrollmentId: enrollment.id, selections: [] }, offering.createdById, tx), { created: 0, replaced: 1 });
-    assert.deepEqual(await tx.studentSubjectEnrollment.findUniqueOrThrow({ where: { id: selected.id }, select: { status: true, terms: { select: { academicTermId: true } } } }), {
-      status: "REPLACED",
-      terms: [{ academicTermId: offering.terms[0].academicTermId }],
-    });
+    assert.deepEqual(await tx.subjectOfferingTerm.findMany({ where: { subjectOfferingId: offering.id }, select: { academicTermId: true } }), [{ academicTermId: offering.terms[0].academicTermId }]);
   });
 });
 

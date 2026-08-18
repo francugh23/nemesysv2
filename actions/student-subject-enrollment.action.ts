@@ -2,39 +2,45 @@
 
 import { Permissions, requirePermission } from "@/lib/authorization";
 import {
+  DropStudentSubjectEnrollmentSchema,
+  ShsCurrentTermProgressionSchema,
   StudentSubjectEnrollmentReadSchema,
-  ShsStudentCurriculumSelectionSchema,
   type StudentSubjectEnrollmentReadInput,
 } from "@/schemas";
-import { getEligibleShsOfferingsForEnrollment, getStudentSubjectEnrollments, selectShsStudentCurriculumService } from "@/services/student-subject-enrollment.service";
+import {
+  dropShsStudentSubjectEnrollmentService,
+  getShsCurrentTermProgressionContext,
+  getStudentSubjectEnrollments,
+  progressShsCurrentTermService,
+} from "@/services/student-subject-enrollment.service";
 
-export async function getStudentSubjectEnrollmentsAction(
-  query: StudentSubjectEnrollmentReadInput,
-) {
+export async function getStudentSubjectEnrollmentsAction(query: StudentSubjectEnrollmentReadInput) {
   await requirePermission(Permissions.ENROLLMENT);
   return getStudentSubjectEnrollments(StudentSubjectEnrollmentReadSchema.parse(query));
 }
 
-export async function getEligibleShsOfferingsForEnrollmentAction(enrollmentId: string) {
+export async function getShsCurrentTermProgressionContextAction(enrollmentId: string) {
   await requirePermission(Permissions.ENROLLMENT);
-  return getEligibleShsOfferingsForEnrollment(enrollmentId);
+  return getShsCurrentTermProgressionContext(enrollmentId);
 }
 
-export async function selectShsStudentCurriculumAction(values: unknown) {
+export async function progressShsCurrentTermAction(values: unknown) {
   try {
     await requirePermission(Permissions.ENROLLMENT);
-  } catch {
-    return { error: "Unauthorized." };
+    const parsed = ShsCurrentTermProgressionSchema.safeParse(values);
+    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid fields." };
+    return { success: "Current-Term SHS participation saved.", data: await progressShsCurrentTermService(parsed.data) };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Something went wrong." };
   }
+}
 
-  const parsed = ShsStudentCurriculumSelectionSchema.safeParse(values);
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid fields." };
-
+export async function dropShsStudentSubjectEnrollmentAction(values: unknown) {
   try {
-    return {
-      success: "SSHS curriculum selection saved.",
-      data: await selectShsStudentCurriculumService(parsed.data),
-    };
+    await requirePermission(Permissions.ENROLLMENT);
+    const parsed = DropStudentSubjectEnrollmentSchema.safeParse(values);
+    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid fields." };
+    return { success: "SHS subject participation dropped.", data: await dropShsStudentSubjectEnrollmentService(parsed.data) };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Something went wrong." };
   }

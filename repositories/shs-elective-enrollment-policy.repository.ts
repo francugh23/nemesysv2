@@ -42,16 +42,28 @@ export function findShsElectiveEnrollmentPolicy(
   });
 }
 
+export function findShsElectiveEnrollmentPolicyByScope(
+  academicYearId: string,
+  academicTermId: string,
+  gradeLevel: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).shsElectiveEnrollmentPolicy.findFirst({
+    where: { academicYearId, academicTermId, gradeLevel },
+    select: policySelect,
+  });
+}
+
 export async function lockShsElectiveEnrollmentPolicyScope(
   academicYearId: string,
   transaction: Prisma.TransactionClient,
 ) {
-  const rows = await transaction.$queryRaw<Array<{ id: string }>>(Prisma.sql`
-    SELECT "id" FROM "AcademicYear"
+  const rows = await transaction.$queryRaw<Array<{ id: string; status: string }>>(Prisma.sql`
+    SELECT "id", "status" FROM "AcademicYear"
     WHERE "id" = ${academicYearId}
     FOR UPDATE
   `);
-  return Boolean(rows[0]);
+  return rows[0] ?? null;
 }
 
 export async function lockShsElectiveEnrollmentPolicy(
