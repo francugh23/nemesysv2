@@ -65,7 +65,6 @@ export const SubjectListItemSchema = z.object({
   description: z.string(),
   gradeLevel: z.string(),
   trackStrand: z.string().nullable(),
-  hasDepEdReference: z.boolean(),
   activeCurriculumCount: z.number().int().nonnegative(),
 });
 

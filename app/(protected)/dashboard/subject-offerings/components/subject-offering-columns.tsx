@@ -91,7 +91,7 @@ export function subjectOfferingColumns({
                   : "TechPro Elective"}
             </Badge>
             <Badge variant={context.curriculumStatus === "SCHOOL_APPROVED" ? "default" : "secondary"}>
-              {context.curriculumStatus === "SCHOOL_APPROVED" ? "School Approved" : "Provisional DepEd"}
+              {context.curriculumStatus === "SCHOOL_APPROVED" ? "School Approved" : "Pending School Approval"}
             </Badge>
             {context.cluster && <Badge variant="outline">{context.cluster.name}</Badge>}
           </div>

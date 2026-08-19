@@ -89,7 +89,6 @@ export async function getSubjects(
   return {
     items: subjects.map(({ _count, ...subject }) => ({
       ...subject,
-      hasDepEdReference: _count.shsCurriculumReferences > 0,
       activeCurriculumCount: _count.offerings,
     })),
     totalCount,

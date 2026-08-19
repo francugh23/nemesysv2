@@ -59,7 +59,6 @@ export function subjectColumns({
 
       return (
         <div className="flex flex-wrap gap-1">
-          {subject.hasDepEdReference && <Badge variant="secondary">DepEd reference available</Badge>}
           <Badge variant={subject.activeCurriculumCount > 0 ? "outline" : "secondary"}>
             {subject.activeCurriculumCount > 0
               ? `Used by ${subject.activeCurriculumCount} active Curriculum ${subject.activeCurriculumCount === 1 ? "entry" : "entries"}`

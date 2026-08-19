@@ -9,7 +9,6 @@ import {
   archiveOffering,
   archiveShsCurriculumCluster,
   countOfferings,
-  countShsCurriculumReferences,
   createOffering,
   createShsCurriculumCluster,
   findActiveShsCurriculumCluster,
@@ -21,7 +20,6 @@ import {
   findShsCurriculumCluster,
   findShsCurriculumClusterDuplicate,
   findShsCurriculumClusters,
-  findShsCurriculumReferences,
   lockOfferingForMutation,
   promoteProvisionalShsOffering,
   updateOffering,
@@ -31,7 +29,6 @@ import { findActiveSubjectById } from "@/repositories/subject.repository";
 import type {
   CreateShsCurriculumClusterInput,
   CreateSubjectOfferingInput,
-  ShsCurriculumReferenceTableQuery,
   SubjectOfferingTableQuery,
   UpdateShsCurriculumClusterInput,
   UpdateSubjectOfferingInput,
@@ -81,7 +78,6 @@ async function validate(
 }
 
 async function validateCluster(values: CreateShsCurriculumClusterInput | UpdateShsCurriculumClusterInput, tx: Prisma.TransactionClient, exclude?: string) {
-  if (values.track === "ACADEMIC") throw new SubjectOfferingServiceError("Academic school-facing categories are fixed by the approved SSHS catalog.");
   const duplicate = await findShsCurriculumClusterDuplicate(values.code, exclude, tx);
   if (duplicate) throw new SubjectOfferingServiceError("An active SHS curriculum cluster already uses this code.");
 }
@@ -135,14 +131,14 @@ export async function promoteShsSubjectOfferingService(values: PromoteShsSubject
   return prisma.$transaction(async (tx) => {
     await lockOfferingForMutation(values.subjectOfferingId, tx);
     const offering = await findOffering(values.subjectOfferingId, tx);
-    if (!offering || offering.deletedAt || !offering.shsContext) throw new SubjectOfferingServiceError("Provisional SSHS offering not found.");
+    if (!offering || offering.deletedAt || !offering.shsContext) throw new SubjectOfferingServiceError("SHS Offering pending school approval not found.");
     assertActive(offering.academicYear);
     if (offering.gradeLevel !== "11" && offering.gradeLevel !== "12") throw new SubjectOfferingServiceError("Only Grade 11 or 12 SSHS offerings can be approved.");
-    if (offering.shsContext.curriculumStatus !== "PROVISIONAL_DEPED") throw new SubjectOfferingServiceError("Only provisional DepEd SSHS offerings can be approved.");
+    if (offering.shsContext.curriculumStatus !== "PROVISIONAL_DEPED") throw new SubjectOfferingServiceError("Only SHS Offerings pending school approval can be approved.");
     const approvedAt = new Date();
     const promoted = await promoteProvisionalShsOffering(offering.id, values.approvalReference, session.user.id, approvedAt, tx);
     if (promoted.count !== 1) throw new SubjectOfferingServiceError("Offering approval could not be completed.");
-    await createAuditLogs([{ userId: session.user.id, action: "UPDATE", module: "SubjectOffering", recordId: offering.id, recordName: `${offering.subjectCode} - ${offering.academicYear.label}`, description: "Approved provisional SSHS subject offering for school use.", metadata: { previousCurriculumStatus: "PROVISIONAL_DEPED", curriculumStatus: "SCHOOL_APPROVED", approvalReference: values.approvalReference, approvedAt: approvedAt.toISOString() } }], tx);
+    await createAuditLogs([{ userId: session.user.id, action: "UPDATE", module: "SubjectOffering", recordId: offering.id, recordName: `${offering.subjectCode} - ${offering.academicYear.label}`, description: "Approved SSHS subject offering for school use.", metadata: { previousCurriculumStatus: "PROVISIONAL_DEPED", curriculumStatus: "SCHOOL_APPROVED", approvalReference: values.approvalReference, approvedAt: approvedAt.toISOString() } }], tx);
     return offering.id;
   });
 }
@@ -164,19 +160,6 @@ export async function getShsCurriculumClusters() {
   return findShsCurriculumClusters();
 }
 
-export async function getShsCurriculumReferences(query: ShsCurriculumReferenceTableQuery) {
-  await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL);
-  const totalCount = await countShsCurriculumReferences();
-  const page = Math.min(query.page, Math.max(1, Math.ceil(totalCount / query.pageSize)));
-  return {
-    items: await findShsCurriculumReferences({ skip: (page - 1) * query.pageSize, take: query.pageSize }),
-    totalCount,
-    page,
-    pageSize: query.pageSize,
-    pageCount: Math.ceil(totalCount / query.pageSize),
-  };
-}
-
 export async function createShsCurriculumClusterService(values: CreateShsCurriculumClusterInput) {
   const session = await requirePermission(Permissions.SUBJECTS);
   return prisma.$transaction(async (tx) => {
@@ -192,7 +175,8 @@ export async function updateShsCurriculumClusterService(id: string, values: Upda
   return prisma.$transaction(async (tx) => {
     const cluster = await findShsCurriculumCluster(id, tx);
     if (!cluster) throw new SubjectOfferingServiceError("SHS curriculum cluster not found.");
-    if (cluster.track === "ACADEMIC") throw new SubjectOfferingServiceError("Academic school-facing categories are fixed by the approved SSHS catalog.");
+    if (cluster.sourceReference) throw new SubjectOfferingServiceError("Source-backed historical SHS curriculum clusters cannot be changed.");
+    if (cluster.track !== values.track) throw new SubjectOfferingServiceError("An SHS curriculum cluster track cannot be changed after creation.");
     await validateCluster(values, tx, id);
     const updated = await updateShsCurriculumCluster(id, values, tx);
     await createAuditLogs([{ userId: session.user.id, action: "UPDATE", module: "ShsCurriculumCluster", recordId: id, recordName: updated.name, description: "Updated SHS curriculum cluster." }], tx);
@@ -205,7 +189,7 @@ export async function archiveShsCurriculumClusterService(id: string) {
   return prisma.$transaction(async (tx) => {
     const cluster = await findShsCurriculumCluster(id, tx);
     if (!cluster) throw new SubjectOfferingServiceError("SHS curriculum cluster not found.");
-    if (cluster.track === "ACADEMIC") throw new SubjectOfferingServiceError("Academic school-facing categories are fixed by the approved SSHS catalog.");
+    if (cluster.sourceReference) throw new SubjectOfferingServiceError("Source-backed historical SHS curriculum clusters cannot be archived.");
     await archiveShsCurriculumCluster(id, tx);
     await createAuditLogs([{ userId: session.user.id, action: "ARCHIVE", module: "ShsCurriculumCluster", recordId: id, recordName: cluster.name, description: "Archived SHS curriculum cluster." }], tx);
     return id;

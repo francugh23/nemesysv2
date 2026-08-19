@@ -20,7 +20,6 @@ const subjectListWithUsageSelect = {
   ...subjectListSelect,
   _count: {
     select: {
-      shsCurriculumReferences: true,
       offerings: { where: { deletedAt: null } },
     },
   },

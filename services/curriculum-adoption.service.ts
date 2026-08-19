@@ -4,6 +4,10 @@ import { Prisma } from "@/app/generated/prisma/client";
 import { Permissions, requirePermission } from "@/lib/authorization";
 import prisma from "@/lib/prisma";
 import { isJhsGradeLevel } from "@/lib/subject-identity";
+import {
+  getCurriculumAdoptionInvalidReasons,
+  type CurriculumAdoptionReason,
+} from "@/services/curriculum-adoption-eligibility.service";
 import { createAuditLogs } from "@/repositories/audit.repository";
 import {
   createAdoptedSubjectOffering,
@@ -21,8 +25,6 @@ import type {
 } from "@/schemas";
 
 export class CurriculumAdoptionServiceError extends Error {}
-
-type AdoptionReason = { code: string; message: string };
 
 function assertYearsAndMappings(
   values: CurriculumAdoptionPreviewInput,
@@ -59,49 +61,6 @@ function assertYearsAndMappings(
   return { sourceYear, destinationYear };
 }
 
-function getInvalidReasons(offering: CurriculumAdoptionOffering): AdoptionReason[] {
-  const reasons: AdoptionReason[] = [];
-  if (offering.subject.deletedAt) {
-    reasons.push({ code: "SUBJECT_ARCHIVED", message: "The related Subject is archived." });
-  }
-  if (offering.subject.gradeLevel !== offering.gradeLevel) {
-    reasons.push({
-      code: "SUBJECT_GRADE_MISMATCH",
-      message: "The Offering grade does not match its reusable Subject definition.",
-    });
-  }
-
-  if (isJhsGradeLevel(offering.gradeLevel)) {
-    if (offering.shsContext) reasons.push({ code: "INVALID_SHS_CONTEXT", message: "A JHS Offering cannot have an SSHS context." });
-    return reasons;
-  }
-
-  const context = offering.shsContext;
-  if (!context) {
-    reasons.push({ code: "MISSING_SHS_CONTEXT", message: "The SSHS Offering has no SSHS context." });
-    return reasons;
-  }
-  if (!context.sourceReference?.trim()) {
-    reasons.push({ code: "MISSING_SOURCE_REFERENCE", message: "The SSHS context has no valid source reference." });
-  }
-  if (context.classification === "CORE") {
-    if (context.clusterId) reasons.push({ code: "INVALID_SHS_CLUSTER", message: "A Core SSHS Offering cannot have a curriculum cluster." });
-    return reasons;
-  }
-  if (!context.cluster) {
-    reasons.push({ code: "MISSING_SHS_CLUSTER", message: "The SSHS elective has no curriculum cluster." });
-    return reasons;
-  }
-  if (context.cluster.deletedAt) {
-    reasons.push({ code: "SHS_CLUSTER_ARCHIVED", message: "The related SSHS curriculum cluster is archived." });
-  }
-  const expectedTrack = context.classification === "ACADEMIC_ELECTIVE" ? "ACADEMIC" : "TECHPRO";
-  if (context.cluster.track !== expectedTrack) {
-    reasons.push({ code: "INVALID_SHS_CLUSTER_TRACK", message: `The SSHS curriculum cluster must use the ${expectedTrack} track.` });
-  }
-  return reasons;
-}
-
 async function buildPreview(values: CurriculumAdoptionPreviewInput, transaction?: Prisma.TransactionClient) {
   const years = await findCurriculumAdoptionYears(
     [values.sourceAcademicYearId, values.destinationAcademicYearId],
@@ -125,7 +84,7 @@ async function buildPreview(values: CurriculumAdoptionPreviewInput, transaction?
     const matchingDestination = destinationOfferings.filter((destination) => destination.subjectId === offering.subjectId && destination.gradeLevel === offering.gradeLevel);
     const activeDestination = matchingDestination.find(({ deletedAt }) => !deletedAt);
     const archivedDestinationOfferingIds = matchingDestination.filter(({ deletedAt }) => deletedAt).map(({ id }) => id);
-    const invalidReasons = getInvalidReasons(offering);
+    const invalidReasons = getCurriculumAdoptionInvalidReasons(offering);
     const hasInvalidTerms = offering.terms.length === 0 || offering.terms.some(({ academicTermId }) => !sourceTermById.has(academicTermId));
     if (hasInvalidTerms) {
       invalidReasons.push({ code: "INVALID_TERM_APPLICABILITY", message: "The source Offering has missing or invalid Academic Term applicability." });
@@ -177,7 +136,7 @@ async function buildPreview(values: CurriculumAdoptionPreviewInput, transaction?
 
 function toRow(
   offering: CurriculumAdoptionOffering,
-  reasons: AdoptionReason[],
+  reasons: CurriculumAdoptionReason[],
   mappedTerms: Array<{ source: CurriculumAdoptionYear["terms"][number]; destination: CurriculumAdoptionYear["terms"][number] }>,
   destinationConflict: { id: string; subjectCode: string; subjectDescription: string; deletedAt: Date | null } | null | undefined,
   archivedDestinationOfferingIds: string[],

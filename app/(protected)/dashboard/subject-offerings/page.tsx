@@ -24,7 +24,6 @@ import {
   EditSubjectOfferingDialog,
 } from "./components/subject-offering-dialogs";
 import { ShsCurriculumClusterDialog } from "./components/shs-curriculum-cluster-dialog";
-import { ShsCurriculumReferenceTable } from "./components/shs-curriculum-reference-table";
 import type { SubjectOfferingListItem } from "./components/subject-offering-types";
 
 const filterKeys = ["academicYearId", "gradeLevel", "curriculumStatus"] as const;
@@ -163,7 +162,7 @@ function SubjectOfferingsPageContent() {
                     label="SHS Approval Status"
                     allLabel="All SHS Approval Statuses"
                     value={tableState.filters.curriculumStatus}
-                    options={[{ label: "Provisional DepEd", value: "PROVISIONAL_DEPED" }, { label: "School Approved", value: "SCHOOL_APPROVED" }]}
+                    options={[{ label: "Pending School Approval", value: "PROVISIONAL_DEPED" }, { label: "School Approved", value: "SCHOOL_APPROVED" }]}
                     onValueChange={(value) => tableState.setFilter("curriculumStatus", value)}
                   />
                 )}
@@ -216,17 +215,6 @@ function SubjectOfferingsPageContent() {
           )}
         </CardContent>
       </Card>
-      <details className="rounded-xl border bg-card text-card-foreground shadow-sm">
-        <summary className="cursor-pointer list-none p-6">
-          <h2 className="font-semibold">DepEd Reference Catalog (reference only)</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Provenance candidates are not operational Curriculum, school-approved Subject Offerings, or student selections. Expand to review reference evidence.
-          </p>
-        </summary>
-        <div className="border-t p-6 pt-4">
-          <ShsCurriculumReferenceTable />
-        </div>
-      </details>
     </div>
   );
 }

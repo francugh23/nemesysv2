@@ -32,7 +32,7 @@ const offeringSelect = {
       curriculumStatus: true,
       sourceReference: true,
       clusterId: true,
-      cluster: { select: { id: true, code: true, name: true, track: true, deletedAt: true } },
+      cluster: { select: { id: true, code: true, name: true, track: true, isSchoolFacing: true, deletedAt: true } },
     },
   },
 } satisfies Prisma.SubjectOfferingSelect;

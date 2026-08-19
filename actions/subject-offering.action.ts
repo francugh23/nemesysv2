@@ -10,8 +10,6 @@ import {
   UpdateShsCurriculumClusterSchema,
   UpdateSubjectOfferingSchema,
   PromoteShsSubjectOfferingSchema,
-  ShsCurriculumReferenceTableQuerySchema,
-  type ShsCurriculumReferenceTableQueryInput,
   type SubjectOfferingTableQueryInput,
 } from "@/schemas";
 import {
@@ -20,7 +18,6 @@ import {
   createShsCurriculumClusterService,
   createSubjectOfferingService,
   getShsCurriculumClusters,
-  getShsCurriculumReferences,
   getSubjectOfferingOptions,
   getSubjectOfferingFilterOptions,
   getSubjectOfferings,
@@ -36,8 +33,6 @@ export async function getSubjectOfferingsAction(query: SubjectOfferingTableQuery
 export async function getSubjectOfferingOptionsAction() { await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL); return getSubjectOfferingOptions(); }
 export async function getSubjectOfferingFilterOptionsAction() { await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL); return getSubjectOfferingFilterOptions(); }
 export async function getShsCurriculumClustersAction() { await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL); return getShsCurriculumClusters(); }
-export async function getShsCurriculumReferencesAction(query: ShsCurriculumReferenceTableQueryInput) { await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL); return getShsCurriculumReferences(ShsCurriculumReferenceTableQuerySchema.parse(query)); }
-
 export async function createSubjectOfferingAction(values: unknown) { const authorized = await auth(); if (authorized) return authorized; const parsed = CreateSubjectOfferingSchema.safeParse(values); return parsed.success ? run(() => createSubjectOfferingService(parsed.data), "Subject offering saved successfully.") : { error: "Invalid fields." }; }
 export async function updateSubjectOfferingAction(id: string, values: unknown) { const authorized = await auth(); if (authorized) return authorized; const parsed = UpdateSubjectOfferingSchema.safeParse(values); return z.string().min(1).safeParse(id).success && parsed.success ? run(() => updateSubjectOfferingService(id, parsed.data), "Subject offering saved successfully.") : { error: "Invalid fields." }; }
 export async function archiveSubjectOfferingAction(id: string) { const authorized = await auth(); if (authorized) return authorized; return z.string().min(1).safeParse(id).success ? run(() => archiveSubjectOfferingService(id), "Subject offering archived successfully.") : { error: "Invalid subject offering." }; }

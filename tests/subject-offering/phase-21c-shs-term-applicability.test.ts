@@ -213,7 +213,7 @@ test("Phase 21C reconciles the exact legacy Academic catalog state with transact
   });
 });
 
-test("Phase 21C keeps custom Academic clusters and operational Offerings as source-only history", async () => {
+test("school-managed Academic clusters remain operational during catalog reconciliation", async () => {
   await withRollback(async (tx) => {
     const actor = await tx.user.findFirstOrThrow({ where: { deletedAt: null, status: "ACTIVE" }, select: { id: true } });
     const term = await tx.academicTerm.findFirstOrThrow({ where: { academicYearId: "academic-year-2026-2027", position: 1 }, select: { id: true } });
@@ -237,15 +237,15 @@ test("Phase 21C keeps custom Academic clusters and operational Offerings as sour
     });
 
     const result = await populateInTransaction(actor.id, "academic-year-2026-2027", tx);
-    assert.equal(result.demotedCustomAcademicClusters, 1);
-    assert.equal(result.preservedOperationalClusters, 1);
-    assert.equal((await tx.shsCurriculumCluster.findUniqueOrThrow({ where: { id: cluster.id }, select: { isSchoolFacing: true } })).isSchoolFacing, false);
+    assert.equal(result.demotedCustomAcademicClusters, 0);
+    assert.equal(result.preservedOperationalClusters, 0);
+    assert.equal((await tx.shsCurriculumCluster.findUniqueOrThrow({ where: { id: cluster.id }, select: { isSchoolFacing: true } })).isSchoolFacing, true);
     assert.deepEqual(await tx.subjectOffering.findUniqueOrThrow({ where: { id: offering.id }, select: { deletedAt: true, terms: { select: { academicTermId: true } }, shsContext: { select: { curriculumStatus: true, clusterId: true } } } }), {
       deletedAt: null,
       terms: [{ academicTermId: term.id }],
       shsContext: { curriculumStatus: "SCHOOL_APPROVED", clusterId: cluster.id },
     });
-    assert.equal(await tx.auditLog.count({ where: { module: "ShsCurriculumCluster", recordId: cluster.id, action: "UPDATE" } }), 1);
+    assert.equal(await tx.auditLog.count({ where: { module: "ShsCurriculumCluster", recordId: cluster.id, action: "UPDATE" } }), 0);
   });
 });
 

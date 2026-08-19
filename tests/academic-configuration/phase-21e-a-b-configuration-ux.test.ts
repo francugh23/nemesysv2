@@ -64,9 +64,9 @@ test("Subjects explain reusable definitions and distinguish JHS from SHS", async
   assert.match(SUBJECTS_DESCRIPTION, /make it part of Curriculum/i);
   assert.match(SUBJECTS_DESCRIPTION, /enroll students/i);
   assert.match(page, /JHS and SHS|Reusable definition/);
-  assert.match(columns, /DepEd reference available/);
+  assert.doesNotMatch(columns, /DepEd reference available/);
   assert.match(columns, /No active Curriculum/);
-  assert.match(repository, /shsCurriculumReferences: true/);
+  assert.doesNotMatch(repository, /shsCurriculumReferences: true/);
   assert.match(repository, /offerings: \{ where: \{ deletedAt: null \} \}/);
   assert.doesNotMatch(columns, /CORE|ACADEMIC_ELECTIVE|TECHPRO_ELECTIVE/);
 });
@@ -89,7 +89,6 @@ test("Subject level filtering and usage indicators use existing read-only relati
   assert.ok(shs.length > 0);
   assert.ok(jhs.every(({ gradeLevel }) => ["7", "8", "9", "10"].includes(gradeLevel)));
   assert.ok(shs.every(({ gradeLevel }) => ["11", "12"].includes(gradeLevel)));
-  assert.ok(shs.some(({ _count }) => _count.shsCurriculumReferences > 0));
   assert.ok(shs.every(({ _count }) => _count.offerings >= 0));
   assert.equal(
     SubjectTableQuerySchema.safeParse({ schoolLevel: "JHS", grade: "11" }).success,
@@ -134,7 +133,7 @@ test("Academic Term badges keep canonical labels without redundant configured na
   assert.match(informative, /Term 2: Midyear/);
 });
 
-test("SHS filters, policies, and reference catalog remain clearly scoped", async () => {
+test("SHS filters and policies remain clearly scoped without catalog workflow", async () => {
   const [page, policyManager] = await Promise.all([
     readSource("app/(protected)/dashboard/subject-offerings/page.tsx"),
     readSource("app/(protected)/dashboard/academic-years/components/shs-elective-enrollment-policy-manager.tsx"),
@@ -142,8 +141,8 @@ test("SHS filters, policies, and reference catalog remain clearly scoped", async
 
   assert.match(page, /isShsGrade &&/);
   assert.match(page, /SHS Approval Status/);
-  assert.match(page, /DepEd Reference Catalog \(reference only\)/);
-  assert.match(page, /not operational Curriculum/);
+  assert.doesNotMatch(page, /DepEd Reference Catalog|ShsCurriculumReferenceTable/);
+  assert.match(page, /Pending School Approval/);
   assert.match(policyManager, /Elective Policy controls how many/);
   assert.match(policyManager, /Curriculum separately\s+defines which subjects/);
 });

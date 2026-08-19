@@ -189,7 +189,8 @@ export function CurriculumAdoptionDialog({
           </DialogTitle>
           <DialogDescription>
             Copy selected Subject Offerings into {academicYear.label}. Subjects are
-            reused, and no Enrollment or student records are copied.
+            reused, and no Enrollment or student records are copied. Copied SHS
+            Curriculum requires destination-year review and approval before student use.
           </DialogDescription>
         </DialogHeader>
 
@@ -386,7 +387,7 @@ export function CurriculumAdoptionDialog({
                 <div className="space-y-1">
                   <p className="font-semibold">Confirm atomic Curriculum adoption</p>
                   <p className="text-sm">
-                    This will create {selectedOfferingIds.size} active Subject Offering{selectedOfferingIds.size === 1 ? "" : "s"} in {academicYear.label}. Any stale record or new conflict will roll back the entire operation.
+                    This will create {selectedOfferingIds.size} active Subject Offering{selectedOfferingIds.size === 1 ? "" : "s"} in {academicYear.label}. Copied SHS Curriculum does not carry school approval and requires destination-year approval before student use. Any stale record or new conflict will roll back the entire operation.
                   </p>
                 </div>
               </div>

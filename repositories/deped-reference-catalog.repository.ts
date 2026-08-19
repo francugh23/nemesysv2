@@ -19,20 +19,6 @@ export async function updateCatalogClusterSchoolFacing(id: string, isSchoolFacin
   return tx.shsCurriculumCluster.update({ where: { id }, data: { isSchoolFacing }, select: { id: true } });
 }
 
-export async function findOtherAcademicSchoolFacingClusters(catalogCodes: string[], tx: Prisma.TransactionClient) {
-  return tx.shsCurriculumCluster.findMany({
-    where: { track: "ACADEMIC", deletedAt: null, isSchoolFacing: true, code: { notIn: catalogCodes } },
-    select: {
-      id: true,
-      code: true,
-      name: true,
-      sourceReference: true,
-      _count: { select: { references: true, subjectOfferingContexts: true } },
-    },
-    orderBy: { code: "asc" },
-  });
-}
-
 export async function findCatalogSubject(code: string, tx: Prisma.TransactionClient) {
   return tx.subject.findFirst({ where: { code, deletedAt: null }, select: { id: true, code: true, description: true, gradeLevel: true } });
 }

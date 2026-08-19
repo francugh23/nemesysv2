@@ -45,6 +45,7 @@ export function useCommitCurriculumAdoption() {
         queryClient.invalidateQueries({ queryKey: ["subject-offerings"] }),
         queryClient.invalidateQueries({ queryKey: ["subject-offering-options"] }),
         queryClient.invalidateQueries({ queryKey: ["subject-offering-filter-options"] }),
+        queryClient.invalidateQueries({ queryKey: ["subjects"] }),
         invalidateAcademicYearConfigurationQueries(
           queryClient,
           values.destinationAcademicYearId,

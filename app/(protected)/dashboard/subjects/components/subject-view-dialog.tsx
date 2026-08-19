@@ -46,7 +46,6 @@ export function SubjectViewDialog({
           <div className="space-y-2 rounded-lg border p-4">
             <p className="text-sm font-medium">Definition usage</p>
             <div className="flex flex-wrap gap-2">
-              {subject.hasDepEdReference && <Badge variant="secondary">DepEd reference available</Badge>}
               <Badge variant="outline">
                 {subject.activeCurriculumCount > 0
                   ? `Used by ${subject.activeCurriculumCount} active Curriculum ${subject.activeCurriculumCount === 1 ? "entry" : "entries"}`

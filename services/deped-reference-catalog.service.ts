@@ -11,7 +11,6 @@ import {
   createCatalogSubject,
   findCatalogActor,
   findCatalogCluster,
-  findOtherAcademicSchoolFacingClusters,
   findAndLockCatalogOffering,
   findCatalogReference,
   findCatalogSubject,
@@ -44,8 +43,8 @@ export async function populateInTransaction(actorId: string, academicYearId: str
   const clusterIds = new Map<string, string>();
   let createdClusters = 0;
   let updatedClusters = 0;
-  let demotedCustomAcademicClusters = 0;
-  let preservedOperationalClusters = 0;
+  const demotedCustomAcademicClusters = 0;
+  const preservedOperationalClusters = 0;
   let createdSubjects = 0;
   let createdReferences = 0;
   let createdOfferings = 0;
@@ -92,28 +91,6 @@ export async function populateInTransaction(actorId: string, academicYearId: str
     clusterIds.set(cluster.code, created.id);
     createdClusters += 1;
     audits.push({ userId: actor.id, action: "CREATE", module: "ShsCurriculumCluster", recordId: created.id, recordName: cluster.name, description: "Created provisional DepEd SSHS curriculum cluster.", metadata: { curriculumStatus: "PROVISIONAL_DEPED", sourceReference: cluster.sourceReference } });
-  }
-
-  const catalogAcademicCodes = depedShsCatalogClusters.filter(({ track }) => track === "ACADEMIC").map(({ code }) => code);
-  const otherAcademicClusters = await findOtherAcademicSchoolFacingClusters(catalogAcademicCodes, tx);
-  for (const cluster of otherAcademicClusters) {
-    await updateCatalogClusterSchoolFacing(cluster.id, false, tx);
-    demotedCustomAcademicClusters += 1;
-    if (cluster._count.subjectOfferingContexts > 0) preservedOperationalClusters += 1;
-    audits.push({
-      userId: actor.id,
-      action: "UPDATE",
-      module: "ShsCurriculumCluster",
-      recordId: cluster.id,
-      recordName: cluster.name,
-      description: "Retained the Academic cluster as historical configuration while removing it from the fixed school-facing category list.",
-      metadata: {
-        changes: { isSchoolFacing: { from: true, to: false } },
-        sourceReference: cluster.sourceReference ?? "SCHOOL_CONFIGURATION",
-        referenceCount: cluster._count.references,
-        offeringContextCount: cluster._count.subjectOfferingContexts,
-      },
-    });
   }
 
   for (const entry of depedShsCatalogEntries) {

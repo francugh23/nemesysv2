@@ -212,11 +212,11 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
             </Field>
           )}
           <Field className={classification === "CORE" ? "md:col-span-2" : undefined}>
-            <FieldLabel>DepEd Source Reference</FieldLabel>
-            <Controller name="shsContext.sourceReference" control={form.control} render={({ field }) => <Input {...field} value={field.value ?? ""} placeholder="Required for provisional DepEd configuration" />} />
+            <FieldLabel>Source / Provenance Reference</FieldLabel>
+            <Controller name="shsContext.sourceReference" control={form.control} render={({ field }) => <Input {...field} value={field.value ?? ""} placeholder="Document, policy, or source supporting this configuration" />} />
             <FieldError>{form.formState.errors.shsContext?.sourceReference?.message}</FieldError>
             <p className="text-xs text-muted-foreground">
-              New SHS Offerings remain Provisional DepEd until the separate school-approval action is completed.
+              New SHS Offerings require the separate school-approval action before student use.
             </p>
           </Field>
         </div>
