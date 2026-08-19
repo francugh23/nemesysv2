@@ -15,18 +15,21 @@ import type { AcademicYearListItem } from "@/schemas";
 import { AcademicYearStatusBadge } from "./academic-year-status-badge";
 import { AcademicTermManager } from "./academic-term-manager";
 import { ShsElectiveEnrollmentPolicyManager } from "./shs-elective-enrollment-policy-manager";
+import { ShsTermResultInterpretationPolicyManager } from "./shs-term-result-interpretation-policy-manager";
 
 export function AcademicYearViewDialog({
   academicYear,
   open,
   onOpenChange,
   canAdoptCurriculum = false,
+  canManageInterpretationPolicy = false,
   onAdoptCurriculum,
 }: {
   academicYear: AcademicYearListItem;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   canAdoptCurriculum?: boolean;
+  canManageInterpretationPolicy?: boolean;
   onAdoptCurriculum?: () => void;
 }) {
   const isReadOnly =
@@ -81,6 +84,13 @@ export function AcademicYearViewDialog({
           open={open}
           readOnly={isReadOnly}
         />
+        {canManageInterpretationPolicy && (
+          <ShsTermResultInterpretationPolicyManager
+            academicYearId={academicYear.id}
+            open={open}
+            isActive={academicYear.status === "ACTIVE"}
+          />
+        )}
         {academicYear.status === "DRAFT" && canAdoptCurriculum && (
           <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/20 p-4">
             <div>

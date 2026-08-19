@@ -1,8 +1,10 @@
 import { Prisma } from "@/app/generated/prisma/client";
 import { Permissions, requirePermission } from "@/lib/authorization";
 import { resolveCurrentAcademicTerm } from "@/lib/academic-term-current";
+import { interpretFinalizedShsTermResult } from "@/lib/shs-term-result-interpretation";
 import prisma from "@/lib/prisma";
 import { findShsElectiveEnrollmentPolicyByScope } from "@/repositories/shs-elective-enrollment-policy.repository";
+import { findPublishedShsTermResultInterpretationPolicyForEnrollment } from "@/repositories/shs-term-result-interpretation-policy.repository";
 import {
   findActiveAcademicYearCalendars,
   findEligibleShsOfferingsForEnrollment,
@@ -44,7 +46,10 @@ async function runSerializableMutation<T>(operation: (transaction: Prisma.Transa
 
 export async function getStudentSubjectEnrollments(query: StudentSubjectEnrollmentRead) {
   await requirePermission(Permissions.ENROLLMENT);
-  const rows = await findStudentSubjectEnrollments(query);
+  const [rows, interpretationPolicy] = await Promise.all([
+    findStudentSubjectEnrollments(query),
+    findPublishedShsTermResultInterpretationPolicyForEnrollment(query.enrollmentId),
+  ]);
   return rows.map((row) => ({
     ...row,
     terms: row.terms.map((term) => ({
@@ -53,6 +58,10 @@ export async function getStudentSubjectEnrollments(query: StudentSubjectEnrollme
         ? {
             ...term.result,
             finalResult: term.result.finalResult?.toNumber() ?? null,
+            interpretation: interpretFinalizedShsTermResult(
+              term.result,
+              interpretationPolicy,
+            ),
           }
         : null,
     })),

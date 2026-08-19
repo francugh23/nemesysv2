@@ -22,6 +22,7 @@ export function AcademicYearDialogManager({
   instanceId,
   onClose,
   canAdoptCurriculum,
+  canManageInterpretationPolicy,
   onAdoptCurriculum,
 }: {
   academicYear: AcademicYearListItem | null;
@@ -29,6 +30,7 @@ export function AcademicYearDialogManager({
   instanceId: number;
   onClose: (instanceId: number) => void;
   canAdoptCurriculum: boolean;
+  canManageInterpretationPolicy: boolean;
   onAdoptCurriculum: (academicYear: AcademicYearListItem) => void;
 }) {
   if (!academicYear) return null;
@@ -42,6 +44,7 @@ export function AcademicYearDialogManager({
         open={dialog === "view"}
         onOpenChange={handleOpenChange}
         canAdoptCurriculum={canAdoptCurriculum}
+        canManageInterpretationPolicy={canManageInterpretationPolicy}
         onAdoptCurriculum={() => onAdoptCurriculum(academicYear)}
       />
       {academicYear.status === "DRAFT" && (

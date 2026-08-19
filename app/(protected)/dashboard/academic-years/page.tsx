@@ -51,6 +51,7 @@ export default function AcademicYearsPage() {
 function AcademicYearsPageContent() {
   const { data: session } = useSession();
   const canAdoptCurriculum = session?.user.role === "SUPER_ADMIN";
+  const canManageInterpretationPolicy = session?.user.role === "SUPER_ADMIN";
   const tableState = useTableUrlState({
     filterKeys: academicYearFilterKeys,
     sortableColumns: academicYearSortFields,
@@ -232,6 +233,7 @@ function AcademicYearsPageContent() {
             instanceId={instanceId}
             onClose={closeDialog}
             canAdoptCurriculum={canAdoptCurriculum}
+            canManageInterpretationPolicy={canManageInterpretationPolicy}
             onAdoptCurriculum={(academicYear) =>
               openDialog(academicYear, "adopt-curriculum")
             }

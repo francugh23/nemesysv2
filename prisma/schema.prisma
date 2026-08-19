@@ -65,6 +65,11 @@ enum ShsTermResultStatus {
   FINALIZED
 }
 
+enum ShsTermResultInterpretationPolicyStatus {
+  DRAFT
+  PUBLISHED
+}
+
 enum AcademicYearStatus {
   DRAFT
   ACTIVE
@@ -128,24 +133,26 @@ model User {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  teacher                              Teacher?
-  createdStudents                      Student[]
-  createdSections                      Section[]
-  createdSubjects                      Subject[]
-  createdEnrollments                   Enrollment[]
-  createdGrades                        Grade[]
-  createdAcademicYears                 AcademicYear[]
-  createdAcademicTerms                 AcademicTerm[]
-  createdSubjectOfferings              SubjectOffering[]
-  createdShsCurriculumClusters         ShsCurriculumCluster[]
-  createdSubjectOfferingShsContexts    SubjectOfferingShsContext[]
-  approvedSubjectOfferingShsContexts   SubjectOfferingShsContext[]   @relation("ShsCurriculumApprovalActor")
-  createdShsCurriculumReferences       ShsCurriculumReference[]
-  createdStudentSubjectEnrollments     StudentSubjectEnrollment[]
-  createdShsElectiveEnrollmentPolicies ShsElectiveEnrollmentPolicy[]
-  createdShsTermResults                ShsTermResult[]               @relation("ShsTermResultCreator")
-  finalizedShsTermResults              ShsTermResult[]               @relation("ShsTermResultFinalizer")
-  auditLogs                            AuditLog[]
+  teacher                                      Teacher?
+  createdStudents                              Student[]
+  createdSections                              Section[]
+  createdSubjects                              Subject[]
+  createdEnrollments                           Enrollment[]
+  createdGrades                                Grade[]
+  createdAcademicYears                         AcademicYear[]
+  createdAcademicTerms                         AcademicTerm[]
+  createdSubjectOfferings                      SubjectOffering[]
+  createdShsCurriculumClusters                 ShsCurriculumCluster[]
+  createdSubjectOfferingShsContexts            SubjectOfferingShsContext[]
+  approvedSubjectOfferingShsContexts           SubjectOfferingShsContext[]         @relation("ShsCurriculumApprovalActor")
+  createdShsCurriculumReferences               ShsCurriculumReference[]
+  createdStudentSubjectEnrollments             StudentSubjectEnrollment[]
+  createdShsElectiveEnrollmentPolicies         ShsElectiveEnrollmentPolicy[]
+  createdShsTermResults                        ShsTermResult[]                     @relation("ShsTermResultCreator")
+  finalizedShsTermResults                      ShsTermResult[]                     @relation("ShsTermResultFinalizer")
+  createdShsTermResultInterpretationPolicies   ShsTermResultInterpretationPolicy[] @relation("ShsTermResultInterpretationPolicyCreator")
+  publishedShsTermResultInterpretationPolicies ShsTermResultInterpretationPolicy[] @relation("ShsTermResultInterpretationPolicyPublisher")
+  auditLogs                                    AuditLog[]
 }
 
 model Student {
@@ -362,11 +369,12 @@ model AcademicYear {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  enrollments                   Enrollment[]
-  subjectAssignments            SubjectAssignment[]
-  terms                         AcademicTerm[]
-  subjectOfferings              SubjectOffering[]
-  shsElectiveEnrollmentPolicies ShsElectiveEnrollmentPolicy[]
+  enrollments                       Enrollment[]
+  subjectAssignments                SubjectAssignment[]
+  terms                             AcademicTerm[]
+  subjectOfferings                  SubjectOffering[]
+  shsElectiveEnrollmentPolicies     ShsElectiveEnrollmentPolicy[]
+  shsTermResultInterpretationPolicy ShsTermResultInterpretationPolicy?
 
   @@index([status])
   @@index([startDate])
@@ -589,6 +597,30 @@ model ShsTermResult {
   @@index([academicTermId])
   @@index([createdById])
   @@index([finalizedById])
+}
+
+model ShsTermResultInterpretationPolicy {
+  id String @id @default(cuid())
+
+  academicYearId String       @unique
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+
+  passingThreshold Decimal                                 @db.Decimal(5, 2)
+  sourceReference  String
+  status           ShsTermResultInterpretationPolicyStatus @default(DRAFT)
+
+  createdById String
+  createdBy   User   @relation("ShsTermResultInterpretationPolicyCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  publishedById String?
+  publishedBy   User?     @relation("ShsTermResultInterpretationPolicyPublisher", fields: [publishedById], references: [id], onDelete: Restrict)
+  publishedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([publishedById])
 }
 
 model Grade {

@@ -96,6 +96,11 @@ export function StudentSubjectEnrollmentList({
           <p className="text-sm text-muted-foreground">
             Current-Term participation and preserved subject enrollment history.
           </p>
+          {isShs && (
+            <p className="text-xs text-muted-foreground">
+              PASSED or FAILED is a Term Result interpretation only. It does not establish subject completion, credits, promotion, or graduation.
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           {replacedRows.length > 0 && (
@@ -291,9 +296,20 @@ function StudentSubjectEnrollmentTable({
                       <div key={term.academicTermId} className="flex flex-wrap items-center gap-2">
                         <span className="text-xs font-medium">{term.academicTerm.name}:</span>
                         {term.result ? (
-                          <Badge variant={term.result.status === "FINALIZED" ? "default" : "secondary"}>
-                            {term.result.status} | {term.result.finalResult?.toFixed(2) ?? "No result"}
-                          </Badge>
+                          <>
+                            <Badge variant={term.result.status === "FINALIZED" ? "default" : "secondary"}>
+                              {term.result.status} | {term.result.finalResult?.toFixed(2) ?? "No result"}
+                            </Badge>
+                            {term.result.interpretation ? (
+                              <Badge variant={term.result.interpretation.outcome === "PASSED" ? "default" : "destructive"}>
+                                {term.result.interpretation.outcome}
+                              </Badge>
+                            ) : term.result.status === "FINALIZED" ? (
+                              <span className="text-xs text-muted-foreground">
+                                Interpretation policy not published
+                              </span>
+                            ) : null}
+                          </>
                         ) : (
                           <span className="text-xs text-muted-foreground">No result</span>
                         )}

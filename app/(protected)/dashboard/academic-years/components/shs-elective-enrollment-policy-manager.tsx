@@ -62,7 +62,7 @@ export function ShsElectiveEnrollmentPolicyManager({
           terms.map((term) => (
             <div key={term.id} className="space-y-2 rounded-md bg-muted/40 p-3">
               <p className="font-medium">
-                Term {term.position}: {term.name}
+                {term.name}
               </p>
               <div className="space-y-2">
                 {GRADES.map((gradeLevel) => (
