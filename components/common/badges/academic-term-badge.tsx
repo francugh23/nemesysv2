@@ -17,13 +17,18 @@ export function AcademicTermBadge({
 }: AcademicTermBadgeProps) {
   const label = `Term ${position}`;
   const className = termClassNames[position];
+  const configuredName = name?.trim();
+  const accessibleLabel =
+    configuredName && configuredName.toLocaleLowerCase() !== label.toLocaleLowerCase()
+      ? `${label}: ${configuredName}`
+      : label;
 
   return (
     <Badge
       variant={className ? undefined : "outline"}
       className={className}
-      aria-label={name ? `${label}: ${name}` : label}
-      title={name ? `${label}: ${name}` : label}
+      aria-label={accessibleLabel}
+      title={accessibleLabel}
     >
       {label}
     </Badge>

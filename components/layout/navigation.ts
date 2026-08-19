@@ -69,13 +69,8 @@ export const navigation = {
     },
 
     {
-      title: "Academics",
+      title: "Academic Configuration",
       items: [
-        {
-          title: "Sections",
-          href: "/dashboard/sections",
-          icon: School,
-        },
         {
           title: "Academic Years",
           href: "/dashboard/academic-years",
@@ -91,6 +86,17 @@ export const navigation = {
           href: CURRICULUM_ROUTE,
           icon: Layers,
         },
+      ],
+    },
+
+    {
+      title: "Academics",
+      items: [
+        {
+          title: "Sections",
+          href: "/dashboard/sections",
+          icon: School,
+        },
         {
           title: "Assignments",
           href: "/dashboard/assignments",
@@ -100,7 +106,7 @@ export const navigation = {
     },
 
     {
-      title: "Enrollment",
+      title: "Operations",
       items: [
         {
           title: "Registration",
@@ -150,7 +156,7 @@ export const navigation = {
 
   REGISTRAR: [
     {
-      title: "Academics",
+      title: "Academic Configuration",
       items: [
         {
           title: "Academic Years",
@@ -162,6 +168,11 @@ export const navigation = {
           href: CURRICULUM_ROUTE,
           icon: Layers,
         },
+      ],
+    },
+    {
+      title: "Operations",
+      items: [
         {
           title: "Enrollment",
           href: "/dashboard/enrollment",

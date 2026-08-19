@@ -5,6 +5,7 @@ import { Download } from "lucide-react";
 
 import { DataTable, resolveServerPagination } from "@/components/data-table";
 import { CrudToolbar } from "@/components/common/crud-toolbar";
+import { AcademicConfigurationNav } from "@/components/common/academic-configuration-nav";
 import { SubjectTableSkeleton } from "@/components/skeletons/subject-table-skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,10 +51,25 @@ function SubjectsPageContent() {
     sortableColumns: subjectSortFields,
   });
   const grade = SubjectGradeLevelSchema.safeParse(tableState.filters.grade);
+  const schoolLevel = ["JHS", "SHS"].includes(tableState.filters.schoolLevel)
+    ? (tableState.filters.schoolLevel as "JHS" | "SHS")
+    : undefined;
   const trackStrand = tableState.filters.trackStrand.trim().slice(0, 100);
   const search = tableState.query.q?.trim().slice(0, 100);
   const normalizeUrl = useEffectEvent(() => {
     if (tableState.filters.grade && !grade.success) {
+      tableState.setFilter("grade", "");
+    }
+
+    if (tableState.filters.schoolLevel && !schoolLevel) {
+      tableState.setFilter("schoolLevel", "");
+    }
+
+    if (
+      grade.success &&
+      ((schoolLevel === "JHS" && ["11", "12"].includes(grade.data)) ||
+        (schoolLevel === "SHS" && ["7", "8", "9", "10"].includes(grade.data)))
+    ) {
       tableState.setFilter("grade", "");
     }
 
@@ -67,6 +83,7 @@ function SubjectsPageContent() {
   });
   const query: SubjectTableQueryInput = {
     q: search || undefined,
+    schoolLevel,
     grade: grade.success ? grade.data : undefined,
     trackStrand: trackStrand || undefined,
     sort: tableState.query.sort as SubjectTableQueryInput["sort"],
@@ -115,8 +132,10 @@ function SubjectsPageContent() {
     normalizeUrl();
   }, [
     grade.success,
+    schoolLevel,
     search,
     tableState.filters.grade,
+    tableState.filters.schoolLevel,
     tableState.filters.trackStrand,
     tableState.query.q,
     trackStrand,
@@ -159,6 +178,23 @@ function SubjectsPageContent() {
         </div>
 
         <CrudToolbar primaryAction={<CreateSubjectDialog />} />
+      </div>
+
+      <AcademicConfigurationNav current="Subjects" />
+
+      <div className="grid gap-3 rounded-lg border bg-muted/30 p-4 text-sm sm:grid-cols-3">
+        <div>
+          <p className="font-medium">Reusable definition</p>
+          <p className="text-muted-foreground">A Subject is not tied to an Academic Year.</p>
+        </div>
+        <div>
+          <p className="font-medium">Curriculum is separate</p>
+          <p className="text-muted-foreground">Add the Subject to Curriculum to offer it in a year and Terms.</p>
+        </div>
+        <div>
+          <p className="font-medium">Enrollment is separate</p>
+          <p className="text-muted-foreground">Creating a Subject never enrolls a student.</p>
+        </div>
       </div>
 
       <Card>

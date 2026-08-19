@@ -59,26 +59,37 @@ export function subjectOfferingColumns({
       id: "terms",
       header: "Terms",
       cell: ({ row }) => (
-        <div className="flex flex-wrap gap-1">
-          {row.original.terms.map((term) => (
-            <AcademicTermBadge
-              key={term.academicTermId}
-              position={term.academicTerm.position}
-              name={term.academicTerm.name}
-            />
-          ))}
+        <div className="flex flex-col items-start gap-1">
+          {["7", "8", "9", "10"].includes(row.original.gradeLevel) && (
+            <Badge>Full Academic Year</Badge>
+          )}
+          <div className="flex flex-wrap gap-1">
+            {row.original.terms.map((term) => (
+              <AcademicTermBadge
+                key={term.academicTermId}
+                position={term.academicTerm.position}
+                name={term.academicTerm.name}
+              />
+            ))}
+          </div>
         </div>
       ),
     },
     {
       id: "shsContext",
-      header: "SSHS Context",
+       header: "SHS Context / Approval",
       cell: ({ row }) => {
         const context = row.original.shsContext;
         if (!context) return "-";
         return (
           <div className="flex flex-wrap gap-1">
-            <Badge variant="outline">{context.classification.replaceAll("_", " ")}</Badge>
+            <Badge variant="outline">
+              {context.classification === "CORE"
+                ? "Core"
+                : context.classification === "ACADEMIC_ELECTIVE"
+                  ? "Academic Elective"
+                  : "TechPro Elective"}
+            </Badge>
             <Badge variant={context.curriculumStatus === "SCHOOL_APPROVED" ? "default" : "secondary"}>
               {context.curriculumStatus === "SCHOOL_APPROVED" ? "School Approved" : "Provisional DepEd"}
             </Badge>

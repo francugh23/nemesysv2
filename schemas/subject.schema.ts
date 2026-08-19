@@ -30,15 +30,31 @@ export const SubjectSortFieldSchema = z.enum([
   "trackStrand",
 ]);
 
-export const SubjectTableQuerySchema = z.object({
-  q: z.string().trim().max(100).optional(),
-  grade: SubjectGradeLevelSchema.optional(),
-  trackStrand: z.string().trim().min(1).max(100).optional(),
-  sort: SubjectSortFieldSchema.optional(),
-  direction: z.enum(["asc", "desc"]).optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(50).default(10),
-});
+export const SubjectTableQuerySchema = z
+  .object({
+    q: z.string().trim().max(100).optional(),
+    schoolLevel: z.enum(["JHS", "SHS"]).optional(),
+    grade: SubjectGradeLevelSchema.optional(),
+    trackStrand: z.string().trim().min(1).max(100).optional(),
+    sort: SubjectSortFieldSchema.optional(),
+    direction: z.enum(["asc", "desc"]).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(50).default(10),
+  })
+  .superRefine((values, context) => {
+    if (
+      values.schoolLevel &&
+      values.grade &&
+      ((values.schoolLevel === "JHS" && !isJhsGradeLevel(values.grade)) ||
+        (values.schoolLevel === "SHS" && isJhsGradeLevel(values.grade)))
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["grade"],
+        message: "Grade level does not belong to the selected school level.",
+      });
+    }
+  });
 
 export type SubjectTableQueryInput = z.input<typeof SubjectTableQuerySchema>;
 export type SubjectTableQuery = z.output<typeof SubjectTableQuerySchema>;
@@ -49,6 +65,8 @@ export const SubjectListItemSchema = z.object({
   description: z.string(),
   gradeLevel: z.string(),
   trackStrand: z.string().nullable(),
+  hasDepEdReference: z.boolean(),
+  activeCurriculumCount: z.number().int().nonnegative(),
 });
 
 export type SubjectListItem = z.infer<typeof SubjectListItemSchema>;

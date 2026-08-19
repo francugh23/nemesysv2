@@ -4,6 +4,7 @@ import { Suspense, useEffect, useEffectEvent, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 
 import { CrudToolbar } from "@/components/common/crud-toolbar";
+import { AcademicConfigurationNav } from "@/components/common/academic-configuration-nav";
 import { DataTable, DataTableFacetedFilter, DataTableToolbar, resolveServerPagination, type DataTableFilterOption } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,6 +50,7 @@ function SubjectOfferingsPageContent() {
   const curriculumStatus = ["PROVISIONAL_DEPED", "SCHOOL_APPROVED"].includes(tableState.filters.curriculumStatus)
     ? tableState.filters.curriculumStatus as "PROVISIONAL_DEPED" | "SCHOOL_APPROVED"
     : undefined;
+  const isShsGrade = gradeLevel === "11" || gradeLevel === "12";
   const query: SubjectOfferingTableQueryInput = {
     q: search || undefined,
     academicYearId,
@@ -83,6 +85,9 @@ function SubjectOfferingsPageContent() {
     if (tableState.filters.gradeLevel && !gradeLevel) {
       tableState.setFilter("gradeLevel", "");
     }
+    if (tableState.filters.curriculumStatus && !isShsGrade) {
+      tableState.setFilter("curriculumStatus", "");
+    }
   });
   const serverPagination = resolveServerPagination({
     requestedPagination: tableState.pagination,
@@ -92,7 +97,7 @@ function SubjectOfferingsPageContent() {
 
   useEffect(() => {
     normalizeGradeFilter();
-  }, [gradeLevel, tableState.filters.gradeLevel]);
+  }, [gradeLevel, isShsGrade, tableState.filters.curriculumStatus, tableState.filters.gradeLevel]);
 
   useEffect(() => {
     if (data && serverPagination.shouldReconcile) {
@@ -116,16 +121,20 @@ function SubjectOfferingsPageContent() {
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold">{CURRICULUM_TITLE}</h1>
           <p className="max-w-3xl text-sm text-muted-foreground">
-            {CURRICULUM_DESCRIPTION} SSHS entries also show classification and
-            school-approval status.
+            {CURRICULUM_DESCRIPTION}
           </p>
           <p className="text-xs text-muted-foreground">
-            This table shows active Subject Offerings. Archiving removes an
-            Offering from active Curriculum while preserving historical records.
+            Subject = reusable definition. Curriculum = Academic-Year-specific Subject Offering.
+            Active SHS entries also show classification, school-facing context, and approval status.
           </p>
         </div>
         {canManageOfferings && <CrudToolbar primaryAction={<CreateSubjectOfferingDialog />} actions={<ShsCurriculumClusterDialog />} />}
       </div>
+
+      <AcademicConfigurationNav
+        current="Curriculum"
+        showSubjects={session?.user.role === "SUPER_ADMIN"}
+      />
 
       <Card>
         <CardContent className="pt-6">
@@ -149,19 +158,29 @@ function SubjectOfferingsPageContent() {
                   options={academicYearOptions}
                   onValueChange={(value) => tableState.setFilter("academicYearId", value)}
                 />
+                {isShsGrade && (
+                  <DataTableFacetedFilter
+                    label="SHS Approval Status"
+                    allLabel="All SHS Approval Statuses"
+                    value={tableState.filters.curriculumStatus}
+                    options={[{ label: "Provisional DepEd", value: "PROVISIONAL_DEPED" }, { label: "School Approved", value: "SCHOOL_APPROVED" }]}
+                    onValueChange={(value) => tableState.setFilter("curriculumStatus", value)}
+                  />
+                )}
                 <DataTableFacetedFilter
-                  label="Curriculum Status"
-                  allLabel="All Statuses"
-                  value={tableState.filters.curriculumStatus}
-                  options={[{ label: "Provisional DepEd", value: "PROVISIONAL_DEPED" }, { label: "School Approved", value: "SCHOOL_APPROVED" }]}
-                  onValueChange={(value) => tableState.setFilter("curriculumStatus", value)}
-                />
-                <DataTableFacetedFilter
-                  label="Grade Level"
-                  allLabel="All Grade Levels"
+                  label="Grade / Level"
+                  allLabel="JHS and SHS"
                   value={tableState.filters.gradeLevel}
-                  options={gradeOptions}
-                  onValueChange={(value) => tableState.setFilter("gradeLevel", value)}
+                  options={gradeOptions.map((option) => ({
+                    ...option,
+                    label: `${["7", "8", "9", "10"].includes(option.value) ? "JHS" : "SHS"} - ${option.label}`,
+                  }))}
+                  onValueChange={(value) => {
+                    tableState.setFilter("gradeLevel", value);
+                    if (!["11", "12"].includes(value)) {
+                      tableState.setFilter("curriculumStatus", "");
+                    }
+                  }}
                 />
               </DataTableToolbar>
             )}
@@ -197,12 +216,17 @@ function SubjectOfferingsPageContent() {
           )}
         </CardContent>
       </Card>
-      <Card>
-        <CardContent className="space-y-3 pt-6">
-          <div><h2 className="font-semibold">Provisional DepEd Reference Catalog</h2><p className="text-sm text-muted-foreground">Reference candidates only. Records without term evidence are not Subject Offerings and cannot be selected for students.</p></div>
+      <details className="rounded-xl border bg-card text-card-foreground shadow-sm">
+        <summary className="cursor-pointer list-none p-6">
+          <h2 className="font-semibold">DepEd Reference Catalog (reference only)</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Provenance candidates are not operational Curriculum, school-approved Subject Offerings, or student selections. Expand to review reference evidence.
+          </p>
+        </summary>
+        <div className="border-t p-6 pt-4">
           <ShsCurriculumReferenceTable />
-        </CardContent>
-      </Card>
+        </div>
+      </details>
     </div>
   );
 }

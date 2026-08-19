@@ -3,6 +3,7 @@ import { Prisma } from "@/app/generated/prisma/client";
 
 export interface SubjectListFilters {
   search?: string;
+  schoolLevel?: "JHS" | "SHS";
   grade?: string;
   trackStrand?: string;
 }
@@ -13,6 +14,16 @@ const subjectListSelect = {
   description: true,
   gradeLevel: true,
   trackStrand: true,
+} satisfies Prisma.SubjectSelect;
+
+const subjectListWithUsageSelect = {
+  ...subjectListSelect,
+  _count: {
+    select: {
+      shsCurriculumReferences: true,
+      offerings: { where: { deletedAt: null } },
+    },
+  },
 } satisfies Prisma.SubjectSelect;
 
 export async function findSubjects() {
@@ -33,18 +44,29 @@ function getSubjectListWhere(
   filters: SubjectListFilters,
 ): Prisma.SubjectWhereInput {
   const searchTerms = filters.search?.split(/\s+/).filter(Boolean) ?? [];
+  const schoolLevelGrades =
+    filters.schoolLevel === "JHS"
+      ? ["7", "8", "9", "10"]
+      : filters.schoolLevel === "SHS"
+        ? ["11", "12"]
+        : undefined;
 
   return {
     deletedAt: null,
-    gradeLevel: filters.grade,
+    gradeLevel: schoolLevelGrades ? { in: schoolLevelGrades } : filters.grade,
     trackStrand: filters.trackStrand,
-    AND: searchTerms.map((term) => ({
-      OR: [
-        { code: { contains: term, mode: "insensitive" } },
-        { description: { contains: term, mode: "insensitive" } },
-        { trackStrand: { contains: term, mode: "insensitive" } },
-      ],
-    })),
+    AND: [
+      ...(filters.grade && schoolLevelGrades
+        ? [{ gradeLevel: filters.grade }]
+        : []),
+      ...searchTerms.map((term) => ({
+        OR: [
+          { code: { contains: term, mode: "insensitive" as const } },
+          { description: { contains: term, mode: "insensitive" as const } },
+          { trackStrand: { contains: term, mode: "insensitive" as const } },
+        ],
+      })),
+    ],
   };
 }
 
@@ -61,7 +83,7 @@ export async function findNonArchivedSubjects(
 ) {
   return prisma.subject.findMany({
     where: getSubjectListWhere(filters),
-    select: subjectListSelect,
+    select: subjectListWithUsageSelect,
     orderBy,
     skip: pagination.skip,
     take: pagination.take,
@@ -73,6 +95,12 @@ function getSubjectGradeSortConditions(filters: SubjectListFilters) {
 
   if (filters.grade) {
     conditions.push(Prisma.sql`"gradeLevel" = ${filters.grade}`);
+  }
+
+  if (filters.schoolLevel === "JHS") {
+    conditions.push(Prisma.sql`"gradeLevel" IN ('7', '8', '9', '10')`);
+  } else if (filters.schoolLevel === "SHS") {
+    conditions.push(Prisma.sql`"gradeLevel" IN ('11', '12')`);
   }
 
   if (filters.trackStrand) {
@@ -125,7 +153,7 @@ export async function findNonArchivedSubjectsByGrade(
         in: ids.map((subject) => subject.id),
       },
     },
-    select: subjectListSelect,
+    select: subjectListWithUsageSelect,
   });
   const order = new Map(ids.map((subject, index) => [subject.id, index]));
 

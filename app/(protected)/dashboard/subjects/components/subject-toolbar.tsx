@@ -10,6 +10,7 @@ import { useSubjectFilterOptions } from "@/hooks/subject.hook";
 import type { ReactNode } from "react";
 
 export const subjectFilterKeys = [
+  "schoolLevel",
   "grade",
   "trackStrand",
 ] as const;
@@ -71,10 +72,34 @@ export function SubjectToolbar({
       actions={actions}
     >
       <DataTableFacetedFilter
+        label="School Level"
+        allLabel="JHS and SHS"
+        value={filters.schoolLevel}
+        options={[
+          { label: "JHS - Grades 7-10", value: "JHS" },
+          { label: "SHS - Grades 11-12", value: "SHS" },
+        ]}
+        onValueChange={(value) => {
+          onFilterChange("schoolLevel", value);
+          if (
+            (value === "JHS" && ["11", "12"].includes(filters.grade)) ||
+            (value === "SHS" && ["7", "8", "9", "10"].includes(filters.grade))
+          ) {
+            onFilterChange("grade", "");
+          }
+        }}
+      />
+      <DataTableFacetedFilter
         label="Grade Level"
         allLabel="All Grade Levels"
         value={filters.grade}
-        options={gradeOptions}
+        options={gradeOptions.filter(({ value }) =>
+          filters.schoolLevel === "JHS"
+            ? ["7", "8", "9", "10"].includes(value)
+            : filters.schoolLevel === "SHS"
+              ? ["11", "12"].includes(value)
+              : true,
+        )}
         onValueChange={(value) => onFilterChange("grade", value)}
         disabled={isLoading || isError}
       />

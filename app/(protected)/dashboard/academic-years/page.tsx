@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import { CrudToolbar } from "@/components/common/crud-toolbar";
+import { AcademicConfigurationNav } from "@/components/common/academic-configuration-nav";
 import { DataTable, resolveServerPagination } from "@/components/data-table";
 import { AcademicYearTableSkeleton } from "@/components/skeletons/academic-year-table-skeleton";
 import { Button } from "@/components/ui/button";
@@ -179,6 +180,11 @@ function AcademicYearsPageContent() {
 
         <CrudToolbar primaryAction={<CreateAcademicYearDialog />} />
       </div>
+
+      <AcademicConfigurationNav
+        current="Academic Years"
+        showSubjects={session?.user.role === "SUPER_ADMIN"}
+      />
 
       <Card>
         <CardContent className="pt-6">

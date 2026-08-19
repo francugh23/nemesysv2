@@ -13,10 +13,8 @@ import { hasPermission, Permissions } from "../../lib/permissions";
 test("Phase 21A presents the approved academic configuration hierarchy", () => {
   assert.deepEqual(ACADEMIC_CONFIGURATION_HIERARCHY, [
     "Academic Years",
-    "Academic Terms",
     "Subjects",
     "Curriculum",
-    "Enrollment",
   ]);
 });
 

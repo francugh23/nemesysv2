@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { AcademicTermBadge } from "@/components/common/badges";
 import { Field, FieldLabel } from "@/components/ui/field";
 import {
   Select,
@@ -46,8 +47,9 @@ export function ShsElectiveEnrollmentPolicyManager({
       <div>
         <h3 className="font-semibold">SHS Elective Policies</h3>
         <p className="text-sm text-muted-foreground">
-          Configure the combined Academic and TechPro elective range for each
-          Term and SHS grade.
+          Elective Policy controls how many Academic and TechPro electives a
+          student may select for each Term and SHS grade. Curriculum separately
+          defines which subjects the school offers.
         </p>
       </div>
 
@@ -61,9 +63,13 @@ export function ShsElectiveEnrollmentPolicyManager({
         ) : terms?.length ? (
           terms.map((term) => (
             <div key={term.id} className="space-y-2 rounded-md bg-muted/40 p-3">
-              <p className="font-medium">
-                {term.name}
-              </p>
+              <div className="flex items-center gap-2">
+                <AcademicTermBadge position={term.position} name={term.name} />
+                {term.name.trim().toLocaleLowerCase() !==
+                  `term ${term.position}`.toLocaleLowerCase() && (
+                  <span className="text-sm text-muted-foreground">{term.name}</span>
+                )}
+              </div>
               <div className="space-y-2">
                 {GRADES.map((gradeLevel) => (
                   <PolicyRow

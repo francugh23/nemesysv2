@@ -4,6 +4,8 @@ import { Controller, type UseFormReturn, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { Checkbox } from "@/components/ui/checkbox";
+import { AcademicTermBadge } from "@/components/common/badges";
+import { Badge } from "@/components/ui/badge";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,6 +36,7 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
   const academicYear = options?.academicYears.find(
     (year) => year.id === academicYearId,
   );
+  const isJhs = ["7", "8", "9", "10"].includes(gradeLevel ?? "");
   const academicYearOptions: SearchableSelectOption[] =
     options?.academicYears.map((year) => ({
       value: year.id,
@@ -50,6 +53,12 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="md:col-span-2">
+        <p className="font-medium">Subject Offering configuration</p>
+        <p className="text-sm text-muted-foreground">
+          Choose the Academic Year and Grade, then connect a reusable Subject to its exact Curriculum context and Terms.
+        </p>
+      </div>
       <Field>
         <FieldLabel>Academic Year</FieldLabel>
         <Controller
@@ -60,7 +69,11 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
               value={field.value}
               onValueChange={(value) => {
                 field.onChange(value);
-                form.setValue("academicTermIds", []);
+                const selectedYear = options?.academicYears.find((year) => year.id === value);
+                form.setValue(
+                  "academicTermIds",
+                  isJhs ? selectedYear?.terms.map((term) => term.id) ?? [] : [],
+                );
               }}
               options={academicYearOptions}
               placeholder={isLoading ? "Loading academic years..." : "Select academic year"}
@@ -84,12 +97,19 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
                 form.setValue("subjectId", "");
                 if (value && ["7", "8", "9", "10"].includes(value)) {
                   form.setValue("shsContext", undefined);
-                } else if (value && !form.getValues("shsContext")) {
-                  form.setValue("shsContext", {
-                    classification: "CORE",
-                    curriculumStatus: "PROVISIONAL_DEPED",
-                    sourceReference: "",
-                  });
+                  form.setValue(
+                    "academicTermIds",
+                    academicYear?.terms.map((term) => term.id) ?? [],
+                  );
+                } else if (value) {
+                  if (!form.getValues("shsContext")) {
+                    form.setValue("shsContext", {
+                      classification: "CORE",
+                      curriculumStatus: "PROVISIONAL_DEPED",
+                      sourceReference: "",
+                    });
+                  }
+                  form.setValue("academicTermIds", []);
                 }
               }}
             >
@@ -109,11 +129,45 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
         <FieldError>{form.formState.errors.gradeLevel?.message}</FieldError>
       </Field>
 
+      <Field className="md:col-span-2">
+        <FieldLabel>Subject</FieldLabel>
+        <Controller
+          name="subjectId"
+          control={form.control}
+          render={({ field }) => (
+            <SearchableSelect
+              value={field.value}
+              onValueChange={(value) => {
+                field.onChange(value);
+
+                const subject = options?.subjects.find((item) => item.id === value);
+                if (subject && !gradeLevel) {
+                  form.setValue("gradeLevel", subject.gradeLevel as SubjectOfferingFormValues["gradeLevel"]);
+                }
+              }}
+              options={subjectOptions}
+              placeholder={
+                isLoading
+                  ? "Loading subjects..."
+                  : gradeLevel
+                    ? "Search reusable Subject definitions"
+                    : "Select a grade level first"
+              }
+              disabled={isLoading || !gradeLevel}
+            />
+          )}
+        />
+        <FieldError>{form.formState.errors.subjectId?.message}</FieldError>
+        <p className="text-xs text-muted-foreground">
+          The Subject is the reusable definition. This Subject Offering is its Academic-Year-specific Curriculum record.
+        </p>
+      </Field>
+
       {["11", "12"].includes(gradeLevel ?? "") && (
         <div className="grid gap-4 rounded-lg border p-4 md:col-span-2 md:grid-cols-2">
           <div className="md:col-span-2">
-            <p className="font-medium">SSHS Curriculum Context</p>
-            <p className="text-sm text-muted-foreground">This describes the offering configuration. It does not create student curriculum records.</p>
+            <p className="font-medium">SHS Curriculum Context</p>
+            <p className="text-sm text-muted-foreground">Classify this specific Offering as Core, Academic Elective, or TechPro Elective. Classification does not belong to the reusable Subject.</p>
           </div>
           <Field>
             <FieldLabel>Classification</FieldLabel>
@@ -138,7 +192,7 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
           </Field>
           {classification !== "CORE" && (
             <Field>
-              <FieldLabel>Curriculum Cluster</FieldLabel>
+              <FieldLabel>School-Facing Cluster</FieldLabel>
               <Controller
                 name="shsContext.clusterId"
                 control={form.control}
@@ -161,34 +215,12 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
             <FieldLabel>DepEd Source Reference</FieldLabel>
             <Controller name="shsContext.sourceReference" control={form.control} render={({ field }) => <Input {...field} value={field.value ?? ""} placeholder="Required for provisional DepEd configuration" />} />
             <FieldError>{form.formState.errors.shsContext?.sourceReference?.message}</FieldError>
+            <p className="text-xs text-muted-foreground">
+              New SHS Offerings remain Provisional DepEd until the separate school-approval action is completed.
+            </p>
           </Field>
         </div>
       )}
-
-      <Field className="md:col-span-2">
-        <FieldLabel>Subject</FieldLabel>
-        <Controller
-          name="subjectId"
-          control={form.control}
-          render={({ field }) => (
-            <SearchableSelect
-              value={field.value}
-              onValueChange={(value) => {
-                field.onChange(value);
-
-                const subject = options?.subjects.find((item) => item.id === value);
-                if (subject && !gradeLevel) {
-                  form.setValue("gradeLevel", subject.gradeLevel as SubjectOfferingFormValues["gradeLevel"]);
-                }
-              }}
-              options={subjectOptions}
-              placeholder={isLoading ? "Loading subjects..." : "Search subjects"}
-              disabled={isLoading}
-            />
-          )}
-        />
-        <FieldError>{form.formState.errors.subjectId?.message}</FieldError>
-      </Field>
 
       <Field className="md:col-span-2">
         <FieldLabel>Academic Terms</FieldLabel>
@@ -197,9 +229,31 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
           control={form.control}
           render={({ field }) => (
             <div className="grid gap-2 sm:grid-cols-3">
-              {academicYear ? (
+              {!gradeLevel ? (
+                <p className="text-sm text-muted-foreground">
+                  Select a grade level before configuring Term applicability.
+                </p>
+              ) : academicYear && isJhs ? (
+                <div className="space-y-3 rounded-lg border bg-muted/30 p-4 sm:col-span-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge>Full Academic Year</Badge>
+                    <span className="text-sm text-muted-foreground">
+                      JHS uses every configured Term; partial-Term configuration is not available.
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {academicYear.terms.map((term) => (
+                      <AcademicTermBadge key={term.id} position={term.position} name={term.name} />
+                    ))}
+                  </div>
+                </div>
+              ) : academicYear ? (
                 academicYear.terms.map((term) => {
                   const checked = field.value.includes(term.id);
+                  const termLabel = `Term ${term.position}`;
+                  const configuredName = term.name.trim();
+                  const showConfiguredName =
+                    configuredName.toLocaleLowerCase() !== termLabel.toLocaleLowerCase();
 
                   return (
                     <label
@@ -216,8 +270,11 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
                           )
                         }
                       />
-                      <span aria-label={`Term ${term.position}: ${term.name}`}>
-                        Term {term.position}
+                      <span className="flex flex-col items-start gap-0.5">
+                        <AcademicTermBadge position={term.position} name={term.name} />
+                        {showConfiguredName && (
+                          <span className="text-xs text-muted-foreground">{configuredName}</span>
+                        )}
                       </span>
                     </label>
                   );
@@ -231,6 +288,11 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
           )}
         />
         <FieldError>{form.formState.errors.academicTermIds?.message}</FieldError>
+        {["11", "12"].includes(gradeLevel ?? "") && (
+          <p className="text-xs text-muted-foreground">
+            Select the exact Terms for this SHS Offering. No all-Term or Grade 12 TechPro placement is inferred.
+          </p>
+        )}
       </Field>
     </div>
   );

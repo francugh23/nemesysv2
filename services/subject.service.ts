@@ -62,6 +62,7 @@ export async function getSubjects(
 
   const filters = {
     search: query.q,
+    schoolLevel: query.schoolLevel,
     grade: query.grade,
     trackStrand: query.trackStrand,
   };
@@ -86,7 +87,11 @@ export async function getSubjects(
         );
 
   return {
-    items: subjects,
+    items: subjects.map(({ _count, ...subject }) => ({
+      ...subject,
+      hasDepEdReference: _count.shsCurriculumReferences > 0,
+      activeCurriculumCount: _count.offerings,
+    })),
     totalCount,
     page,
     pageSize: query.pageSize,

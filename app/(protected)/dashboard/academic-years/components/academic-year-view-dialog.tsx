@@ -1,6 +1,7 @@
 "use client";
 
-import { Copy, LockKeyhole } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Copy, LockKeyhole } from "lucide-react";
 
 import {
   Dialog,
@@ -8,9 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { formatDateOnly, formatDateTime } from "@/lib/format";
 import type { AcademicYearListItem } from "@/schemas";
+import { CURRICULUM_ROUTE } from "@/lib/academic-configuration";
 
 import { AcademicYearStatusBadge } from "./academic-year-status-badge";
 import { AcademicTermManager } from "./academic-term-manager";
@@ -74,6 +76,21 @@ export function AcademicYearViewDialog({
           />
           <InfoItem label="Created At" value={formatDateTime(academicYear.createdAt)} />
           <InfoItem label="Updated At" value={formatDateTime(academicYear.updatedAt)} />
+        </div>
+        <div className="flex flex-col justify-between gap-3 rounded-lg border bg-muted/20 p-4 sm:flex-row sm:items-center">
+          <div>
+            <p className="font-medium">Academic Year Curriculum</p>
+            <p className="text-sm text-muted-foreground">
+              Review this year&apos;s Subject Offerings, exact Term applicability, and SHS approval context.
+            </p>
+          </div>
+          <Link
+            href={`${CURRICULUM_ROUTE}?academicYearId=${encodeURIComponent(academicYear.id)}`}
+            className={buttonVariants({ variant: "outline" })}
+          >
+            View Curriculum for this Academic Year
+            <ArrowRight />
+          </Link>
         </div>
         <AcademicTermManager
           academicYearId={academicYear.id}
