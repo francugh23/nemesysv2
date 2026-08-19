@@ -7,7 +7,11 @@ import {
   getCurriculumAdoptionOptionsAction,
   previewCurriculumAdoptionAction,
 } from "@/actions/curriculum-adoption.action";
-import type { CurriculumAdoptionPreviewInput } from "@/schemas";
+import type {
+  CommitCurriculumAdoptionInput,
+  CurriculumAdoptionPreviewInput,
+} from "@/schemas";
+import { invalidateAcademicYearConfigurationQueries } from "@/hooks/query-invalidation";
 
 export function useCurriculumAdoptionPreview(values: CurriculumAdoptionPreviewInput | null) {
   return useQuery({
@@ -32,14 +36,19 @@ export function useCurriculumAdoptionOptions(
 export function useCommitCurriculumAdoption() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: commitCurriculumAdoptionAction,
-    onSuccess: async (result) => {
+    mutationFn: (values: CommitCurriculumAdoptionInput) =>
+      commitCurriculumAdoptionAction(values),
+    onSuccess: async (result, values) => {
       if ("error" in result) return;
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["curriculum-adoption-preview"] }),
         queryClient.invalidateQueries({ queryKey: ["subject-offerings"] }),
         queryClient.invalidateQueries({ queryKey: ["subject-offering-options"] }),
         queryClient.invalidateQueries({ queryKey: ["subject-offering-filter-options"] }),
+        invalidateAcademicYearConfigurationQueries(
+          queryClient,
+          values.destinationAcademicYearId,
+        ),
       ]);
     },
   });

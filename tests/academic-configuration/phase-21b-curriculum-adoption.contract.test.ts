@@ -116,7 +116,7 @@ test("Phase 21B successful mutation invalidates only adoption and Offering query
 });
 
 test("Phase 21B UI exposes adoption only to Super Admins and draft destinations", () => {
-  assert.match(page, /session\?\.user\.role === "SUPER_ADMIN"/);
+  assert.match(page, /hasPermission\([\s\S]*Permissions\.SUBJECTS/);
   assert.match(manager, /academicYear\.status === "DRAFT" && canAdoptCurriculum/);
   assert.match(dialog, /Map every source Term to one unique destination Term\. No mapping is inferred\./);
   assert.match(dialog, /Subjects are\s+reused, and no Enrollment or student records are copied\./);

@@ -85,6 +85,14 @@ export const AcademicYearListItemSchema = z.object({
 
 export type AcademicYearListItem = z.infer<typeof AcademicYearListItemSchema>;
 
+export const AcademicYearConfigurationSummaryReadSchema = z.object({
+  academicYearId: z.string().min(1),
+});
+
+export type AcademicYearConfigurationSummaryReadInput = z.infer<
+  typeof AcademicYearConfigurationSummaryReadSchema
+>;
+
 export interface AcademicYearPage {
   items: AcademicYearListItem[];
   totalCount: number;

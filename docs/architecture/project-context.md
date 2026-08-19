@@ -9,7 +9,7 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-Phase 21C SSHS Curriculum Term Applicability, the focused Curriculum UI bug fixes, Phase 21D-A SHS Enrollment Foundation, Phase 21D-B Progressive SHS Current-Term Enrollment, Phase 21D-C Immutable SHS Term Result Foundation, Phase 21D-D SHS Term Result Interpretation Policy Foundation, and Phase 21E-A/B Academic Configuration Navigation and Curriculum Operational UX are complete; authenticated browser verification remains pending before production.
+Phase 21C SSHS Curriculum Term Applicability, the focused Curriculum UI bug fixes, Phase 21D-A SHS Enrollment Foundation, Phase 21D-B Progressive SHS Current-Term Enrollment, Phase 21D-C Immutable SHS Term Result Foundation, Phase 21D-D SHS Term Result Interpretation Policy Foundation, Phase 21E-A/B Academic Configuration Navigation and Curriculum Operational UX, and Phase 21E-C Academic Year Configuration Composition are complete; authenticated browser verification remains pending before production.
 
 ### Current Objective
 
@@ -39,6 +39,7 @@ Academic Year is the canonical period identity for academic configuration and op
 - Controlled Enrollment terminal transitions with confirmation, transactional Student synchronization and audit, parent-authoritative subject operation, corrected shared pagination, targeted list filtering, and Audit Log export
 - Academic configuration hierarchy with reusable Subjects, Academic Year-owned Terms, year-specific Curriculum terminology over Subject Offerings, and Enrollment-scoped student snapshots
 - Route-linked Academic Configuration navigation, reusable-definition Subject usage indicators, JHS full-year Curriculum presentation, explicit SHS Term/context UX, and Academic Year-filtered Curriculum navigation
+- Composed Academic Year Details with embedded Terms, factual Curriculum and permission-aware SHS policy summaries, focused policy dialogs, and non-persisted operational readiness notices
 - Focused Curriculum form Term selection correction and URL-driven server pagination for the provisional DepEd reference catalog
 - Enrollment-owned actual entry Academic Term and explicit Academic or TechPro SHS Track, with legacy-safe null preservation and no Term Enrollment model
 - Progressive SHS backend foundation with Term-scoped elective identity, subject-level DROPPED lifecycle integrity, immutable participation Terms, configurable per-Term elective policies, and Philippine current-Term resolution
@@ -94,6 +95,7 @@ Academic Year is the canonical period identity for academic configuration and op
 - [Phase 21D-C: Immutable SHS Term Result Foundation](./milestones/phase-21d-c-immutable-shs-term-results.md)
 - [Phase 21D-D: SHS Term Result Interpretation Policy Foundation](./milestones/phase-21d-d-shs-term-result-interpretation-policy.md)
 - [Phase 21E-A/B: Academic Configuration Navigation And Curriculum UX](./milestones/phase-21e-a-b-academic-configuration-ux.md)
+- [Phase 21E-C: Academic Year Configuration Composition](./milestones/phase-21e-c-academic-year-configuration-composition.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -155,7 +157,8 @@ Academic Year is the canonical period identity for academic configuration and op
 - Existing `Permissions.GRADES` remains Super Admin-only and protects SHS Term Result mutations at Action and Service boundaries. Enrollment Details displays exact-Term evidence and permits only DRAFT editing/finalization; terminal participation remains readable without controls. Results do not infer passing, completion, credits, prerequisites, progression, promotion, or graduation.
 - Each Academic Year may explicitly adopt one SHS Term Result interpretation policy while ACTIVE. The policy records the required school-approved reference and fixed `75.00` threshold, progresses from editable DRAFT to database-immutable PUBLISHED, and is protected by Super Admin-only `Permissions.GRADES` authority at Action and Service boundaries.
 - A PUBLISHED policy derives PASSED when a FINALIZED result is at least `75.00` and FAILED otherwise by direct `DECIMAL(5,2)` comparison without rounding or transmutation. Publication retrospectively affects reads without mutating evidence, missing policy never blocks finalization, and Term interpretation does not infer subject completion, credits, prerequisites, progression, promotion, or graduation.
-- Academic Year Details manages Grade 11/12 elective policies for configured Terms. Locked and archived years are read-only, and policies are never seeded, copied, or inferred.
+- Academic Year Details composes Overview, embedded Academic Terms, factual Curriculum aggregates, permission-aware SHS policy summaries, and operational readiness notices in one constrained modal. Elective and result-policy editors use focused dialogs; locked and archived years are historical/read-only, and policies are never seeded, copied, or inferred.
+- The Academic Year configuration summary is a non-persisted, service-owned repeatable-read projection. The only activation blocker remains the existing exactly-three-chronological-Term requirement; Curriculum and policy gaps are warnings or information only. Result interpretation policy facts are omitted unless the caller has `Permissions.GRADES`.
 - Shared pagination resets to page one when page size changes, supports 50 rendered rows, immediately reflects URL-requested Next/Previous state during placeholder transitions, and uses the server-resolved page that produced fresh records for page labels, ranges, and boundary controls. Independent tables on one route may opt into distinct URL page keys. Enrollment includes represented Track / Strand filtering, Subject Offering includes server-side code/description search with historical represented Academic Year filters, and the provisional DepEd reference catalog uses URL-driven server pagination.
 - Audit Log complete filtered CSV/XLSX export uses the shared bounded repeatable-read export architecture and excludes metadata. Student and Subject remain the only import workflows; Subject import invalidates dependent Offering options.
 - Academic configuration remains separated across Academic Year with nested Terms, Subjects, Subject Offerings, and Enrollment-scoped Student Subject Enrollment. Academic Years, Subjects, and Curriculum now use a route-linked Academic Configuration surface without model merging or a monolithic stepper; Enrollment remains operational and legacy Assignments remain outside configuration.

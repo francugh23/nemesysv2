@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAcademicYears } from "@/hooks/academic-year.hook";
+import { hasPermission, Permissions } from "@/lib/permissions";
 import { useTableUrlState } from "@/hooks/use-table-url-state.hook";
 import {
   AcademicYearStatusSchema,
@@ -51,8 +52,18 @@ export default function AcademicYearsPage() {
 
 function AcademicYearsPageContent() {
   const { data: session } = useSession();
-  const canAdoptCurriculum = session?.user.role === "SUPER_ADMIN";
-  const canManageInterpretationPolicy = session?.user.role === "SUPER_ADMIN";
+  const canAdoptCurriculum = hasPermission(
+    session?.user.role,
+    Permissions.SUBJECTS,
+  );
+  const canManageElectivePolicy = hasPermission(
+    session?.user.role,
+    Permissions.SHS_CURRICULUM_APPROVAL,
+  );
+  const canManageInterpretationPolicy = hasPermission(
+    session?.user.role,
+    Permissions.GRADES,
+  );
   const tableState = useTableUrlState({
     filterKeys: academicYearFilterKeys,
     sortableColumns: academicYearSortFields,
@@ -183,7 +194,7 @@ function AcademicYearsPageContent() {
 
       <AcademicConfigurationNav
         current="Academic Years"
-        showSubjects={session?.user.role === "SUPER_ADMIN"}
+        showSubjects={hasPermission(session?.user.role, Permissions.SUBJECTS)}
       />
 
       <Card>
@@ -239,9 +250,16 @@ function AcademicYearsPageContent() {
             instanceId={instanceId}
             onClose={closeDialog}
             canAdoptCurriculum={canAdoptCurriculum}
+            canManageElectivePolicy={canManageElectivePolicy}
             canManageInterpretationPolicy={canManageInterpretationPolicy}
             onAdoptCurriculum={(academicYear) =>
               openDialog(academicYear, "adopt-curriculum")
+            }
+            onManageElectivePolicy={(academicYear) =>
+              openDialog(academicYear, "elective-policies")
+            }
+            onManageInterpretationPolicy={(academicYear) =>
+              openDialog(academicYear, "result-interpretation-policy")
             }
           />
         </CardContent>

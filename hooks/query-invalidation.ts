@@ -2,6 +2,17 @@ import type { QueryClient } from "@tanstack/react-query";
 
 type QueryInvalidator = Pick<QueryClient, "invalidateQueries">;
 
+export function invalidateAcademicYearConfigurationQueries(
+  queryClient: QueryInvalidator,
+  academicYearId?: string,
+) {
+  return queryClient.invalidateQueries({
+    queryKey: academicYearId
+      ? ["academic-year-configuration", academicYearId]
+      : ["academic-year-configuration"],
+  });
+}
+
 export async function invalidateTeacherQueries(queryClient: QueryInvalidator) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ["teachers"] }),
@@ -45,6 +56,7 @@ export async function invalidateAcademicYearQueries(
 ) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ["academic-years"] }),
+    invalidateAcademicYearConfigurationQueries(queryClient),
     queryClient.invalidateQueries({
       queryKey: ["subject-assignment-options"],
     }),
@@ -60,6 +72,7 @@ export async function invalidateAcademicTermQueries(
 ) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ["academic-years"] }),
+    invalidateAcademicYearConfigurationQueries(queryClient, academicYearId),
     queryClient.invalidateQueries({
       queryKey: ["academic-terms", academicYearId],
     }),

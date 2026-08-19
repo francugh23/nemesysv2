@@ -35,7 +35,7 @@ export function ShsElectiveEnrollmentPolicyManager({
   readOnly: boolean;
 }) {
   const { data: terms, isLoading: termsLoading } =
-    useAcademicTerms(academicYearId);
+    useAcademicTerms(academicYearId, open);
   const {
     data: policies,
     error,

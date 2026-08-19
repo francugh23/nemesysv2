@@ -14,6 +14,7 @@ The application flow is:
 - Services own business policy, orchestration, authorization decisions, transactions, and audit coordination.
 - Repositories own Prisma data access only. They do not make business decisions.
 - Hooks encapsulate TanStack Query keys, queries, mutations, and invalidation behavior.
+- Cross-domain administrative summaries remain read-only Service projections. Permission-gated facts are queried and returned only for authorized callers, and multi-query summaries that must agree use a consistent database snapshot.
 
 Do not bypass a layer to save code.
 

@@ -27,6 +27,23 @@ const academicYearMutationSelect = {
   status: true,
 } satisfies Prisma.AcademicYearSelect;
 
+const academicYearConfigurationSelect = {
+  ...academicYearListSelect,
+  terms: {
+    select: {
+      id: true,
+      academicYearId: true,
+      name: true,
+      position: true,
+      startDate: true,
+      endDate: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: [{ position: "asc" }, { id: "asc" }],
+  },
+} satisfies Prisma.AcademicYearSelect;
+
 function getAcademicYearListWhere(
   filters: AcademicYearListFilters,
 ): Prisma.AcademicYearWhereInput {
@@ -75,6 +92,16 @@ export async function findAcademicYearById(
   return (transaction ?? prisma).academicYear.findUnique({
     where: { id },
     select: academicYearMutationSelect,
+  });
+}
+
+export async function findAcademicYearConfigurationById(
+  id: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).academicYear.findUnique({
+    where: { id },
+    select: academicYearConfigurationSelect,
   });
 }
 

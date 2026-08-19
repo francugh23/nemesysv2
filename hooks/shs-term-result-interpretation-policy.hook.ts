@@ -11,6 +11,7 @@ import type {
   PublishShsTermResultInterpretationPolicyInput,
   SaveShsTermResultInterpretationPolicyDraftInput,
 } from "@/schemas";
+import { invalidateAcademicYearConfigurationQueries } from "@/hooks/query-invalidation";
 
 export function useShsTermResultInterpretationPolicy(
   academicYearId: string,
@@ -30,6 +31,7 @@ function usePolicyInvalidation() {
       queryClient.invalidateQueries({
         queryKey: ["shs-term-result-interpretation-policy", academicYearId],
       }),
+      invalidateAcademicYearConfigurationQueries(queryClient, academicYearId),
       ...(invalidateResults
         ? [queryClient.invalidateQueries({ queryKey: ["student-subject-enrollments"] })]
         : []),

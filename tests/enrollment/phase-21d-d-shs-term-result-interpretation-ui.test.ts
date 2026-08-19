@@ -24,9 +24,11 @@ test("interpretation policy actions and services independently require GRADES au
 test("Academic Year Details limits policy management to Super Admin and ACTIVE years", () => {
   const page = source("app/(protected)/dashboard/academic-years/page.tsx");
   const view = source("app/(protected)/dashboard/academic-years/components/academic-year-view-dialog.tsx");
+  const dialog = source("app/(protected)/dashboard/academic-years/components/shs-term-result-interpretation-policy-dialog.tsx");
   const manager = source("app/(protected)/dashboard/academic-years/components/shs-term-result-interpretation-policy-manager.tsx");
-  assert.match(page, /canManageInterpretationPolicy = session\?\.user\.role === "SUPER_ADMIN"/);
-  assert.match(view, /academicYear\.status === "ACTIVE"/);
+  assert.match(page, /canManageInterpretationPolicy = hasPermission\([\s\S]*Permissions\.GRADES/);
+  assert.match(view, /canManageInterpretationPolicy/);
+  assert.match(dialog, /academicYear\.status === "ACTIVE"/);
   assert.match(manager, /Passing Threshold/);
   assert.match(manager, /75\.00/);
   assert.match(manager, /School-Approved Reference/);

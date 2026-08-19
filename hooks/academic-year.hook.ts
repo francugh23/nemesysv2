@@ -12,6 +12,7 @@ import {
   archiveAcademicYearAction,
   createAcademicYearAction,
   getAcademicYearFilterOptionsAction,
+  getAcademicYearConfigurationSummaryAction,
   getAcademicYearsAction,
   lockAcademicYearAction,
   updateAcademicYearAction,
@@ -31,6 +32,18 @@ export function useAcademicYearFilterOptions() {
   return useQuery({
     queryKey: ["academic-years", "filter-options"],
     queryFn: getAcademicYearFilterOptionsAction,
+  });
+}
+
+export function useAcademicYearConfigurationSummary(
+  academicYearId: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["academic-year-configuration", academicYearId],
+    queryFn: () =>
+      getAcademicYearConfigurationSummaryAction({ academicYearId }),
+    enabled: enabled && Boolean(academicYearId),
   });
 }
 

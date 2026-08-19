@@ -10,11 +10,11 @@ import {
 } from "@/actions/academic-term.action";
 import { invalidateAcademicTermQueries } from "@/hooks/query-invalidation";
 
-export function useAcademicTerms(academicYearId: string) {
+export function useAcademicTerms(academicYearId: string, enabled = true) {
   return useQuery({
     queryKey: ["academic-terms", academicYearId],
     queryFn: () => getAcademicTermsAction(academicYearId),
-    enabled: Boolean(academicYearId),
+    enabled: enabled && Boolean(academicYearId),
   });
 }
 

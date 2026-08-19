@@ -6,6 +6,7 @@ import {
   Permissions,
   requirePermission,
 } from "@/lib/authorization";
+import { hasPermission } from "@/lib/permissions";
 import { hasThreeChronologicallyOrderedTerms } from "@/lib/academic-term";
 import prisma from "@/lib/prisma";
 import { createAuditLogs } from "@/repositories/audit.repository";
@@ -13,6 +14,7 @@ import {
   countAcademicYears,
   createAcademicYear,
   findAcademicYearById,
+  findAcademicYearConfigurationById,
   findAcademicYears,
   findAcademicYearStatusOptionValues,
   findOverlappingAcademicYear,
@@ -21,6 +23,13 @@ import {
   updateDraftAcademicYear,
 } from "@/repositories/academic-year.repository";
 import { findAcademicTermsByAcademicYear } from "@/repositories/academic-term.repository";
+import {
+  countOfferings,
+  findAcademicYearOfferingGradeCounts,
+} from "@/repositories/subject-offering.repository";
+import { findShsElectiveEnrollmentPolicies } from "@/repositories/shs-elective-enrollment-policy.repository";
+import { findShsTermResultInterpretationPolicy } from "@/repositories/shs-term-result-interpretation-policy.repository";
+import { buildAcademicYearConfigurationSummary } from "@/services/academic-year-configuration-summary.service";
 import type {
   AcademicYearFilterOptions,
   AcademicYearPage,
@@ -169,6 +178,80 @@ export async function getAcademicYearFilterOptions(): Promise<AcademicYearFilter
   const statuses = await findAcademicYearStatusOptionValues();
 
   return { statuses: statuses.map((value) => value.status) };
+}
+
+export async function getAcademicYearConfigurationSummaryService(
+  academicYearId: string,
+) {
+  const session = await requirePermission(Permissions.ACADEMIC_YEARS);
+  await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL);
+
+  const includeResultPolicy = hasPermission(
+    session.user.role,
+    Permissions.GRADES,
+  );
+
+  return prisma.$transaction(
+    async (transaction) => {
+      const academicYear = await findAcademicYearConfigurationById(
+        academicYearId,
+        transaction,
+      );
+
+      if (!academicYear) {
+        throw new AcademicYearServiceError("Academic year not found.", "NOT_FOUND");
+      }
+
+      const activeOfferingCount = await countOfferings(
+        { academicYearId },
+        transaction,
+      );
+      const gradeCounts = await findAcademicYearOfferingGradeCounts(
+        academicYearId,
+        transaction,
+      );
+      const provisionalShsOfferingCount = await countOfferings(
+        { academicYearId, curriculumStatus: "PROVISIONAL_DEPED" },
+        transaction,
+      );
+      const schoolApprovedShsOfferingCount = await countOfferings(
+        { academicYearId, curriculumStatus: "SCHOOL_APPROVED" },
+        transaction,
+      );
+      const electivePolicies = await findShsElectiveEnrollmentPolicies(
+        academicYearId,
+        transaction,
+      );
+      const resultPolicy = includeResultPolicy
+        ? await findShsTermResultInterpretationPolicy(
+            academicYearId,
+            transaction,
+          )
+        : undefined;
+
+      return buildAcademicYearConfigurationSummary({
+        academicYear,
+        curriculum: {
+          activeOfferingCount,
+          gradeCounts: gradeCounts
+            .map(({ gradeLevel, _count }) => ({
+              gradeLevel,
+              count: _count._all,
+            }))
+            .sort(
+              (left, right) =>
+                Number(left.gradeLevel) - Number(right.gradeLevel),
+            ),
+          provisionalShsOfferingCount,
+          schoolApprovedShsOfferingCount,
+        },
+        electivePolicies,
+        includeResultPolicy,
+        resultPolicy,
+      });
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+  );
 }
 
 export async function createAcademicYearService(

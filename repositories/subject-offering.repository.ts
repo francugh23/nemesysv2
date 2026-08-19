@@ -43,7 +43,15 @@ function getOfferingListWhere(q: OfferingListQuery): Prisma.SubjectOfferingWhere
 export async function findOfferings(q: OfferingListQuery, p: { skip: number; take: number }) {
   return prisma.subjectOffering.findMany({ where: getOfferingListWhere(q), select, skip: p.skip, take: p.take, orderBy: [{ academicYear: { startDate: "desc" } }, { gradeLevel: "asc" }, { subjectCode: "asc" }] });
 }
-export async function countOfferings(q: OfferingListQuery) { return prisma.subjectOffering.count({ where: getOfferingListWhere(q) }); }
+export async function countOfferings(q: OfferingListQuery, tx?: Prisma.TransactionClient) { return (tx ?? prisma).subjectOffering.count({ where: getOfferingListWhere(q) }); }
+export async function findAcademicYearOfferingGradeCounts(academicYearId: string, tx?: Prisma.TransactionClient) {
+  return (tx ?? prisma).subjectOffering.groupBy({
+    by: ["gradeLevel"],
+    where: { academicYearId, deletedAt: null },
+    _count: { _all: true },
+    orderBy: { gradeLevel: "asc" },
+  });
+}
 export async function findOffering(id: string, tx?: Prisma.TransactionClient) { return (tx ?? prisma).subjectOffering.findFirst({ where: { id, deletedAt: null }, select }); }
 export async function lockOfferingForMutation(id: string, tx: Prisma.TransactionClient) {
   const rows = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`

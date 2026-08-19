@@ -3,6 +3,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { ShsCurriculumReferenceTableQueryInput } from "@/schemas";
+import { invalidateAcademicYearConfigurationQueries } from "@/hooks/query-invalidation";
 
 import {
   archiveShsCurriculumClusterAction,
@@ -34,6 +35,7 @@ function useInvalidate() {
     queryClient.invalidateQueries({ queryKey: ["shs-curriculum-clusters"] }),
     queryClient.invalidateQueries({ queryKey: ["shs-curriculum-references"] }),
     queryClient.invalidateQueries({ queryKey: ["shs-current-term-progression"] }),
+    invalidateAcademicYearConfigurationQueries(queryClient),
   ]);
 }
 

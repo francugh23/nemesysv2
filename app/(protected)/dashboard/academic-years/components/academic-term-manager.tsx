@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -23,7 +23,6 @@ import { Input } from "@/components/ui/input";
 import {
   useCreateAcademicTerm,
   useDeleteAcademicTerm,
-  useAcademicTerms,
   useUpdateAcademicTerm,
 } from "@/hooks/academic-term.hook";
 import { formatDateOnly } from "@/lib/format";
@@ -37,11 +36,18 @@ import { AcademicTermBadge } from "@/components/common/badges";
 export function AcademicTermManager({
   academicYearId,
   isDraft,
+  terms,
+  isLoading,
+  isError,
+  onRetry,
 }: {
   academicYearId: string;
   isDraft: boolean;
+  terms?: AcademicTermListItem[];
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
 }) {
-  const { data: terms, isLoading } = useAcademicTerms(academicYearId);
   const [editingTerm, setEditingTerm] = useState<AcademicTermListItem | null>(null);
   const [termToRemove, setTermToRemove] = useState<AcademicTermListItem | null>(null);
   const [open, setOpen] = useState(false);
@@ -78,6 +84,15 @@ export function AcademicTermManager({
       <div className="space-y-2 rounded-lg border p-3">
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading terms...</p>
+        ) : isError ? (
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-destructive">
+              Unable to load Academic Terms.
+            </p>
+            <Button type="button" size="sm" variant="outline" onClick={onRetry}>
+              <RefreshCw /> Try again
+            </Button>
+          </div>
         ) : terms?.length ? (
           terms.map((term) => (
             <div

@@ -6,6 +6,8 @@ import { AcademicYearLifecycleDialog } from "./academic-year-lifecycle-dialog";
 import { AcademicYearViewDialog } from "./academic-year-view-dialog";
 import { EditAcademicYearDialog } from "./edit-academic-year-dialog";
 import { CurriculumAdoptionDialog } from "./curriculum-adoption-dialog";
+import { ShsElectiveEnrollmentPolicyDialog } from "./shs-elective-enrollment-policy-dialog";
+import { ShsTermResultInterpretationPolicyDialog } from "./shs-term-result-interpretation-policy-dialog";
 
 export type AcademicYearDialogType =
   | "view"
@@ -14,6 +16,8 @@ export type AcademicYearDialogType =
   | "lock"
   | "archive"
   | "adopt-curriculum"
+  | "elective-policies"
+  | "result-interpretation-policy"
   | null;
 
 export function AcademicYearDialogManager({
@@ -22,16 +26,22 @@ export function AcademicYearDialogManager({
   instanceId,
   onClose,
   canAdoptCurriculum,
+  canManageElectivePolicy,
   canManageInterpretationPolicy,
   onAdoptCurriculum,
+  onManageElectivePolicy,
+  onManageInterpretationPolicy,
 }: {
   academicYear: AcademicYearListItem | null;
   dialog: AcademicYearDialogType;
   instanceId: number;
   onClose: (instanceId: number) => void;
   canAdoptCurriculum: boolean;
+  canManageElectivePolicy: boolean;
   canManageInterpretationPolicy: boolean;
   onAdoptCurriculum: (academicYear: AcademicYearListItem) => void;
+  onManageElectivePolicy: (academicYear: AcademicYearListItem) => void;
+  onManageInterpretationPolicy: (academicYear: AcademicYearListItem) => void;
 }) {
   if (!academicYear) return null;
 
@@ -44,8 +54,11 @@ export function AcademicYearDialogManager({
         open={dialog === "view"}
         onOpenChange={handleOpenChange}
         canAdoptCurriculum={canAdoptCurriculum}
+        canManageElectivePolicy={canManageElectivePolicy}
         canManageInterpretationPolicy={canManageInterpretationPolicy}
-        onAdoptCurriculum={() => onAdoptCurriculum(academicYear)}
+        onAdoptCurriculum={onAdoptCurriculum}
+        onManageElectivePolicy={onManageElectivePolicy}
+        onManageInterpretationPolicy={onManageInterpretationPolicy}
       />
       {academicYear.status === "DRAFT" && (
         <EditAcademicYearDialog
@@ -58,6 +71,20 @@ export function AcademicYearDialogManager({
         <CurriculumAdoptionDialog
           academicYear={academicYear}
           open={dialog === "adopt-curriculum"}
+          onOpenChange={handleOpenChange}
+        />
+      )}
+      {canManageElectivePolicy && (
+        <ShsElectiveEnrollmentPolicyDialog
+          academicYear={academicYear}
+          open={dialog === "elective-policies"}
+          onOpenChange={handleOpenChange}
+        />
+      )}
+      {canManageInterpretationPolicy && (
+        <ShsTermResultInterpretationPolicyDialog
+          academicYear={academicYear}
+          open={dialog === "result-interpretation-policy"}
           onOpenChange={handleOpenChange}
         />
       )}

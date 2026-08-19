@@ -11,6 +11,7 @@ import type {
   CreateShsElectiveEnrollmentPolicyInput,
   UpdateShsElectiveEnrollmentPolicyInput,
 } from "@/schemas";
+import { invalidateAcademicYearConfigurationQueries } from "@/hooks/query-invalidation";
 
 export type ShsElectiveEnrollmentPolicy = Awaited<
   ReturnType<typeof getShsElectiveEnrollmentPoliciesAction>
@@ -39,6 +40,7 @@ function usePolicyInvalidation() {
       queryClient.invalidateQueries({
         queryKey: ["shs-current-term-progression"],
       }),
+      invalidateAcademicYearConfigurationQueries(queryClient, academicYearId),
     ]);
 }
 

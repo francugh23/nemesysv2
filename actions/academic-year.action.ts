@@ -5,6 +5,7 @@ import * as z from "zod";
 import { Permissions, requirePermission } from "@/lib/authorization";
 import {
   AcademicYearTableQuerySchema,
+  AcademicYearConfigurationSummaryReadSchema,
   CreateAcademicYearSchema,
   UpdateAcademicYearSchema,
   type AcademicYearTableQueryInput,
@@ -17,6 +18,7 @@ import {
   archiveAcademicYearService,
   createAcademicYearService,
   getAcademicYearFilterOptions,
+  getAcademicYearConfigurationSummaryService,
   getAcademicYears,
   lockAcademicYearService,
   updateAcademicYearService,
@@ -41,6 +43,21 @@ export async function getAcademicYearFilterOptionsAction() {
   await requirePermission(Permissions.ACADEMIC_YEARS);
 
   return getAcademicYearFilterOptions();
+}
+
+export async function getAcademicYearConfigurationSummaryAction(values: unknown) {
+  await requirePermission(Permissions.ACADEMIC_YEARS);
+  await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL);
+  const parsed = AcademicYearConfigurationSummaryReadSchema.safeParse(values);
+
+  if (!parsed.success) {
+    throw new AcademicYearServiceError(
+      "Invalid academic year configuration query.",
+      "INVALID_QUERY",
+    );
+  }
+
+  return getAcademicYearConfigurationSummaryService(parsed.data.academicYearId);
 }
 
 async function authorizeAction(): Promise<ActionResponse | undefined> {
