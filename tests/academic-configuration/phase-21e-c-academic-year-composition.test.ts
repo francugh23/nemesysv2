@@ -51,6 +51,7 @@ function buildInput(
         { gradeLevel: "11", count: 1 },
       ],
       provisionalShsOfferingCount: 1,
+      pendingShsOfferingCount: 1,
       schoolApprovedShsOfferingCount: 0,
     },
     electivePolicies: [],
@@ -121,6 +122,28 @@ test("Curriculum aggregates exclude archived Offerings and represent active grad
   assert.ok(gradeCounts.every(({ gradeLevel }) => Number(gradeLevel) >= 7));
   assert.ok(provisionalCount >= 0);
   assert.ok(approvedCount >= 0);
+});
+
+test("missing SHS context blocks finalization even when no Offering is provisional", () => {
+  const summary = buildAcademicYearConfigurationSummary(
+    buildInput({
+      academicYear: {
+        ...buildInput().academicYear,
+        status: "ACTIVE",
+      },
+      curriculum: {
+        ...buildInput().curriculum,
+        provisionalShsOfferingCount: 0,
+        pendingShsOfferingCount: 1,
+      },
+    }),
+  );
+
+  assert.equal(summary.curriculum.pendingShsOfferingCount, 1);
+  assert.equal(
+    summary.notices.find(({ code }) => code === "SHS_CURRICULUM_NOT_FINALIZABLE")?.severity,
+    "BLOCKER",
+  );
 });
 
 test("Term activation blocker exactly follows the existing three chronological Terms rule", () => {
@@ -224,6 +247,7 @@ test("historical configuration gaps are informational rather than actionable", (
         activeOfferingCount: 0,
         gradeCounts: [],
         provisionalShsOfferingCount: 0,
+        pendingShsOfferingCount: 0,
         schoolApprovedShsOfferingCount: 0,
       },
     }),

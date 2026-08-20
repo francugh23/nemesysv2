@@ -56,6 +56,7 @@ function AcademicYearsPageContent() {
     session?.user.role,
     Permissions.SUBJECTS,
   );
+  const canFinalizeCurriculum = canAdoptCurriculum;
   const canManageElectivePolicy = hasPermission(
     session?.user.role,
     Permissions.SHS_CURRICULUM_APPROVAL,
@@ -250,6 +251,7 @@ function AcademicYearsPageContent() {
             instanceId={instanceId}
             onClose={closeDialog}
             canAdoptCurriculum={canAdoptCurriculum}
+            canFinalizeCurriculum={canFinalizeCurriculum}
             canManageElectivePolicy={canManageElectivePolicy}
             canManageInterpretationPolicy={canManageInterpretationPolicy}
             onAdoptCurriculum={(academicYear) =>

@@ -28,12 +28,15 @@ import { useAcademicYearConfigurationSummary } from "@/hooks/academic-year.hook"
 import { CURRICULUM_ROUTE } from "@/lib/academic-configuration";
 import { formatDateOnly, formatDateTime } from "@/lib/format";
 import type { AcademicYearListItem } from "@/schemas";
+import { CurriculumFinalizationDialog } from "./curriculum-finalization-dialog";
+import { useState } from "react";
 
 export function AcademicYearViewDialog({
   academicYear,
   open,
   onOpenChange,
   canAdoptCurriculum = false,
+  canFinalizeCurriculum = false,
   canManageElectivePolicy = false,
   canManageInterpretationPolicy = false,
   onAdoptCurriculum,
@@ -44,12 +47,14 @@ export function AcademicYearViewDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   canAdoptCurriculum?: boolean;
+  canFinalizeCurriculum?: boolean;
   canManageElectivePolicy?: boolean;
   canManageInterpretationPolicy?: boolean;
   onAdoptCurriculum?: (academicYear: AcademicYearListItem) => void;
   onManageElectivePolicy?: (academicYear: AcademicYearListItem) => void;
   onManageInterpretationPolicy?: (academicYear: AcademicYearListItem) => void;
 }) {
+  const [finalizationOpen, setFinalizationOpen] = useState(false);
   const summaryQuery = useAcademicYearConfigurationSummary(academicYear.id, open);
   const summary = summaryQuery.data;
   const overview = summary?.academicYear ?? academicYear;
@@ -156,6 +161,22 @@ export function AcademicYearViewDialog({
                     />
                   </div>
 
+                  <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border bg-muted/20 px-3 py-2 text-sm">
+                    <span className="font-medium">Curriculum state:</span>
+                    <Badge variant={summary.curriculum.state === "FINALIZED" ? "default" : "outline"}>
+                      {summary.curriculum.state === "HISTORICAL"
+                        ? "Historical"
+                        : summary.curriculum.state === "FINALIZED"
+                          ? "Finalized"
+                          : "Configurable"}
+                    </Badge>
+                    {summary.curriculum.finalization && (
+                      <span className="text-muted-foreground">
+                        Finalized by {summary.curriculum.finalization.finalizedBy} on {formatDateTime(summary.curriculum.finalization.finalizedAt)}
+                      </span>
+                    )}
+                  </div>
+
                   <div className="mt-4 space-y-2">
                     <p className="text-sm font-medium">Represented grades</p>
                     <div className="flex flex-wrap gap-2">
@@ -193,7 +214,19 @@ export function AcademicYearViewDialog({
                         <Copy /> Adopt Curriculum
                       </Button>
                     )}
+                    {overview.status === "ACTIVE" && canFinalizeCurriculum && summary.curriculum.state === "CONFIGURABLE" && (
+                      <Button type="button" onClick={() => setFinalizationOpen(true)}>
+                        <LockKeyhole /> Finalize Curriculum
+                      </Button>
+                    )}
                   </div>
+                  <CurriculumFinalizationDialog
+                    academicYearId={overview.id}
+                    academicYearLabel={overview.label}
+                    pendingShsOfferingCount={summary.curriculum.pendingShsOfferingCount}
+                    open={finalizationOpen}
+                    onOpenChange={setFinalizationOpen}
+                  />
                 </div>
               ) : (
                 <SummaryLoading />

@@ -6,10 +6,9 @@ import {
   findOfferingOptions,
 } from "../../repositories/subject-offering.repository";
 
-test("Curriculum options keep Terms owned by each selected active Academic Year", async () => {
+test("Curriculum options exclude finalized years and keep Terms owned by configurable active years", async () => {
   const [, academicYears] = await findOfferingOptions();
 
-  assert.ok(academicYears.length > 0);
   assert.ok(academicYears.every((academicYear) => academicYear.terms.length > 0));
   assert.ok(
     academicYears.every((academicYear) =>

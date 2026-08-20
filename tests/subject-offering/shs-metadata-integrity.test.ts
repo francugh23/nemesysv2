@@ -5,10 +5,12 @@ import "dotenv/config";
 
 import { Prisma } from "../../app/generated/prisma/client";
 import prisma from "../../lib/prisma";
+import { makeLegacyActiveCurriculumConfigurable } from "../helpers/phase-21e-e1-legacy-fixture";
 
 class RollbackFixture extends Error {}
 
 async function createFixture(transaction: Prisma.TransactionClient) {
+  await makeLegacyActiveCurriculumConfigurable("academic-year-2026-2027", transaction);
   const [user, academicYear, term, jhsOffering] = await Promise.all([
     transaction.user.findFirstOrThrow({ where: { deletedAt: null }, select: { id: true } }),
     transaction.academicYear.findUniqueOrThrow({ where: { id: "academic-year-2026-2027" }, select: { id: true } }),
@@ -83,7 +85,7 @@ test("provisional SHS Offerings cannot materialize Student Subject Enrollments",
   }), /Provisional DepEd Subject Offerings cannot materialize/i);
 });
 
-test("approved SHS snapshots remain immutable after their Offering context changes", async () => {
+test("approved SHS Offering context is frozen once Student Participation exists", async () => {
   await assert.rejects(prisma.$transaction(async (transaction) => {
       const fixture = await createFixture(transaction);
       await transaction.subjectOfferingShsContext.create({ data: { subjectOfferingId: fixture.offering.id, classification: "ACADEMIC_ELECTIVE", curriculumStatus: "SCHOOL_APPROVED", clusterId: fixture.academicCluster.id, sourceReference: "DO 017", approvalReference: "School approval 1", approvedById: fixture.user.id, approvedAt: new Date(), createdById: fixture.user.id } });
@@ -94,5 +96,5 @@ test("approved SHS snapshots remain immutable after their Offering context chang
       await transaction.subjectOfferingShsContext.update({ where: { subjectOfferingId: fixture.offering.id }, data: { approvalReference: "School approval 2" } });
       await transaction.studentSubjectEnrollment.update({ where: { id: studentSubjectEnrollment.id }, data: { status: "REPLACED", replacedAt: new Date() } });
       await transaction.studentSubjectEnrollment.update({ where: { id: studentSubjectEnrollment.id }, data: { shsClusterName: "Changed" } });
-    }), /SHS snapshots are immutable/i);
+    }), /SHS Curriculum context used by student participation cannot be changed/i);
 });

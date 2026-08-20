@@ -7,7 +7,7 @@ export type AcademicYearReadinessNotice = {
   code:
     | "TERMS_NOT_ACTIVATABLE"
     | "NO_CURRICULUM"
-    | "PROVISIONAL_SHS_CURRICULUM"
+    | "SHS_CURRICULUM_NOT_FINALIZABLE"
     | "MISSING_ELECTIVE_POLICIES"
     | "CURRICULUM_COUNT"
     | "REPRESENTED_GRADES"
@@ -40,13 +40,14 @@ export function buildAcademicYearConfigurationSummary({
     activeOfferingCount: number;
     gradeCounts: Array<{ gradeLevel: string; count: number }>;
     provisionalShsOfferingCount: number;
+    pendingShsOfferingCount: number;
     schoolApprovedShsOfferingCount: number;
   };
   electivePolicies: ElectivePolicyRecord[];
   includeResultPolicy: boolean;
   resultPolicy?: InterpretationPolicyRecord | null;
 }) {
-  const { terms, ...overview } = academicYear;
+  const { terms, curriculumFinalization, ...overview } = academicYear;
   const termsReadyForActivation = hasThreeChronologicallyOrderedTerms(terms);
   const isDraft = overview.status === "DRAFT";
   const historical = overview.status === "LOCKED" || overview.status === "ARCHIVED";
@@ -89,11 +90,11 @@ export function buildAcademicYearConfigurationSummary({
     });
   }
 
-  if (curriculum.provisionalShsOfferingCount > 0) {
+  if (curriculum.pendingShsOfferingCount > 0) {
     notices.push({
-      code: "PROVISIONAL_SHS_CURRICULUM",
-      severity: historical ? "INFORMATION" : "WARNING",
-      message: `${curriculum.provisionalShsOfferingCount} provisional SHS Offering${curriculum.provisionalShsOfferingCount === 1 ? " remains" : "s remain"} without school approval.`,
+      code: "SHS_CURRICULUM_NOT_FINALIZABLE",
+      severity: historical ? "INFORMATION" : isDraft ? "WARNING" : "BLOCKER",
+      message: `${curriculum.pendingShsOfferingCount} active SHS Offering${curriculum.pendingShsOfferingCount === 1 ? " is" : "s are"} missing SHS context or Pending School Approval and must be completed, approved, or archived before Curriculum finalization.`,
     });
   }
 
@@ -144,7 +145,12 @@ export function buildAcademicYearConfigurationSummary({
   }
 
   return {
-    academicYear: overview,
+    academicYear: {
+      ...overview,
+      curriculumFinalization: curriculumFinalization
+        ? { finalizedAt: curriculumFinalization.finalizedAt }
+        : null,
+    },
     terms,
     activation: {
       termsReady: termsReadyForActivation,
@@ -155,8 +161,24 @@ export function buildAcademicYearConfigurationSummary({
       representedGrades: curriculum.gradeCounts.map(({ gradeLevel }) => gradeLevel),
       gradeCounts: curriculum.gradeCounts,
       provisionalShsOfferingCount: curriculum.provisionalShsOfferingCount,
+      pendingShsOfferingCount: curriculum.pendingShsOfferingCount,
       schoolApprovedShsOfferingCount:
         curriculum.schoolApprovedShsOfferingCount,
+      state: historical
+        ? "HISTORICAL" as const
+        : curriculumFinalization
+          ? "FINALIZED" as const
+          : "CONFIGURABLE" as const,
+      finalization: curriculumFinalization
+        ? {
+            finalizedAt: curriculumFinalization.finalizedAt,
+            finalizedBy: [
+              curriculumFinalization.finalizedBy.firstName,
+              curriculumFinalization.finalizedBy.middleName,
+              curriculumFinalization.finalizedBy.lastName,
+            ].filter(Boolean).join(" "),
+          }
+        : null,
     },
     electivePolicies: {
       configuredScopeCount:

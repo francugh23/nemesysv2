@@ -6,9 +6,10 @@ import type { CreateSubjectOfferingInput } from "@/schemas";
 const clusterSelect = { id: true, code: true, name: true, track: true, sourceReference: true, isSchoolFacing: true } satisfies Prisma.ShsCurriculumClusterSelect;
 const select = {
   id: true, subjectId: true, academicYearId: true, gradeLevel: true, subjectCode: true, subjectDescription: true, deletedAt: true,
-  academicYear: { select: { label: true, status: true } },
+  academicYear: { select: { label: true, status: true, curriculumFinalization: { select: { finalizedAt: true } } } },
   terms: { include: { academicTerm: true } },
   shsContext: { select: { classification: true, curriculumStatus: true, sourceReference: true, approvalReference: true, approvedById: true, approvedAt: true, cluster: { select: clusterSelect } } },
+  _count: { select: { studentSubjectEnrollments: true } },
 } satisfies Prisma.SubjectOfferingSelect;
 
 type OfferingContext = CreateSubjectOfferingInput["shsContext"];
@@ -53,6 +54,9 @@ export async function findAcademicYearOfferingGradeCounts(academicYearId: string
   });
 }
 export async function findOffering(id: string, tx?: Prisma.TransactionClient) { return (tx ?? prisma).subjectOffering.findFirst({ where: { id, deletedAt: null }, select }); }
+export async function hasOfferingStudentDependencies(id: string, tx: Prisma.TransactionClient) {
+  return (await tx.studentSubjectEnrollment.count({ where: { subjectOfferingId: id } })) > 0;
+}
 export async function lockOfferingForMutation(id: string, tx: Prisma.TransactionClient) {
   const rows = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
     SELECT "id" FROM "SubjectOffering" WHERE "id" = ${id} FOR UPDATE
@@ -75,7 +79,7 @@ export async function findOfferingOptions() {
   return Promise.all([
     prisma.subject.findMany({ where: { deletedAt: null }, select: { id: true, code: true, description: true, gradeLevel: true }, orderBy: { code: "asc" } }),
     prisma.academicYear.findMany({
-      where: { status: "ACTIVE" },
+       where: { status: "ACTIVE", curriculumFinalization: null },
       select: { id: true, label: true, terms: { select: { id: true, name: true, position: true }, orderBy: { position: "asc" } } },
     }),
   ]);
@@ -96,3 +100,15 @@ export async function findShsCurriculumClusterDuplicate(code: string, excludeId:
 export async function createShsCurriculumCluster(data: Prisma.ShsCurriculumClusterUncheckedCreateInput, tx: Prisma.TransactionClient) { return tx.shsCurriculumCluster.create({ data, select: clusterSelect }); }
 export async function updateShsCurriculumCluster(id: string, data: Prisma.ShsCurriculumClusterUncheckedUpdateInput, tx: Prisma.TransactionClient) { return tx.shsCurriculumCluster.update({ where: { id }, data, select: clusterSelect }); }
 export async function archiveShsCurriculumCluster(id: string, tx: Prisma.TransactionClient) { return tx.shsCurriculumCluster.update({ where: { id }, data: { deletedAt: new Date() }, select: clusterSelect }); }
+export function hasActiveOfferingForCluster(id: string, tx: Prisma.TransactionClient) {
+  return tx.subjectOfferingShsContext.findFirst({
+    where: { clusterId: id, subjectOffering: { deletedAt: null, academicYear: { status: "ACTIVE" } } },
+    select: { subjectOfferingId: true },
+  });
+}
+export function hasFinalizedOfferingForCluster(id: string, tx: Prisma.TransactionClient) {
+  return tx.subjectOfferingShsContext.findFirst({
+    where: { clusterId: id, subjectOffering: { deletedAt: null, academicYear: { curriculumFinalization: { isNot: null } } } },
+    select: { subjectOfferingId: true },
+  });
+}

@@ -58,12 +58,32 @@ export async function lockShsElectiveEnrollmentPolicyScope(
   academicYearId: string,
   transaction: Prisma.TransactionClient,
 ) {
-  const rows = await transaction.$queryRaw<Array<{ id: string; status: string }>>(Prisma.sql`
-    SELECT "id", "status" FROM "AcademicYear"
-    WHERE "id" = ${academicYearId}
+  const rows = await transaction.$queryRaw<Array<{ id: string; status: string; curriculumFinalized: boolean }>>(Prisma.sql`
+    SELECT academic_year."id", academic_year."status", EXISTS (
+      SELECT 1 FROM "CurriculumFinalization" finalization
+      WHERE finalization."academicYearId" = academic_year."id"
+    ) AS "curriculumFinalized"
+    FROM "AcademicYear" academic_year
+    WHERE academic_year."id" = ${academicYearId}
     FOR UPDATE
   `);
   return rows[0] ?? null;
+}
+
+export async function hasShsParticipationForPolicyScope(
+  academicYearId: string,
+  academicTermId: string,
+  gradeLevel: string,
+  transaction: Prisma.TransactionClient,
+) {
+  return (await transaction.studentSubjectEnrollment.count({
+    where: {
+      gradeLevel,
+      shsClassification: { not: null },
+      enrollment: { academicYearId },
+      terms: { some: { academicTermId } },
+    },
+  })) > 0;
 }
 
 export async function lockShsElectiveEnrollmentPolicy(

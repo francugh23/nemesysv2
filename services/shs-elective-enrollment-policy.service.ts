@@ -2,11 +2,13 @@ import { Prisma } from "@/app/generated/prisma/client";
 import { Permissions, requirePermission } from "@/lib/authorization";
 import prisma from "@/lib/prisma";
 import { createAuditLogs } from "@/repositories/audit.repository";
+import { lockAcademicYearsForCurriculumMutation } from "@/repositories/curriculum-finalization.repository";
 import {
   createShsElectiveEnrollmentPolicy,
   findAcademicTermForShsElectiveEnrollmentPolicy,
   findShsElectiveEnrollmentPolicies,
   findShsElectiveEnrollmentPolicy,
+  hasShsParticipationForPolicyScope,
   lockShsElectiveEnrollmentPolicy,
   lockShsElectiveEnrollmentPolicyScope,
   updateShsElectiveEnrollmentPolicy,
@@ -22,13 +24,18 @@ export class ShsElectiveEnrollmentPolicyServiceError extends Error {}
 async function validatePolicyTerm(
   values: CreateShsElectiveEnrollmentPolicyInput,
   transaction: Prisma.TransactionClient,
+  lockedAcademicYear?: { status: string; curriculumFinalized: boolean },
 ) {
-  const academicYear = await lockShsElectiveEnrollmentPolicyScope(values.academicYearId, transaction);
+  const academicYear = lockedAcademicYear
+    ?? await lockShsElectiveEnrollmentPolicyScope(values.academicYearId, transaction);
   if (!academicYear) {
     throw new ShsElectiveEnrollmentPolicyServiceError("Academic year not found.");
   }
   if (academicYear.status === "LOCKED" || academicYear.status === "ARCHIVED") {
     throw new ShsElectiveEnrollmentPolicyServiceError("Elective policies are read-only for locked or archived academic years.");
+  }
+  if (academicYear.curriculumFinalized) {
+    throw new ShsElectiveEnrollmentPolicyServiceError("Curriculum is finalized and elective policies are read-only.");
   }
   const term = await findAcademicTermForShsElectiveEnrollmentPolicy(
     values.academicTermId,
@@ -48,6 +55,9 @@ export async function createShsElectiveEnrollmentPolicyInTransaction(
   transaction: Prisma.TransactionClient,
 ) {
   const term = await validatePolicyTerm(values, transaction);
+  if (await hasShsParticipationForPolicyScope(values.academicYearId, values.academicTermId, values.gradeLevel, transaction)) {
+    throw new ShsElectiveEnrollmentPolicyServiceError("This elective-policy scope is locked by SHS Student Participation.");
+  }
   const policy = await createShsElectiveEnrollmentPolicy(
     { ...values, createdById: actorId },
     transaction,
@@ -79,13 +89,37 @@ export async function updateShsElectiveEnrollmentPolicyInTransaction(
   actorId: string,
   transaction: Prisma.TransactionClient,
 ) {
-  const term = await validatePolicyTerm(values, transaction);
+  const reference = await findShsElectiveEnrollmentPolicy(id, transaction);
+  if (!reference) {
+    throw new ShsElectiveEnrollmentPolicyServiceError("Elective policy not found.");
+  }
+  const lockedYears = await lockAcademicYearsForCurriculumMutation(
+    [reference.academicYearId, values.academicYearId],
+    transaction,
+  );
+  if (lockedYears.length !== new Set([reference.academicYearId, values.academicYearId]).size) {
+    throw new ShsElectiveEnrollmentPolicyServiceError("Academic year not found.");
+  }
+  if (lockedYears.some(({ status }) => status === "LOCKED" || status === "ARCHIVED")) {
+    throw new ShsElectiveEnrollmentPolicyServiceError("Elective policies are read-only for locked or archived academic years.");
+  }
+  if (lockedYears.some(({ curriculumFinalized }) => curriculumFinalized)) {
+    throw new ShsElectiveEnrollmentPolicyServiceError("Curriculum is finalized and elective policies are read-only.");
+  }
   if (!(await lockShsElectiveEnrollmentPolicy(id, transaction))) {
     throw new ShsElectiveEnrollmentPolicyServiceError("Elective policy not found.");
   }
   const previous = await findShsElectiveEnrollmentPolicy(id, transaction);
   if (!previous) {
     throw new ShsElectiveEnrollmentPolicyServiceError("Elective policy not found.");
+  }
+  const targetYear = lockedYears.find(({ id: academicYearId }) => academicYearId === values.academicYearId)!;
+  const term = await validatePolicyTerm(values, transaction, targetYear);
+  if (
+    await hasShsParticipationForPolicyScope(previous.academicYearId, previous.academicTermId, previous.gradeLevel, transaction)
+    || await hasShsParticipationForPolicyScope(values.academicYearId, values.academicTermId, values.gradeLevel, transaction)
+  ) {
+    throw new ShsElectiveEnrollmentPolicyServiceError("This elective-policy scope is locked by SHS Student Participation.");
   }
   const policy = await updateShsElectiveEnrollmentPolicy(
     id,

@@ -6,6 +6,10 @@ import "dotenv/config";
 import { Prisma } from "../../app/generated/prisma/client";
 import prisma from "../../lib/prisma";
 import {
+  createLegacyPolicyFixture,
+  makeLegacyActiveCurriculumConfigurable,
+} from "../helpers/phase-21e-e1-legacy-fixture";
+import {
   DropStudentSubjectEnrollmentSchema,
 } from "../../schemas/student-subject-enrollment.schema";
 import {
@@ -48,6 +52,7 @@ async function createDropFixture(transaction: Prisma.TransactionClient) {
     }),
   ]);
   assert.equal(academicYear.terms.length, 3);
+  await makeLegacyActiveCurriculumConfigurable(academicYear.id, transaction, true);
   const offerings = await transaction.subjectOffering.findMany({
     where: {
       academicYearId: academicYear.id,
@@ -113,8 +118,8 @@ async function createDropFixture(transaction: Prisma.TransactionClient) {
       createdById: actor.id,
     },
   });
-  const policy = await transaction.shsElectiveEnrollmentPolicy.create({
-    data: {
+  const policy = await createLegacyPolicyFixture(
+    {
       academicYearId: academicYear.id,
       academicTermId: academicYear.terms[0]!.id,
       gradeLevel: "11",
@@ -122,7 +127,8 @@ async function createDropFixture(transaction: Prisma.TransactionClient) {
       maximumElectives: 3,
       createdById: actor.id,
     },
-  });
+    transaction,
+  );
   await progressShsCurrentTermInTransaction(
     { enrollmentId: enrollment.id, subjectOfferingIds: [elective.id] },
     actor.id,

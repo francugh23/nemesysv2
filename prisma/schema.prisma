@@ -150,6 +150,7 @@ model User {
   createdShsElectiveEnrollmentPolicies         ShsElectiveEnrollmentPolicy[]
   createdShsTermResults                        ShsTermResult[]                     @relation("ShsTermResultCreator")
   finalizedShsTermResults                      ShsTermResult[]                     @relation("ShsTermResultFinalizer")
+  finalizedCurricula                           CurriculumFinalization[]            @relation("CurriculumFinalizer")
   createdShsTermResultInterpretationPolicies   ShsTermResultInterpretationPolicy[] @relation("ShsTermResultInterpretationPolicyCreator")
   publishedShsTermResultInterpretationPolicies ShsTermResultInterpretationPolicy[] @relation("ShsTermResultInterpretationPolicyPublisher")
   auditLogs                                    AuditLog[]
@@ -375,10 +376,25 @@ model AcademicYear {
   subjectOfferings                  SubjectOffering[]
   shsElectiveEnrollmentPolicies     ShsElectiveEnrollmentPolicy[]
   shsTermResultInterpretationPolicy ShsTermResultInterpretationPolicy?
+  curriculumFinalization            CurriculumFinalization?
 
   @@index([status])
   @@index([startDate])
   @@index([createdById])
+}
+
+model CurriculumFinalization {
+  id String @id @default(cuid())
+
+  academicYearId String       @unique
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+
+  finalizedById String
+  finalizedBy   User   @relation("CurriculumFinalizer", fields: [finalizedById], references: [id], onDelete: Restrict)
+  finalizedAt   DateTime
+  createdAt     DateTime @default(now())
+
+  @@index([finalizedById])
 }
 
 model SubjectOffering {

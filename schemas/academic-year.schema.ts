@@ -81,6 +81,7 @@ export const AcademicYearListItemSchema = z.object({
   status: AcademicYearStatusSchema,
   createdAt: z.date(),
   updatedAt: z.date(),
+  curriculumFinalization: z.object({ finalizedAt: z.date() }).nullable(),
 });
 
 export type AcademicYearListItem = z.infer<typeof AcademicYearListItemSchema>;

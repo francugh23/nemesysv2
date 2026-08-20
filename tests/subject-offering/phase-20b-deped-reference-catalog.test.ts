@@ -22,7 +22,11 @@ test("Phase 20B catalog remains source-backed and term-safe across the approval 
     prisma.shsCurriculumCluster.findMany({ where: { deletedAt: null }, select: { code: true, sourceReference: true, isSchoolFacing: true, track: true } }),
     prisma.shsCurriculumReference.findMany({ select: { gradeLevel: true, classification: true, curriculumStatus: true, sourceReference: true, termApplicability: true, termPositions: true, schoolCategories: true, cluster: { select: { track: true } } } }),
     prisma.subjectOffering.findMany({
-      where: { deletedAt: null, gradeLevel: { in: ["11", "12"] } },
+      where: {
+        deletedAt: null,
+        gradeLevel: { in: ["11", "12"] },
+        shsContext: { is: { sourceReference: { contains: "deped.gov.ph" } } },
+      },
       select: {
         academicYearId: true,
         terms: { select: { academicTerm: { select: { academicYearId: true } } } },

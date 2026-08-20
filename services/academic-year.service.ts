@@ -29,6 +29,7 @@ import {
 } from "@/repositories/subject-offering.repository";
 import { findShsElectiveEnrollmentPolicies } from "@/repositories/shs-elective-enrollment-policy.repository";
 import { findShsTermResultInterpretationPolicy } from "@/repositories/shs-term-result-interpretation-policy.repository";
+import { countPendingShsOfferings } from "@/repositories/curriculum-finalization.repository";
 import { buildAcademicYearConfigurationSummary } from "@/services/academic-year-configuration-summary.service";
 import type {
   AcademicYearFilterOptions,
@@ -214,6 +215,10 @@ export async function getAcademicYearConfigurationSummaryService(
         { academicYearId, curriculumStatus: "PROVISIONAL_DEPED" },
         transaction,
       );
+      const pendingShsOfferingCount = await countPendingShsOfferings(
+        academicYearId,
+        transaction,
+      );
       const schoolApprovedShsOfferingCount = await countOfferings(
         { academicYearId, curriculumStatus: "SCHOOL_APPROVED" },
         transaction,
@@ -243,6 +248,7 @@ export async function getAcademicYearConfigurationSummaryService(
                 Number(left.gradeLevel) - Number(right.gradeLevel),
             ),
           provisionalShsOfferingCount,
+          pendingShsOfferingCount,
           schoolApprovedShsOfferingCount,
         },
         electivePolicies,

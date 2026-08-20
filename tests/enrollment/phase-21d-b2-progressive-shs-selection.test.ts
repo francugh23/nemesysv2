@@ -8,6 +8,10 @@ import "dotenv/config";
 import { Prisma } from "../../app/generated/prisma/client";
 import prisma from "../../lib/prisma";
 import {
+  createLegacyPolicyFixture,
+  makeLegacyActiveCurriculumConfigurable,
+} from "../helpers/phase-21e-e1-legacy-fixture";
+import {
   progressShsCurrentTermInTransaction,
   ShsCurrentTermProgressionError,
 } from "../../services/student-subject-enrollment-selection.service";
@@ -58,6 +62,7 @@ async function createProgressionFixture(
     }),
   ]);
   assert.equal(academicYear.terms.length, 3, "B2 fixtures require the active three-Term year");
+  await makeLegacyActiveCurriculumConfigurable(academicYear.id, transaction, true);
 
   const provisionalOfferings = await transaction.subjectOffering.findMany({
     where: {
@@ -165,8 +170,8 @@ async function createProgressionFixture(
   });
   const policy = options.createPolicy === false
     ? null
-    : await transaction.shsElectiveEnrollmentPolicy.create({
-        data: {
+    : await createLegacyPolicyFixture(
+        {
           academicYearId: academicYear.id,
           academicTermId: policyTerm.id,
           gradeLevel: "11",
@@ -174,7 +179,8 @@ async function createProgressionFixture(
           maximumElectives: options.maximumElectives ?? 3,
           createdById: actor.id,
         },
-      });
+        transaction,
+      );
 
   return {
     actor,

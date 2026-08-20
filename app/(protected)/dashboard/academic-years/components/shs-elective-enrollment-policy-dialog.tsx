@@ -16,13 +16,15 @@ export function ShsElectiveEnrollmentPolicyDialog({
   academicYear,
   open,
   onOpenChange,
+  curriculumFinalized = false,
 }: {
   academicYear: AcademicYearListItem;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  curriculumFinalized?: boolean;
 }) {
   const readOnly =
-    academicYear.status === "LOCKED" || academicYear.status === "ARCHIVED";
+    academicYear.status === "LOCKED" || academicYear.status === "ARCHIVED" || curriculumFinalized;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

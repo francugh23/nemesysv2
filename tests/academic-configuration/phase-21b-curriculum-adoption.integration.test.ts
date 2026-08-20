@@ -12,6 +12,7 @@ import {
   findSourceCurriculumAdoptionOfferings,
   type CurriculumAdoptionOffering,
 } from "../../repositories/curriculum-adoption.repository";
+import { makeLegacyActiveCurriculumConfigurable } from "../helpers/phase-21e-e1-legacy-fixture";
 
 class RollbackFixture extends Error {}
 
@@ -71,6 +72,7 @@ async function createSourceOffering(
     };
   },
 ) {
+  await makeLegacyActiveCurriculumConfigurable(values.academicYearId, tx);
   const suffix = randomUUID().replaceAll("-", "").slice(0, 10);
   const subject = await tx.subject.create({
     data: {
@@ -380,6 +382,7 @@ test("Phase 21B source projections expose archived Offerings, Subjects, and SSHS
     });
     await tx.subjectOffering.update({ where: { id: archivedOffering.offering.id }, data: { deletedAt: new Date() } });
     await tx.subject.update({ where: { id: archivedSubject.subject.id }, data: { deletedAt: new Date() } });
+    await tx.subjectOffering.update({ where: { id: archivedCluster.offering.id }, data: { deletedAt: new Date() } });
     await tx.shsCurriculumCluster.update({ where: { id: cluster.id }, data: { deletedAt: new Date() } });
 
     const rows = await findSourceCurriculumAdoptionOfferings(sourceYear.id, tx);

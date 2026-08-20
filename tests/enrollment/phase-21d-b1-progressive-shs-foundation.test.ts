@@ -10,6 +10,7 @@ import { hasPermission, Permissions } from "../../lib/permissions";
 import prisma from "../../lib/prisma";
 import { createAuditLogs } from "../../repositories/audit.repository";
 import { createShsElectiveEnrollmentPolicy } from "../../repositories/shs-elective-enrollment-policy.repository";
+import { makeLegacyActiveCurriculumConfigurable } from "../helpers/phase-21e-e1-legacy-fixture";
 import {
   CreateShsElectiveEnrollmentPolicySchema,
 } from "../../schemas/shs-elective-enrollment-policy.schema";
@@ -135,7 +136,8 @@ test("B1 elective policy schema and database enforce scope and counts", async ()
   await withRollback(async (tx) => {
     const actor = await tx.user.findFirstOrThrow({ where: { deletedAt: null } });
     const year = await tx.academicYear.findFirstOrThrow({ where: { status: "ACTIVE" }, include: { terms: true } });
-    const values = { academicYearId: year.id, academicTermId: year.terms[0]!.id, gradeLevel: "11" as const, minimumElectives: 1, maximumElectives: 3 };
+    await makeLegacyActiveCurriculumConfigurable(year.id, tx);
+    const values = { academicYearId: year.id, academicTermId: year.terms[0]!.id, gradeLevel: "12" as const, minimumElectives: 1, maximumElectives: 3 };
     const beforeAudits = await tx.auditLog.count();
     const policy = await createShsElectiveEnrollmentPolicy({ ...values, createdById: actor.id }, tx);
     await createAuditLogs([{ userId: actor.id, action: "CREATE", module: "ShsElectiveEnrollmentPolicy", recordId: policy.id, description: "Created SHS elective enrollment policy." }], tx);
@@ -154,6 +156,7 @@ test("B1 elective policy rejects a cross-year Term and rolls policy audit back a
   await withRollback(async (tx) => {
     const actor = await tx.user.findFirstOrThrow({ where: { deletedAt: null } });
     const year = await tx.academicYear.findFirstOrThrow({ where: { status: "ACTIVE" }, include: { terms: true } });
+    await makeLegacyActiveCurriculumConfigurable(year.id, tx);
     const otherYear = await tx.academicYear.create({ data: { label: "2097-2098", startDate: new Date("2097-06-01T00:00:00.000Z"), endDate: new Date("2098-04-01T00:00:00.000Z"), createdById: actor.id } });
     const otherTerm = await tx.academicTerm.create({ data: { academicYearId: otherYear.id, name: "Other Term", position: 1, startDate: new Date("2097-06-01T00:00:00.000Z"), endDate: new Date("2097-08-01T00:00:00.000Z"), createdById: actor.id } });
     await assert.rejects(tx.shsElectiveEnrollmentPolicy.create({ data: { academicYearId: year.id, academicTermId: otherTerm.id, gradeLevel: "11", minimumElectives: 1, maximumElectives: 3, createdById: actor.id } }));
@@ -161,6 +164,7 @@ test("B1 elective policy rejects a cross-year Term and rolls policy audit back a
   await withRollback(async (tx) => {
     const actor = await tx.user.findFirstOrThrow({ where: { deletedAt: null } });
     const year = await tx.academicYear.findFirstOrThrow({ where: { status: "ACTIVE" }, include: { terms: true } });
+    await makeLegacyActiveCurriculumConfigurable(year.id, tx);
     const policy = await tx.shsElectiveEnrollmentPolicy.create({ data: { academicYearId: year.id, academicTermId: year.terms[2]!.id, gradeLevel: "12", minimumElectives: 1, maximumElectives: 2, createdById: actor.id } });
     await createAuditLogs([{ userId: actor.id, action: "CREATE", module: "ShsElectiveEnrollmentPolicy", recordId: policy.id, description: "Created SHS elective enrollment policy." }], tx);
   });

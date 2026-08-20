@@ -9,12 +9,14 @@ import { Prisma } from "../../app/generated/prisma/client";
 import prisma from "../../lib/prisma";
 import { depedShsCatalogEntries } from "../../lib/shs-deped-catalog";
 import { populateInTransaction, populateProvisionalDepedReferenceCatalog } from "../../services/deped-reference-catalog.service";
+import { makeLegacyActiveCurriculumConfigurable } from "../helpers/phase-21e-e1-legacy-fixture";
 
 class RollbackFixture extends Error {}
 
 async function withRollback(run: (tx: Prisma.TransactionClient) => Promise<void>) {
   try {
     await prisma.$transaction(async (tx) => {
+      await makeLegacyActiveCurriculumConfigurable("academic-year-2026-2027", tx, true);
       await run(tx);
       throw new RollbackFixture();
     });
@@ -141,7 +143,11 @@ test("Phase 21C populated catalog has 12 one-Term Academic Offerings, four Acade
     prisma.academicTerm.findMany({ where: { academicYearId: "academic-year-2026-2027" }, select: { id: true } }),
     prisma.shsCurriculumReference.findMany({ select: { gradeLevel: true, classification: true, termApplicability: true, termPositions: true, schoolCategories: true } }),
     prisma.subjectOffering.findMany({
-      where: { academicYearId: "academic-year-2026-2027", deletedAt: null, shsContext: { isNot: null } },
+      where: {
+        academicYearId: "academic-year-2026-2027",
+        deletedAt: null,
+        shsContext: { is: { sourceReference: { contains: "deped.gov.ph" } } },
+      },
       select: { subjectId: true, gradeLevel: true, terms: { select: { academicTermId: true } }, shsContext: { select: { curriculumStatus: true } } },
     }),
     prisma.subjectOffering.findMany({
@@ -157,7 +163,7 @@ test("Phase 21C populated catalog has 12 one-Term Academic Offerings, four Acade
   assert.ok(activeOfferings.every(({ gradeLevel }) => gradeLevel === "11"));
   assert.equal(activeOfferings.filter(({ terms: offeringTerms }) => offeringTerms.length === 1).length, 12);
   assert.equal(activeOfferings.filter(({ terms: offeringTerms }) => offeringTerms.length === 3).length, 50);
-  assert.ok(activeOfferings.some(({ shsContext }) => shsContext?.curriculumStatus === "PROVISIONAL_DEPED"));
+  assert.ok(activeOfferings.every(({ shsContext }) => ["PROVISIONAL_DEPED", "SCHOOL_APPROVED"].includes(shsContext!.curriculumStatus)));
   assert.equal(new Set(activeOfferings.map(({ subjectId, gradeLevel }) => `${subjectId}:${gradeLevel}`)).size, activeOfferings.length);
   assert.ok(jhsOfferings.every(({ terms: offeringTerms }) => offeringTerms.length === 3));
   assert.equal(catalogSubjects.length, 171);
@@ -377,6 +383,9 @@ test("Phase 21C corrects only an exact provisional Academic catalog signature an
       orderBy: { subjectCode: "asc" },
     });
     const expectedTermId = offering.terms[0].academicTermId;
+    const beforeAuditCount = await tx.auditLog.count({
+      where: { module: "SubjectOffering", recordId: offering.id, action: "UPDATE" },
+    });
     await tx.subjectOfferingTerm.createMany({
       data: offering.academicYear.terms.filter(({ id }) => id !== expectedTermId).map(({ id }) => ({ subjectOfferingId: offering.id, academicTermId: id })),
     });
@@ -384,7 +393,7 @@ test("Phase 21C corrects only an exact provisional Academic catalog signature an
     const result = await populateInTransaction(offering.createdById, "academic-year-2026-2027", tx);
     assert.equal(result.reconfiguredOfferings, 1);
     assert.deepEqual(await tx.subjectOfferingTerm.findMany({ where: { subjectOfferingId: offering.id }, select: { academicTermId: true } }), [{ academicTermId: expectedTermId }]);
-    assert.equal(await tx.auditLog.count({ where: { module: "SubjectOffering", recordId: offering.id, action: "UPDATE" } }), 1);
+    assert.equal(await tx.auditLog.count({ where: { module: "SubjectOffering", recordId: offering.id, action: "UPDATE" } }), beforeAuditCount + 1);
 
     const deliberateTermId = offering.academicYear.terms.find(({ id }) => id !== expectedTermId)!.id;
     await tx.subjectOffering.update({ where: { id: offering.id }, data: { terms: { deleteMany: {}, create: { academicTermId: deliberateTermId } } } });
@@ -447,9 +456,15 @@ test("Phase 21C population is idempotent and provisional Offering materializatio
   }), beforeStatuses);
 
   await assert.rejects(prisma.$transaction(async (tx) => {
+    await makeLegacyActiveCurriculumConfigurable("academic-year-2026-2027", tx, true);
     const fixture = await getCatalogFixture(tx, "11");
     const offering = await tx.subjectOffering.findFirstOrThrow({
-      where: { subjectId: fixture.reference.subjectId, academicYearId: fixture.academicYear.id, deletedAt: null },
+      where: {
+        subjectId: fixture.reference.subjectId,
+        academicYearId: fixture.academicYear.id,
+        deletedAt: null,
+        shsContext: { is: { curriculumStatus: "PROVISIONAL_DEPED" } },
+      },
       select: { id: true, subjectCode: true, subjectDescription: true, gradeLevel: true, shsContext: true },
     });
     const enrollment = await createEnrollment("11", fixture, tx);

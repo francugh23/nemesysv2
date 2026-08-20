@@ -100,18 +100,34 @@ export function subjectOfferingColumns({
     },
     {
       id: "offeringState",
-      header: "Offering State",
-      cell: ({ row }) => (
-        <Badge variant={row.original.deletedAt ? "secondary" : "default"}>
-          {row.original.deletedAt ? "Archived" : "Active"}
-        </Badge>
-      ),
+      header: "Configuration State",
+      cell: ({ row }) => {
+        const offering = row.original;
+        const finalized = Boolean(offering.academicYear.curriculumFinalization);
+        const depended = offering._count.studentSubjectEnrollments > 0;
+        return (
+          <div className="flex flex-col items-start gap-1">
+            <Badge variant={offering.deletedAt ? "secondary" : "default"}>
+              {offering.deletedAt ? "Archived" : "Active"}
+            </Badge>
+            {finalized && <Badge variant="outline">Finalized</Badge>}
+            {!finalized && depended && (
+              <Badge variant="outline" title="Semantic configuration is protected because Student Participation references this Offering.">
+                Locked by Student Participation
+              </Badge>
+            )}
+          </div>
+        );
+      },
     },
     {
       id: "actions",
       enableSorting: false,
-      cell: ({ row }) =>
-        row.original.academicYear.status === "ACTIVE" && (canManageOfferings || row.original.shsContext?.curriculumStatus === "PROVISIONAL_DEPED") ? (
+      cell: ({ row }) => {
+        const offering = row.original;
+        const finalized = Boolean(offering.academicYear.curriculumFinalization);
+        const depended = offering._count.studentSubjectEnrollments > 0;
+        return offering.academicYear.status === "ACTIVE" && !finalized && (canManageOfferings || offering.shsContext?.curriculumStatus === "PROVISIONAL_DEPED") ? (
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
@@ -121,14 +137,15 @@ export function subjectOfferingColumns({
               }
             />
             <DropdownMenuContent align="end">
-              {canManageOfferings && row.original.shsContext?.curriculumStatus !== "SCHOOL_APPROVED" && <DropdownMenuItem onClick={() => onEdit(row.original)}>Edit</DropdownMenuItem>}
-              {row.original.shsContext?.curriculumStatus === "PROVISIONAL_DEPED" && <DropdownMenuItem onClick={() => onApprove(row.original)}>Approve for school use</DropdownMenuItem>}
-              {canManageOfferings && <DropdownMenuItem className="text-destructive" onClick={() => onArchive(row.original)}>
+              {canManageOfferings && !depended && offering.shsContext?.curriculumStatus !== "SCHOOL_APPROVED" && <DropdownMenuItem onClick={() => onEdit(offering)}>Edit</DropdownMenuItem>}
+              {!depended && offering.shsContext?.curriculumStatus === "PROVISIONAL_DEPED" && <DropdownMenuItem onClick={() => onApprove(offering)}>Approve for school use</DropdownMenuItem>}
+              {canManageOfferings && <DropdownMenuItem className="text-destructive" onClick={() => onArchive(offering)}>
                 Archive
               </DropdownMenuItem>}
             </DropdownMenuContent>
           </DropdownMenu>
-        ) : null,
+        ) : null;
+      },
     },
   ];
 }

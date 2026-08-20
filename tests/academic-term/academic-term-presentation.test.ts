@@ -33,7 +33,7 @@ test("Academic Term read surfaces use the shared badge", () => {
   }
 });
 
-test("Academic Term selectors remain textual, ordered, and searchable", () => {
+test("Academic Term selectors remain ordered, searchable, and use the established presentation", () => {
   const enrollmentForm = readFileSync(
     path.join(
       root,
@@ -50,5 +50,5 @@ test("Academic Term selectors remain textual, ordered, and searchable", () => {
   );
   assert.match(enrollmentForm, /label: `Term \$\{term\.position\}`/);
   assert.match(enrollmentForm, /searchValue: `\$\{term\.position\} \$\{term\.name\}`/);
-  assert.match(offeringForm, /Term \{term\.position\}/);
+  assert.match(offeringForm, /<AcademicTermBadge/);
 });

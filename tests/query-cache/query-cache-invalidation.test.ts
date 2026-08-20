@@ -95,7 +95,7 @@ test("Imports can add narrowly scoped dependent query invalidation", async () =>
   ]);
 });
 
-test("Academic Year mutations refresh only management and operational selectors", async () => {
+test("Academic Year mutations refresh management details and operational selectors", async () => {
   const invalidated: unknown[] = [];
 
   await invalidateAcademicYearQueries({
@@ -107,6 +107,7 @@ test("Academic Year mutations refresh only management and operational selectors"
 
   assert.deepEqual(invalidated, [
     ["academic-years"],
+    ["academic-year-configuration"],
     ["subject-assignment-options"],
     ["enrollment-form-options"],
     ["subject-offering-options"],
@@ -121,6 +122,7 @@ test("Academic Term mutations refresh their parent management view and term quer
 
   assert.deepEqual(queryKeys, [
     ["academic-years"],
+    ["academic-year-configuration", "academic-year-2026-2027"],
     ["academic-terms", "academic-year-2026-2027"],
     ["subject-offering-options"],
   ]);

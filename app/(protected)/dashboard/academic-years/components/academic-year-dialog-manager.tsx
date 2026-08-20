@@ -26,6 +26,7 @@ export function AcademicYearDialogManager({
   instanceId,
   onClose,
   canAdoptCurriculum,
+  canFinalizeCurriculum,
   canManageElectivePolicy,
   canManageInterpretationPolicy,
   onAdoptCurriculum,
@@ -37,6 +38,7 @@ export function AcademicYearDialogManager({
   instanceId: number;
   onClose: (instanceId: number) => void;
   canAdoptCurriculum: boolean;
+  canFinalizeCurriculum: boolean;
   canManageElectivePolicy: boolean;
   canManageInterpretationPolicy: boolean;
   onAdoptCurriculum: (academicYear: AcademicYearListItem) => void;
@@ -54,6 +56,7 @@ export function AcademicYearDialogManager({
         open={dialog === "view"}
         onOpenChange={handleOpenChange}
         canAdoptCurriculum={canAdoptCurriculum}
+        canFinalizeCurriculum={canFinalizeCurriculum}
         canManageElectivePolicy={canManageElectivePolicy}
         canManageInterpretationPolicy={canManageInterpretationPolicy}
         onAdoptCurriculum={onAdoptCurriculum}
@@ -79,6 +82,7 @@ export function AcademicYearDialogManager({
           academicYear={academicYear}
           open={dialog === "elective-policies"}
           onOpenChange={handleOpenChange}
+          curriculumFinalized={Boolean(academicYear.curriculumFinalization)}
         />
       )}
       {canManageInterpretationPolicy && (

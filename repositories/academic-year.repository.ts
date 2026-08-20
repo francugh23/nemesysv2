@@ -17,6 +17,9 @@ const academicYearListSelect = {
   status: true,
   createdAt: true,
   updatedAt: true,
+  curriculumFinalization: {
+    select: { finalizedAt: true },
+  },
 } satisfies Prisma.AcademicYearSelect;
 
 const academicYearMutationSelect = {
@@ -41,6 +44,14 @@ const academicYearConfigurationSelect = {
       updatedAt: true,
     },
     orderBy: [{ position: "asc" }, { id: "asc" }],
+  },
+  curriculumFinalization: {
+    select: {
+      finalizedAt: true,
+      finalizedBy: {
+        select: { firstName: true, middleName: true, lastName: true },
+      },
+    },
   },
 } satisfies Prisma.AcademicYearSelect;
 
