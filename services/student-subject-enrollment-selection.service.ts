@@ -136,8 +136,11 @@ export async function progressShsCurrentTermInTransaction(
   const droppedCurrentIdentities = new Set(history
     .filter((row) => row.status === "DROPPED" && row.terms.some(({ academicTermId }) => academicTermId === currentTerm.id))
     .map(({ subjectOfferingId }) => subjectOfferingId));
-  if (requested.some(({ id }) => droppedCurrentIdentities.has(id) || [...(ancestorIdsByOfferingId.get(id) ?? [])].some((ancestorId) => droppedCurrentIdentities.has(ancestorId)))) {
-    throw new ShsCurrentTermProgressionError("A dropped Offering cannot be selected again for the same Academic Term.");
+  const droppedAncestorIdentities = new Set(history
+    .filter((row) => row.status === "DROPPED")
+    .map(({ subjectOfferingId }) => subjectOfferingId));
+  if (requested.some(({ id }) => droppedCurrentIdentities.has(id) || [...(ancestorIdsByOfferingId.get(id) ?? [])].some((ancestorId) => droppedAncestorIdentities.has(ancestorId)))) {
+    throw new ShsCurrentTermProgressionError("A dropped Offering cannot be selected again in the same Term, and its replacement descendants remain blocked for the Academic Year.");
   }
 
   const activeCurrentElectives = active.filter((row) =>

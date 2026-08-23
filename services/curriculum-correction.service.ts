@@ -37,7 +37,7 @@ function dateOnly(value: Date) {
 }
 
 function getCalendarState(
-  terms: Array<{ id: string; startDate: Date; endDate: Date; position: number }>,
+  terms: Array<{ id: string; name: string; startDate: Date; endDate: Date; position: number }>,
   clock: () => Date,
 ) {
   const operationalDate = getPhilippineCalendarDate(clock());
@@ -50,8 +50,24 @@ function getCalendarState(
   return {
     operationalDate,
     activeTerm: activeTerms[0] ?? null,
-    futureTerms: terms.filter(({ startDate }) => operationalDate < dateOnly(startDate)),
+    futureTerms: terms
+      .filter(({ startDate }) => operationalDate < dateOnly(startDate))
+      .sort((left, right) => dateOnly(left.startDate).localeCompare(dateOnly(right.startDate)) || left.position - right.position || left.id.localeCompare(right.id)),
   };
+}
+
+function deriveCorrectionPlan(
+  source: NonNullable<Awaited<ReturnType<typeof findCorrectionSource>>>,
+  calendar: ReturnType<typeof getCalendarState>,
+) {
+  const effectiveTerm = calendar.futureTerms[0] ?? null;
+  if (!effectiveTerm) return { effectiveTerm: null, successorTerms: [] };
+  const sourceTermIds = new Set(source.terms.map(({ academicTermId }) => academicTermId));
+  const successorTerms = isJhsGradeLevel(source.gradeLevel)
+    ? source.academicYear.terms
+    : source.academicYear.terms.filter((term) =>
+        sourceTermIds.has(term.id) && dateOnly(term.startDate) >= dateOnly(effectiveTerm.startDate));
+  return { effectiveTerm, successorTerms };
 }
 
 function correctionEligibilityReason(
@@ -150,17 +166,29 @@ export async function getCurriculumCorrectionContext(sourceOfferingId: string, c
   return prisma.$transaction(async (transaction) => {
     const source = await findCorrectionSource(sourceOfferingId, transaction);
     if (!source) throw new CurriculumCorrectionServiceError("Subject Offering not found or archived.");
-    const [subjects, shsClusters] = await findCorrectionFormOptions(transaction);
+    const calendar = getCalendarState(source.academicYear.terms, clock);
+    const plan = deriveCorrectionPlan(source, calendar);
+    const [subjects, shsClusters, electivePolicies] = await findCorrectionFormOptions(
+      source.academicYearId,
+      source.gradeLevel,
+      plan.successorTerms.map(({ id }) => id),
+      transaction,
+    );
     const impact = await lockCorrectionParticipationImpact(source.id, transaction);
-    const operationalDate = getPhilippineCalendarDate(clock());
+    const eligibilityReason = correctionEligibilityReason(source, calendar.operationalDate) ?? (
+      !isJhsGradeLevel(source.gradeLevel) && plan.effectiveTerm && !plan.successorTerms.some(({ id }) => id === plan.effectiveTerm!.id)
+        ? `This Offering does not apply in the immediately next unstarted Term (${plan.effectiveTerm.name}).`
+        : null
+    );
     return {
       source,
       subjects: subjects.filter(({ gradeLevel }) => gradeLevel === source.gradeLevel),
       shsClusters,
       impact,
-      operationalDate,
-      eligibilityReason: correctionEligibilityReason(source, operationalDate),
-      effectiveTerms: source.academicYear.terms.filter(({ startDate }) => operationalDate < dateOnly(startDate)),
+      operationalDate: calendar.operationalDate,
+      eligibilityReason,
+      plan,
+      electivePolicies,
     };
   }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
 }
@@ -204,50 +232,59 @@ export async function correctSubjectOfferingInTransaction(
     throw new CurriculumCorrectionServiceError("An active Offering already uses the replacement Subject identity in this Academic Year and grade.");
   }
 
-  const uniqueTermIds = [...new Set(values.replacement.academicTermIds)];
-  if (uniqueTermIds.length !== values.replacement.academicTermIds.length) {
-    throw new CurriculumCorrectionServiceError("Replacement Academic Terms must be unique.");
-  }
-  await lockCorrectionTermAndClusterScopes(uniqueTermIds, values.replacement.shsContext?.clusterId, transaction);
-  const policies = values.replacement.shsContext?.classification === "ACADEMIC_ELECTIVE" || values.replacement.shsContext?.classification === "TECHPRO_ELECTIVE"
-    ? await lockCorrectionPolicyScopes(source.academicYearId, uniqueTermIds, source.gradeLevel, transaction)
-    : [];
-  const impact = await lockCorrectionParticipationImpact(source.id, transaction);
-
   const calendar = getCalendarState(source.academicYear.terms, clock);
   const eligibilityReason = correctionEligibilityReason(source, calendar.operationalDate);
   if (eligibilityReason) throw new CurriculumCorrectionServiceError(eligibilityReason);
-  const effectiveTerm = source.academicYear.terms.find(({ id }) => id === values.effectiveAcademicTermId);
-  if (!effectiveTerm) throw new CurriculumCorrectionServiceError("Effective Academic Term must belong to the source Academic Year.");
-  if (calendar.operationalDate >= dateOnly(effectiveTerm.startDate)) {
-    throw new CurriculumCorrectionServiceError("Effective Academic Term must be future and unstarted.");
+  const plan = deriveCorrectionPlan(source, calendar);
+  if (!plan.effectiveTerm) throw new CurriculumCorrectionServiceError("Controlled correction is unavailable after all configured Academic Terms have started.");
+  const derivedTermIds = plan.successorTerms.map(({ id }) => id);
+  if (!isJhsGradeLevel(source.gradeLevel) && !derivedTermIds.includes(plan.effectiveTerm.id)) {
+    throw new CurriculumCorrectionServiceError(`This Offering does not apply in the immediately next unstarted Term (${plan.effectiveTerm.name}).`);
   }
-  const replacementTerms = source.academicYear.terms.filter(({ id }) => uniqueTermIds.includes(id));
-  if (replacementTerms.length !== uniqueTermIds.length) {
-    throw new CurriculumCorrectionServiceError("Replacement Academic Terms must belong to the source Academic Year.");
+  if (values.effectiveAcademicTermId !== plan.effectiveTerm.id) {
+    throw new CurriculumCorrectionServiceError("Effective Academic Term must be the immediately next unstarted configured Term.");
   }
-  if (!uniqueTermIds.includes(effectiveTerm.id)) {
-    throw new CurriculumCorrectionServiceError("Replacement Terms must include the effective Academic Term.");
+  const submittedTermIds = [...new Set(values.replacement.academicTermIds)].sort();
+  const sortedDerivedTermIds = [...derivedTermIds].sort();
+  if (
+    submittedTermIds.length !== values.replacement.academicTermIds.length ||
+    submittedTermIds.length !== sortedDerivedTermIds.length ||
+    submittedTermIds.some((id, index) => id !== sortedDerivedTermIds[index])
+  ) {
+    throw new CurriculumCorrectionServiceError("Replacement Terms must exactly match the predecessor's remaining applicable Terms.");
   }
+  await lockCorrectionTermAndClusterScopes(derivedTermIds, values.replacement.shsContext?.clusterId, transaction);
+  const policies = values.replacement.shsContext?.classification === "ACADEMIC_ELECTIVE" || values.replacement.shsContext?.classification === "TECHPRO_ELECTIVE"
+    ? await lockCorrectionPolicyScopes(source.academicYearId, derivedTermIds, source.gradeLevel, transaction)
+    : [];
+  const impact = await lockCorrectionParticipationImpact(source.id, transaction);
+  const effectiveTerm = plan.effectiveTerm;
+  const replacementTerms = plan.successorTerms;
 
   if (isJhsGradeLevel(source.gradeLevel)) {
     const firstTerm = source.academicYear.terms[0];
     if (!firstTerm || effectiveTerm.id !== firstTerm.id || replacementTerms.length !== source.academicYear.terms.length) {
       throw new CurriculumCorrectionServiceError("JHS correction must be effective before Term 1 and retain every configured Academic Term.");
     }
-  } else if (replacementTerms.some(({ startDate }) => dateOnly(startDate) < dateOnly(effectiveTerm.startDate))) {
-    throw new CurriculumCorrectionServiceError("SHS replacement Terms cannot precede the effective Academic Term.");
   }
 
   let cluster: Awaited<ReturnType<typeof findActiveShsCurriculumCluster>> = null;
   const context = values.replacement.shsContext;
+  if (context && source.shsContext) {
+    if (context.sourceReference.trim() === source.shsContext.sourceReference?.trim()) {
+      throw new CurriculumCorrectionServiceError("Replacement provenance must be newly supplied for this correction.");
+    }
+    if (context.approvalReference.trim() === source.shsContext.approvalReference?.trim()) {
+      throw new CurriculumCorrectionServiceError("Replacement approval reference must independently evidence this correction.");
+    }
+  }
   if (context?.clusterId) {
     cluster = await findActiveShsCurriculumCluster(context.clusterId, transaction);
     if (!cluster || !cluster.isSchoolFacing) throw new CurriculumCorrectionServiceError("Replacement SHS cluster not found or archived.");
     if (context.classification === "ACADEMIC_ELECTIVE" && cluster.track !== "ACADEMIC") throw new CurriculumCorrectionServiceError("Academic electives require an Academic curriculum cluster.");
     if (context.classification === "TECHPRO_ELECTIVE" && cluster.track !== "TECHPRO") throw new CurriculumCorrectionServiceError("TechPro electives require a TechPro curriculum cluster.");
   }
-  if (context && context.classification !== "CORE" && policies.length !== uniqueTermIds.length) {
+  if (context && context.classification !== "CORE" && policies.length !== derivedTermIds.length) {
     throw new CurriculumCorrectionServiceError("Existing future elective policy configuration must cover every replacement Term.");
   }
 
@@ -256,6 +293,10 @@ export async function correctSubjectOfferingInTransaction(
     throw new CurriculumCorrectionServiceError("Unlocked Curriculum must continue using the ordinary edit or archive workflow.");
   }
   const correctedAt = clock();
+  const replacementValues = {
+    ...values.replacement,
+    academicTermIds: derivedTermIds,
+  };
   const sourceSnapshot = snapshotOffering({
     subject: { id: source.subjectId, code: source.subjectCode, description: source.subjectDescription },
     gradeLevel: source.gradeLevel,
@@ -297,7 +338,7 @@ export async function correctSubjectOfferingInTransaction(
     source.id,
     source.academicYearId,
     subject,
-    values.replacement,
+    replacementValues,
     actorId,
     correctedAt,
     transaction,

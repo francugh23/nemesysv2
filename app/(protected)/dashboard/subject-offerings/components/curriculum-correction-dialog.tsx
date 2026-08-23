@@ -8,7 +8,6 @@ import { AcademicTermBadge } from "@/components/common/badges";
 import { FormDialog } from "@/components/common/dialogs/form-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -63,47 +62,45 @@ function CorrectionForm({
   onOpenChange: (open: boolean) => void;
 }) {
   const correction = useCorrectSubjectOffering();
-  const firstEffective = data.effectiveTerms[0];
+  const effectiveTerm = data.plan.effectiveTerm;
+  const successorTerms = data.plan.successorTerms;
   const isJhs = ["7", "8", "9", "10"].includes(offering.gradeLevel);
   const isShs = !isJhs;
   const [subjectId, setSubjectId] = useState(data.source.subjectId);
-  const [effectiveAcademicTermId, setEffectiveAcademicTermId] = useState(firstEffective?.id ?? "");
-  const [academicTermIds, setAcademicTermIds] = useState<string[]>(isJhs ? data.source.academicYear.terms.map(({ id }) => id) : firstEffective ? [firstEffective.id] : []);
   const [classification, setClassification] = useState<Classification>(data.source.shsContext?.classification ?? "CORE");
   const [clusterId, setClusterId] = useState(data.source.shsContext?.clusterId ?? "");
-  const [sourceReference, setSourceReference] = useState(data.source.shsContext?.sourceReference ?? "");
+  const [sourceReference, setSourceReference] = useState("");
   const [approvalReference, setApprovalReference] = useState("");
   const [reason, setReason] = useState("");
   const [evidenceReference, setEvidenceReference] = useState("");
   const [confirmation, setConfirmation] = useState("");
-  const effectiveTerm = data.source.academicYear.terms.find(({ id }) => id === effectiveAcademicTermId);
-  const selectableTerms = data.source.academicYear.terms.filter((term) =>
-    isJhs || (effectiveTerm && term.position >= effectiveTerm.position));
   const availableClusters = data.shsClusters.filter((cluster) =>
     classification === "ACADEMIC_ELECTIVE" ? cluster.track === "ACADEMIC" : cluster.track === "TECHPRO");
+  const electivePolicyCompatible = classification === "CORE" ||
+    successorTerms.every((term) => data.electivePolicies.some((policy) => policy.academicTermId === term.id));
   const canSubmit = Boolean(
     !data.eligibilityReason &&
     subjectId &&
-    effectiveAcademicTermId &&
-    academicTermIds.length &&
+    effectiveTerm &&
+    successorTerms.length &&
     reason.trim() &&
     evidenceReference.trim() &&
     confirmation === offering.subjectCode &&
-    (!isShs || (sourceReference.trim() && approvalReference.trim() && (classification === "CORE" || clusterId))),
+    (!isShs || (sourceReference.trim() && approvalReference.trim() && (classification === "CORE" || clusterId) && electivePolicyCompatible)),
   );
 
   async function submit() {
     if (!canSubmit) return;
     const result = await correction.mutateAsync({
       sourceOfferingId: offering.id,
-      effectiveAcademicTermId,
+      effectiveAcademicTermId: effectiveTerm!.id,
       reason,
       evidenceReference,
       confirmation,
       replacement: {
         subjectId,
         gradeLevel: offering.gradeLevel,
-        academicTermIds,
+        academicTermIds: successorTerms.map(({ id }) => id),
         shsContext: isShs ? {
           classification,
           clusterId: classification === "CORE" ? undefined : clusterId,
@@ -160,38 +157,14 @@ function CorrectionForm({
                   placeholder="Select replacement Subject"
                 />
               </Field>
-              <Field>
-                <FieldLabel>Effective Academic Term</FieldLabel>
-                <Select value={effectiveAcademicTermId || null} onValueChange={(value) => {
-                  setEffectiveAcademicTermId(value ?? "");
-                  if (!value || isJhs) return;
-                  const selected = data.source.academicYear.terms.find((term) => term.id === value);
-                  setAcademicTermIds(selected ? [selected.id] : []);
-                }}>
-                  <SelectTrigger><SelectValue placeholder="Select future Term" /></SelectTrigger>
-                  <SelectContent>
-                    {data.effectiveTerms.map((term) => <SelectItem key={term.id} value={term.id}>{term.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </Field>
+              <Fact label="Immediately next effective Term" value={effectiveTerm?.name ?? "Unavailable"} />
             </div>
 
             <Field>
-              <FieldLabel>Replacement Term applicability</FieldLabel>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {selectableTerms.map((term) => {
-                  const checked = academicTermIds.includes(term.id);
-                  return (
-                    <label key={term.id} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                      <Checkbox
-                        checked={checked}
-                        disabled={isJhs || term.id === effectiveAcademicTermId}
-                        onCheckedChange={() => setAcademicTermIds(checked ? academicTermIds.filter((id) => id !== term.id) : [...academicTermIds, term.id])}
-                      />
-                      <AcademicTermBadge position={term.position} name={term.name} />
-                    </label>
-                  );
-                })}
+              <FieldLabel>Derived successor Terms</FieldLabel>
+              <div className="flex min-h-10 flex-wrap items-center gap-2 rounded-md border bg-muted/20 px-3 py-2">
+                {successorTerms.map((term) => <AcademicTermBadge key={term.id} position={term.position} name={term.name} />)}
+                {!successorTerms.length && <span className="text-sm text-muted-foreground">No eligible remaining Terms</span>}
               </div>
             </Field>
 
@@ -226,6 +199,15 @@ function CorrectionForm({
                     />
                   </Field>
                 )}
+                <div className="md:col-span-2 rounded-md border bg-muted/20 p-3 text-sm">
+                  {classification === "CORE" ? (
+                    <span className="text-muted-foreground">Elective policy: Not applicable</span>
+                  ) : electivePolicyCompatible ? (
+                    <span>Compatible elective policies exist for every successor Term.</span>
+                  ) : (
+                    <span className="text-destructive">An existing Grade {offering.gradeLevel} elective policy is required for every successor Term.</span>
+                  )}
+                </div>
                 <Field>
                   <FieldLabel>Source / Provenance Reference</FieldLabel>
                   <Input value={sourceReference} onChange={(event) => setSourceReference(event.target.value)} maxLength={500} />
@@ -236,6 +218,27 @@ function CorrectionForm({
                 </Field>
               </div>
             )}
+          </div>
+
+          <div className="space-y-3 rounded-xl border p-4">
+            <div>
+              <h3 className="font-semibold">Lineage preview</h3>
+              <p className="text-sm text-muted-foreground">Effective {effectiveTerm?.name ?? "Term unavailable"}. The predecessor is archived and the successor becomes the active prospective identity.</p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <LineageCard
+                role="Historical predecessor"
+                subject={`${data.source.subjectCode} - ${data.source.subjectDescription}`}
+                terms={data.source.terms.map(({ academicTerm }) => academicTerm)}
+                context={formatShsContext(data.source.shsContext)}
+              />
+              <LineageCard
+                role="Prospective successor"
+                subject={data.subjects.find((subject) => subject.id === subjectId) ? `${data.subjects.find((subject) => subject.id === subjectId)!.code} - ${data.subjects.find((subject) => subject.id === subjectId)!.description}` : "Select a Subject"}
+                terms={successorTerms}
+                context={isShs ? formatClassification(classification, availableClusters.find((cluster) => cluster.id === clusterId)?.name) : "JHS"}
+              />
+            </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -251,7 +254,7 @@ function CorrectionForm({
 
           <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4">
             <p className="font-medium">Historical records will not be rewritten</p>
-            <p className="mt-1 text-sm text-muted-foreground">Existing students and historical results remain attached to the original Offering. The replacement applies prospectively only.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Existing students remain on the historical Offering. The replacement applies prospectively only. Student-specific placement or enrollment errors are not corrected here.</p>
           </div>
 
           <Field>
@@ -304,4 +307,24 @@ export function CurriculumCorrectionDetailDialog({
 
 function Fact({ label, value }: { label: string; value: string }) {
   return <div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 text-sm font-medium">{value}</p></div>;
+}
+
+function LineageCard({ role, subject, terms, context }: { role: string; subject: string; terms: Array<{ id?: string; name: string; position: number }>; context: string }) {
+  return (
+    <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{role}</p>
+      <p className="text-sm font-medium">{subject}</p>
+      <div className="flex flex-wrap gap-1">{terms.map((term) => <AcademicTermBadge key={term.id ?? `${term.position}-${term.name}`} position={term.position} name={term.name} />)}</div>
+      <p className="text-xs text-muted-foreground">{context}</p>
+    </div>
+  );
+}
+
+function formatClassification(classification: Classification, clusterName?: string) {
+  const label = classification === "CORE" ? "Core" : classification === "ACADEMIC_ELECTIVE" ? "Academic Elective" : "TechPro Elective";
+  return clusterName ? `${label} - ${clusterName}` : label;
+}
+
+function formatShsContext(context: { classification: Classification; cluster?: { name: string } | null } | null) {
+  return context ? formatClassification(context.classification, context.cluster?.name) : "JHS";
 }

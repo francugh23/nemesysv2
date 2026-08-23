@@ -81,7 +81,12 @@ export function findCurriculumCorrectionDetail(subjectOfferingId: string, transa
   });
 }
 
-export function findCorrectionFormOptions(transaction?: Prisma.TransactionClient) {
+export function findCorrectionFormOptions(
+  academicYearId: string,
+  gradeLevel: string,
+  academicTermIds: string[],
+  transaction?: Prisma.TransactionClient,
+) {
   const client = transaction ?? prisma;
   return Promise.all([
     client.subject.findMany({
@@ -93,6 +98,11 @@ export function findCorrectionFormOptions(transaction?: Prisma.TransactionClient
       where: { deletedAt: null, isSchoolFacing: true },
       select: { id: true, code: true, name: true, track: true },
       orderBy: [{ track: "asc" }, { name: "asc" }],
+    }),
+    client.shsElectiveEnrollmentPolicy.findMany({
+      where: { academicYearId, gradeLevel, academicTermId: { in: academicTermIds } },
+      select: { id: true, academicTermId: true, minimumElectives: true, maximumElectives: true },
+      orderBy: { academicTermId: "asc" },
     }),
   ]);
 }

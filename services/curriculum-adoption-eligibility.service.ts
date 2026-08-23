@@ -8,6 +8,16 @@ export function getCurriculumAdoptionInvalidReasons(
 ): CurriculumAdoptionReason[] {
   const reasons: CurriculumAdoptionReason[] = [];
 
+  if (
+    offering.replacesSubjectOffering &&
+    offering.replacesSubjectOffering.terms.length > offering.terms.length
+  ) {
+    reasons.push({
+      code: "PARTIAL_YEAR_CORRECTION_SUCCESSOR",
+      message: "This mid-year correction successor is not a complete next-year Curriculum baseline.",
+    });
+  }
+
   if (offering.subject.deletedAt) {
     reasons.push({ code: "SUBJECT_ARCHIVED", message: "The related Subject is archived." });
   }

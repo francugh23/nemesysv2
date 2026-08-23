@@ -160,31 +160,33 @@ async function activateEffectiveTerm(academicTermId: string, transaction: Prisma
   }
 }
 
-function values(source: Awaited<ReturnType<typeof fixture>>["source"], term3Id: string): CorrectSubjectOfferingInput {
+function values(source: Awaited<ReturnType<typeof fixture>>["source"], effectiveTermId: string): CorrectSubjectOfferingInput {
   assert.ok(source.shsContext?.sourceReference);
   const classification = source.shsContext.classification;
   const shsContext = classification === "CORE"
     ? {
         classification,
-        sourceReference: source.shsContext.sourceReference,
+        sourceReference: "New E2-A replacement provenance",
         approvalReference: "E2-A replacement approval",
       }
     : {
         classification,
         clusterId: source.shsContext.cluster?.id ?? "",
-        sourceReference: source.shsContext.sourceReference,
+        sourceReference: "New E2-A replacement provenance",
         approvalReference: "E2-A replacement approval",
       };
   return {
     sourceOfferingId: source.id,
-    effectiveAcademicTermId: term3Id,
+    effectiveAcademicTermId: effectiveTermId,
     reason: "Documented E2-A configuration correction.",
     evidenceReference: "E2-A test memorandum",
     confirmation: source.subjectCode,
     replacement: {
       subjectId: source.subjectId,
       gradeLevel: "11" as const,
-      academicTermIds: [term3Id],
+      academicTermIds: source.academicYear.terms
+        .filter((term) => term.position >= source.academicYear.terms.find((candidate) => candidate.id === effectiveTermId)!.position)
+        .map(({ id }) => id),
       shsContext,
     },
   };
@@ -226,7 +228,10 @@ test("finalized Curriculum correction atomically archives predecessor and create
     const afterFinalization = await transaction.curriculumFinalization.findUnique({ where: { academicYearId: source.academicYearId } });
     assert.ok(predecessor?.deletedAt);
     assert.equal(replacement?.replacesSubjectOfferingId, source.id);
-    assert.deepEqual(replacement?.terms.map(({ academicTermId }) => academicTermId), [effectiveTerm.id]);
+    assert.deepEqual(
+      replacement?.terms.map(({ academicTermId }) => academicTermId).sort(),
+      source.academicYear.terms.filter(({ position }) => position >= effectiveTerm.position).map(({ id }) => id).sort(),
+    );
     assert.equal(replacement?.shsContext?.curriculumStatus, "SCHOOL_APPROVED");
     assert.equal(correction?.sourceWasFinalized, true);
     assert.equal(correction?.sourceParticipationCount, 0);
@@ -302,7 +307,12 @@ test("partial-Term predecessor Core covers only its immutable Term and successor
     });
     assert.equal(result.replacedCore, 0);
     assert.deepEqual(predecessor, { status: "ACTIVE", terms: [{ academicTermId: firstTerm.id }] });
-    assert.deepEqual(successor, { status: "ACTIVE", terms: [{ academicTermId: effectiveTerm.id }] });
+    assert.deepEqual(successor, {
+      status: "ACTIVE",
+      terms: source.academicYear.terms
+        .filter(({ position }) => position >= effectiveTerm.position)
+        .map(({ id }) => ({ academicTermId: id })),
+    });
   });
 });
 
@@ -320,6 +330,17 @@ test("corrected elective maps to its active successor and remains retained when 
       maximumElectives: 3,
       createdById: source.createdById,
     }, transaction);
+    const laterTerms = source.academicYear.terms.filter(({ position }) => position > effectiveTerm.position);
+    for (const term of laterTerms) {
+      await createLegacyPolicyFixture({
+        academicYearId: source.academicYearId,
+        academicTermId: term.id,
+        gradeLevel: "11",
+        minimumElectives: 1,
+        maximumElectives: 3,
+        createdById: source.createdById,
+      }, transaction);
+    }
     const ids = { correctionId: randomUUID(), replacementOfferingId: randomUUID() };
     await correctSubjectOfferingInTransaction(
       values(source, effectiveTerm.id), source.createdById, transaction, NOW_CLOCK, ids,
@@ -363,6 +384,18 @@ test("dependency-locked unfinalized correction preserves all SSE, Term membershi
   await withRollback(async (transaction) => {
     const { source, effectiveTerm } = await fixture(transaction, false);
     const activeEnrollmentId = await createActiveParticipation(source, transaction);
+    const participation = await transaction.studentSubjectEnrollment.findFirstOrThrow({
+      where: { enrollmentId: activeEnrollmentId, subjectOfferingId: source.id },
+      select: { id: true },
+    });
+    await transaction.shsTermResult.create({
+      data: {
+        studentSubjectEnrollmentId: participation.id,
+        academicTermId: source.academicYear.terms[0]!.id,
+        finalResult: new Prisma.Decimal("88.50"),
+        createdById: source.createdById,
+      },
+    });
     await makeLegacyActiveCurriculumConfigurable(source.academicYearId, transaction);
     await configureCurrentInterTermGap(source.academicYearId, transaction);
     const before = await transaction.studentSubjectEnrollment.findMany({
@@ -427,7 +460,7 @@ test("E2-A rejects active-Term, post-year, foreign-Term, and unlocked ordinary-w
     );
     await assert.rejects(
       correctSubjectOfferingInTransaction({ ...values(source, effectiveTerm.id), effectiveAcademicTermId: randomUUID() }, source.createdById, transaction, () => new Date("2026-12-20T00:00:00+08:00")),
-      /must belong to the source Academic Year/i,
+      /immediately next unstarted/i,
     );
     await makeLegacyActiveCurriculumConfigurable(source.academicYearId, transaction);
     await assert.rejects(

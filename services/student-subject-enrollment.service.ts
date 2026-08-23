@@ -103,6 +103,7 @@ export async function getShsCurrentTermProgressionContext(enrollmentId: string, 
   const currentRows = rows.filter((row) => row.status === "ACTIVE" && row.terms.some(({ academicTermId }) => academicTermId === resolved.academicTerm.id));
   const currentElectives = currentRows.filter((row) => row.shsClassification === "ACADEMIC_ELECTIVE" || row.shsClassification === "TECHPRO_ELECTIVE");
   const droppedIdentities = new Set(rows.filter((row) => row.status === "DROPPED" && row.terms.some(({ academicTermId }) => academicTermId === resolved.academicTerm.id)).map(({ subjectOfferingId }) => subjectOfferingId));
+  const droppedAncestorIdentities = new Set(rows.filter((row) => row.status === "DROPPED").map(({ subjectOfferingId }) => subjectOfferingId));
   const eligibleElectives = offerings.filter((offering) =>
     (offering.shsContext?.classification === "ACADEMIC_ELECTIVE" || offering.shsContext?.classification === "TECHPRO_ELECTIVE") &&
     offering.terms.some(({ academicTermId }) => academicTermId === resolved.academicTerm.id));
@@ -136,7 +137,7 @@ export async function getShsCurrentTermProgressionContext(enrollmentId: string, 
     eligibleElectives: eligibleElectives.map((offering) => ({
       ...offering,
       selected: currentElectives.some(({ subjectOfferingId }) => subjectOfferingId === offering.id || ancestorIdsByOfferingId.get(offering.id)?.has(subjectOfferingId)),
-      dropped: droppedIdentities.has(offering.id) || [...(ancestorIdsByOfferingId.get(offering.id) ?? [])].some((ancestorId) => droppedIdentities.has(ancestorId)),
+      dropped: droppedIdentities.has(offering.id) || [...(ancestorIdsByOfferingId.get(offering.id) ?? [])].some((ancestorId) => droppedAncestorIdentities.has(ancestorId)),
     })),
   };
 }

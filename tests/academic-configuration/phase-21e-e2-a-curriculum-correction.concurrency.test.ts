@@ -52,10 +52,10 @@ test("concurrent E2-A corrections produce exactly one successor", { skip: !enabl
     replacement: {
       subjectId: source.subjectId,
       gradeLevel: "11" as const,
-      academicTermIds: [effectiveTerm.id],
+      academicTermIds: source.academicYear.terms.filter(({ position }) => position >= effectiveTerm.position).map(({ id }) => id),
       shsContext: {
         classification: "CORE" as const,
-        sourceReference: source.shsContext.sourceReference,
+        sourceReference: "New concurrent correction provenance",
         approvalReference: "Concurrent correction approval",
       },
     },

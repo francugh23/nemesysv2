@@ -21,6 +21,9 @@ const offeringSelect = {
   subjectCode: true,
   subjectDescription: true,
   deletedAt: true,
+  replacesSubjectOffering: {
+    select: { terms: { select: { academicTermId: true } } },
+  },
   subject: { select: { gradeLevel: true, deletedAt: true } },
   terms: {
     select: { academicTermId: true },

@@ -232,19 +232,33 @@ export async function findOfferingReplacementAncestors(
   return (transaction ?? prisma).$queryRaw<Array<{ offeringId: string; ancestorOfferingId: string }>>(Prisma.sql`
     WITH RECURSIVE lineage AS (
       SELECT offering."id" AS "offeringId",
-        offering."replacesSubjectOfferingId" AS "ancestorOfferingId"
+        offering."replacesSubjectOfferingId" AS "ancestorOfferingId",
+        CASE
+          WHEN current_context."classification" = 'CORE' AND predecessor_context."classification" = 'CORE' THEN 'CORE'
+          WHEN current_context."classification" IN ('ACADEMIC_ELECTIVE', 'TECHPRO_ELECTIVE')
+            AND predecessor_context."classification" IN ('ACADEMIC_ELECTIVE', 'TECHPRO_ELECTIVE') THEN 'ELECTIVE'
+          ELSE NULL
+        END AS "continuationKind"
       FROM "SubjectOffering" offering
+      JOIN "SubjectOfferingShsContext" current_context ON current_context."subjectOfferingId" = offering."id"
+      JOIN "SubjectOfferingShsContext" predecessor_context ON predecessor_context."subjectOfferingId" = offering."replacesSubjectOfferingId"
       WHERE offering."id" IN (${Prisma.join(orderedIds)})
         AND offering."replacesSubjectOfferingId" IS NOT NULL
       UNION ALL
-      SELECT lineage."offeringId", predecessor."replacesSubjectOfferingId"
+      SELECT lineage."offeringId", predecessor."replacesSubjectOfferingId", lineage."continuationKind"
       FROM lineage
       JOIN "SubjectOffering" predecessor
         ON predecessor."id" = lineage."ancestorOfferingId"
+      JOIN "SubjectOfferingShsContext" next_context ON next_context."subjectOfferingId" = predecessor."replacesSubjectOfferingId"
       WHERE predecessor."replacesSubjectOfferingId" IS NOT NULL
+        AND (
+          (lineage."continuationKind" = 'CORE' AND next_context."classification" = 'CORE')
+          OR (lineage."continuationKind" = 'ELECTIVE' AND next_context."classification" IN ('ACADEMIC_ELECTIVE', 'TECHPRO_ELECTIVE'))
+        )
     )
     SELECT "offeringId", "ancestorOfferingId"
     FROM lineage
+    WHERE "continuationKind" IS NOT NULL
     ORDER BY "offeringId", "ancestorOfferingId"
   `);
 }
