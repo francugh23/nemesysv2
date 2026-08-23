@@ -151,6 +151,7 @@ model User {
   createdShsTermResults                        ShsTermResult[]                     @relation("ShsTermResultCreator")
   finalizedShsTermResults                      ShsTermResult[]                     @relation("ShsTermResultFinalizer")
   finalizedCurricula                           CurriculumFinalization[]            @relation("CurriculumFinalizer")
+  curriculumCorrections                        CurriculumCorrection[]              @relation("CurriculumCorrectionActor")
   createdShsTermResultInterpretationPolicies   ShsTermResultInterpretationPolicy[] @relation("ShsTermResultInterpretationPolicyCreator")
   publishedShsTermResultInterpretationPolicies ShsTermResultInterpretationPolicy[] @relation("ShsTermResultInterpretationPolicyPublisher")
   auditLogs                                    AuditLog[]
@@ -239,6 +240,7 @@ model AcademicTerm {
   selectedStudentSubjectEnrollments StudentSubjectEnrollment[]     @relation("StudentSubjectEnrollmentSelectionAcademicTerm")
   entryEnrollments                  Enrollment[]                   @relation("EnrollmentEntryAcademicTerm")
   shsElectiveEnrollmentPolicies     ShsElectiveEnrollmentPolicy[]
+  curriculumCorrections             CurriculumCorrection[]
 
   @@unique([academicYearId, position])
   @@unique([id, academicYearId])
@@ -377,6 +379,7 @@ model AcademicYear {
   shsElectiveEnrollmentPolicies     ShsElectiveEnrollmentPolicy[]
   shsTermResultInterpretationPolicy ShsTermResultInterpretationPolicy?
   curriculumFinalization            CurriculumFinalization?
+  curriculumCorrections             CurriculumCorrection[]
 
   @@index([status])
   @@index([startDate])
@@ -390,7 +393,7 @@ model CurriculumFinalization {
   academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
 
   finalizedById String
-  finalizedBy   User   @relation("CurriculumFinalizer", fields: [finalizedById], references: [id], onDelete: Restrict)
+  finalizedBy   User     @relation("CurriculumFinalizer", fields: [finalizedById], references: [id], onDelete: Restrict)
   finalizedAt   DateTime
   createdAt     DateTime @default(now())
 
@@ -398,25 +401,61 @@ model CurriculumFinalization {
 }
 
 model SubjectOffering {
-  id                        String                     @id @default(cuid())
-  subjectId                 String
-  subject                   Subject                    @relation(fields: [subjectId], references: [id], onDelete: Restrict)
-  academicYearId            String
-  academicYear              AcademicYear               @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
-  gradeLevel                String
-  subjectCode               String
-  subjectDescription        String
-  createdById               String
-  createdBy                 User                       @relation(fields: [createdById], references: [id], onDelete: Restrict)
-  createdAt                 DateTime                   @default(now())
-  updatedAt                 DateTime                   @updatedAt
-  deletedAt                 DateTime?
-  terms                     SubjectOfferingTerm[]
-  shsContext                SubjectOfferingShsContext?
-  studentSubjectEnrollments StudentSubjectEnrollment[]
+  id                              String                     @id @default(cuid())
+  subjectId                       String
+  subject                         Subject                    @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  academicYearId                  String
+  academicYear                    AcademicYear               @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+  gradeLevel                      String
+  subjectCode                     String
+  subjectDescription              String
+  createdById                     String
+  createdBy                       User                       @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt                       DateTime                   @default(now())
+  updatedAt                       DateTime                   @updatedAt
+  deletedAt                       DateTime?
+  replacesSubjectOfferingId       String?                    @unique
+  replacesSubjectOffering         SubjectOffering?           @relation("SubjectOfferingReplacement", fields: [replacesSubjectOfferingId], references: [id], onDelete: Restrict)
+  replacementSubjectOffering      SubjectOffering?           @relation("SubjectOfferingReplacement")
+  sourceCurriculumCorrection      CurriculumCorrection?      @relation("CurriculumCorrectionSource")
+  replacementCurriculumCorrection CurriculumCorrection?      @relation("CurriculumCorrectionReplacement")
+  terms                           SubjectOfferingTerm[]
+  shsContext                      SubjectOfferingShsContext?
+  studentSubjectEnrollments       StudentSubjectEnrollment[]
 
   @@index([academicYearId])
   @@index([subjectId])
+}
+
+model CurriculumCorrection {
+  id String @id @default(cuid())
+
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+
+  sourceOfferingId String          @unique
+  sourceOffering   SubjectOffering @relation("CurriculumCorrectionSource", fields: [sourceOfferingId], references: [id], onDelete: Restrict)
+
+  replacementOfferingId String          @unique
+  replacementOffering   SubjectOffering @relation("CurriculumCorrectionReplacement", fields: [replacementOfferingId], references: [id], onDelete: Restrict)
+
+  effectiveAcademicTermId String
+  effectiveAcademicTerm   AcademicTerm @relation(fields: [effectiveAcademicTermId, academicYearId], references: [id, academicYearId], onDelete: Restrict, map: "CurriculumCorrection_effectiveTerm_year_fkey")
+
+  reason                           String
+  evidenceReference                String
+  sourceWasFinalized               Boolean
+  sourceParticipationCount         Int
+  sourceConfigurationSnapshot      Json
+  replacementConfigurationSnapshot Json
+
+  correctedById String
+  correctedBy   User     @relation("CurriculumCorrectionActor", fields: [correctedById], references: [id], onDelete: Restrict)
+  correctedAt   DateTime
+  createdAt     DateTime @default(now())
+
+  @@index([academicYearId, effectiveAcademicTermId])
+  @@index([correctedById])
 }
 
 model ShsCurriculumCluster {

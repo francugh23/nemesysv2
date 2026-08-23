@@ -15,6 +15,7 @@ import {
   CURRICULUM_TITLE,
 } from "@/lib/academic-configuration";
 import type { SubjectOfferingTableQueryInput } from "@/schemas";
+import { hasPermission, Permissions } from "@/lib/permissions";
 
 import { subjectOfferingColumns } from "./components/subject-offering-columns";
 import {
@@ -23,6 +24,7 @@ import {
   CreateSubjectOfferingDialog,
   EditSubjectOfferingDialog,
 } from "./components/subject-offering-dialogs";
+import { CurriculumCorrectionDetailDialog, CurriculumCorrectionDialog } from "./components/curriculum-correction-dialog";
 import { ShsCurriculumClusterDialog } from "./components/shs-curriculum-cluster-dialog";
 import type { SubjectOfferingListItem } from "./components/subject-offering-types";
 
@@ -38,7 +40,7 @@ export default function SubjectOfferingsPage() {
 
 function SubjectOfferingsPageContent() {
   const { data: session } = useSession();
-  const canManageOfferings = session?.user.role === "SUPER_ADMIN";
+  const canManageOfferings = hasPermission(session?.user.role, Permissions.SUBJECTS);
   const tableState = useTableUrlState({ filterKeys, sortableColumns: [] });
   const { data: filterOptions } = useSubjectOfferingFilterOptions();
   const gradeLevel = ["7", "8", "9", "10", "11", "12"].includes(tableState.filters.gradeLevel)
@@ -60,7 +62,7 @@ function SubjectOfferingsPageContent() {
   };
   const { data, isLoading, isError, isFetching, isPlaceholderData, refetch } = useSubjectOfferings(query);
   const [selectedOffering, setSelectedOffering] = useState<SubjectOfferingListItem | null>(null);
-  const [dialog, setDialog] = useState<"edit" | "archive" | "approve" | null>(null);
+  const [dialog, setDialog] = useState<"edit" | "archive" | "approve" | "correct" | "correctionDetails" | null>(null);
   const columns = useMemo(
     () =>
       subjectOfferingColumns({
@@ -73,6 +75,8 @@ function SubjectOfferingsPageContent() {
           setDialog("archive");
         },
         onApprove: (offering) => { setSelectedOffering(offering); setDialog("approve"); },
+        onCorrect: (offering) => { setSelectedOffering(offering); setDialog("correct"); },
+        onViewCorrection: (offering) => { setSelectedOffering(offering); setDialog("correctionDetails"); },
         canManageOfferings,
       }),
     [canManageOfferings],
@@ -210,7 +214,9 @@ function SubjectOfferingsPageContent() {
             <>
               <EditSubjectOfferingDialog offering={selectedOffering} open={dialog === "edit"} onOpenChange={(open) => !open && setDialog(null)} />
                <ArchiveSubjectOfferingDialog offering={selectedOffering} open={dialog === "archive"} onOpenChange={(open) => !open && setDialog(null)} />
-               <ApproveShsSubjectOfferingDialog offering={selectedOffering} open={dialog === "approve"} onOpenChange={(open) => !open && setDialog(null)} />
+                <ApproveShsSubjectOfferingDialog offering={selectedOffering} open={dialog === "approve"} onOpenChange={(open) => !open && setDialog(null)} />
+                <CurriculumCorrectionDialog offering={selectedOffering} open={dialog === "correct"} onOpenChange={(open) => !open && setDialog(null)} />
+                <CurriculumCorrectionDetailDialog offering={selectedOffering} open={dialog === "correctionDetails"} onOpenChange={(open) => !open && setDialog(null)} />
             </>
           )}
         </CardContent>

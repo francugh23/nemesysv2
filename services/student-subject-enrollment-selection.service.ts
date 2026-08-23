@@ -12,6 +12,7 @@ import {
   dropActiveStudentSubjectEnrollment,
   findActiveAcademicYearCalendars,
   findApprovedShsCoreOfferingIds,
+  findOfferingReplacementAncestors,
   findShsStudentSubjectEnrollmentHistory,
   lockActiveShsEnrollmentForCurriculumSelection,
   lockActiveShsStudentSubjectEnrollments,
@@ -109,6 +110,13 @@ export async function progressShsCurrentTermInTransaction(
   const coreCandidates = await findApprovedShsCoreOfferingIds(enrollment.academicYearId, enrollment.gradeLevel, transaction);
   const affectedIds = [...new Set([...values.subjectOfferingIds, ...coreCandidates.map(({ id }) => id)])];
   const lockedOfferings = await lockShsOfferingsById(affectedIds, transaction);
+  const lineage = await findOfferingReplacementAncestors(affectedIds, transaction);
+  const ancestorIdsByOfferingId = new Map<string, Set<string>>();
+  for (const { offeringId, ancestorOfferingId } of lineage) {
+    const ancestors = ancestorIdsByOfferingId.get(offeringId) ?? new Set<string>();
+    ancestors.add(ancestorOfferingId);
+    ancestorIdsByOfferingId.set(offeringId, ancestors);
+  }
   const offeringById = new Map(lockedOfferings.map((offering) => [offering.id, offering]));
   if (affectedIds.some((id) => !offeringById.has(id))) throw new ShsCurrentTermProgressionError("A selected SHS Offering no longer exists.");
   for (const offering of lockedOfferings) {
@@ -128,14 +136,16 @@ export async function progressShsCurrentTermInTransaction(
   const droppedCurrentIdentities = new Set(history
     .filter((row) => row.status === "DROPPED" && row.terms.some(({ academicTermId }) => academicTermId === currentTerm.id))
     .map(({ subjectOfferingId }) => subjectOfferingId));
-  if (requested.some(({ id }) => droppedCurrentIdentities.has(id))) {
+  if (requested.some(({ id }) => droppedCurrentIdentities.has(id) || [...(ancestorIdsByOfferingId.get(id) ?? [])].some((ancestorId) => droppedCurrentIdentities.has(ancestorId)))) {
     throw new ShsCurrentTermProgressionError("A dropped Offering cannot be selected again for the same Academic Term.");
   }
 
   const activeCurrentElectives = active.filter((row) =>
     row.gradeLevel === enrollment.gradeLevel && isElective(row.shsClassification) && row.terms.some(({ academicTermId }) => academicTermId === currentTerm.id));
   const activeCurrentOfferingIds = new Set(activeCurrentElectives.map(({ subjectOfferingId }) => subjectOfferingId));
-  const newElectives = requested.filter(({ id }) => !activeCurrentOfferingIds.has(id));
+  const newElectives = requested.filter(({ id }) =>
+    !activeCurrentOfferingIds.has(id) &&
+    ![...(ancestorIdsByOfferingId.get(id) ?? [])].some((ancestorId) => activeCurrentOfferingIds.has(ancestorId)));
   const prospectiveCount = activeCurrentElectives.length + newElectives.length;
   if (prospectiveCount < policy.minimumElectives || prospectiveCount > policy.maximumElectives) {
     throw new ShsCurrentTermProgressionError(`Current-Term elective count must be between ${policy.minimumElectives} and ${policy.maximumElectives}.`);
@@ -144,14 +154,24 @@ export async function progressShsCurrentTermInTransaction(
   const droppedOfferingIds = new Set(history.filter(({ status }) => status === "DROPPED").map(({ subjectOfferingId }) => subjectOfferingId));
   const coreStartPosition = initialMaterialization ? entryTerm.position : currentTerm.position;
   const newCores = lockedOfferings.flatMap((offering) => {
-    if (offering.shsContext?.classification !== "CORE" || droppedOfferingIds.has(offering.id)) return [];
+    const ancestorIds = ancestorIdsByOfferingId.get(offering.id) ?? new Set<string>();
+    if (
+      offering.shsContext?.classification !== "CORE" ||
+      droppedOfferingIds.has(offering.id) ||
+      [...ancestorIds].some((ancestorId) => droppedOfferingIds.has(ancestorId))
+    ) return [];
+    const ancestorTermIds = new Set(active
+      .filter(({ subjectOfferingId, shsClassification }) =>
+        shsClassification === "CORE" && ancestorIds.has(subjectOfferingId))
+      .flatMap(({ terms }) => terms.map(({ academicTermId }) => academicTermId)));
     const academicTermIds = offering.terms
       .filter(({ academicTerm }) => academicTerm.position >= coreStartPosition)
       .map(({ academicTermId }) => academicTermId);
     const activeCore = active.find(({ subjectOfferingId, shsClassification }) => subjectOfferingId === offering.id && shsClassification === "CORE");
     const activeTermIds = new Set(activeCore?.terms.map(({ academicTermId }) => academicTermId));
-    const alreadyCovered = academicTermIds.every((academicTermId) => activeTermIds.has(academicTermId));
-    return academicTermIds.length && !alreadyCovered ? [{ offering, academicTermIds, activeCore }] : [];
+    const uncoveredTermIds = academicTermIds.filter((academicTermId) =>
+      !ancestorTermIds.has(academicTermId) && !activeTermIds.has(academicTermId));
+    return uncoveredTermIds.length ? [{ offering, academicTermIds: uncoveredTermIds, activeCore }] : [];
   });
 
   const replacedCores = [];

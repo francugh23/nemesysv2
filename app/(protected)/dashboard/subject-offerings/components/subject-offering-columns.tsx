@@ -20,11 +20,15 @@ export function subjectOfferingColumns({
   onEdit,
   onArchive,
   onApprove,
+  onCorrect,
+  onViewCorrection,
   canManageOfferings,
 }: {
   onEdit: (offering: SubjectOfferingListItem) => void;
   onArchive: (offering: SubjectOfferingListItem) => void;
   onApprove: (offering: SubjectOfferingListItem) => void;
+  onCorrect: (offering: SubjectOfferingListItem) => void;
+  onViewCorrection: (offering: SubjectOfferingListItem) => void;
   canManageOfferings: boolean;
 }): ColumnDef<SubjectOfferingListItem>[] {
   return [
@@ -116,6 +120,14 @@ export function subjectOfferingColumns({
                 Locked by Student Participation
               </Badge>
             )}
+            {offering.replacementCurriculumCorrection && (
+              <Badge variant="secondary" title={`Prospective from ${offering.replacementCurriculumCorrection.effectiveAcademicTerm.name}.`}>
+                Replacement
+              </Badge>
+            )}
+            {offering.replacesSubjectOffering && (
+              <span className="text-xs text-muted-foreground">Replaces {offering.replacesSubjectOffering.subjectCode}</span>
+            )}
           </div>
         );
       },
@@ -127,7 +139,10 @@ export function subjectOfferingColumns({
         const offering = row.original;
         const finalized = Boolean(offering.academicYear.curriculumFinalization);
         const depended = offering._count.studentSubjectEnrollments > 0;
-        return offering.academicYear.status === "ACTIVE" && !finalized && (canManageOfferings || offering.shsContext?.curriculumStatus === "PROVISIONAL_DEPED") ? (
+        const ordinaryActions = !finalized && (canManageOfferings || offering.shsContext?.curriculumStatus === "PROVISIONAL_DEPED");
+        const canCorrect = canManageOfferings && (finalized || depended);
+        const canViewCorrection = canManageOfferings && Boolean(offering.replacementCurriculumCorrection);
+        return offering.academicYear.status === "ACTIVE" && (ordinaryActions || canCorrect || canViewCorrection) ? (
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
@@ -137,11 +152,13 @@ export function subjectOfferingColumns({
               }
             />
             <DropdownMenuContent align="end">
-              {canManageOfferings && !depended && offering.shsContext?.curriculumStatus !== "SCHOOL_APPROVED" && <DropdownMenuItem onClick={() => onEdit(offering)}>Edit</DropdownMenuItem>}
+              {canManageOfferings && !finalized && !depended && offering.shsContext?.curriculumStatus !== "SCHOOL_APPROVED" && <DropdownMenuItem onClick={() => onEdit(offering)}>Edit</DropdownMenuItem>}
               {!depended && offering.shsContext?.curriculumStatus === "PROVISIONAL_DEPED" && <DropdownMenuItem onClick={() => onApprove(offering)}>Approve for school use</DropdownMenuItem>}
-              {canManageOfferings && <DropdownMenuItem className="text-destructive" onClick={() => onArchive(offering)}>
+              {canManageOfferings && !finalized && <DropdownMenuItem className="text-destructive" onClick={() => onArchive(offering)}>
                 Archive
               </DropdownMenuItem>}
+              {canCorrect && <DropdownMenuItem onClick={() => onCorrect(offering)}>Correct / Replace</DropdownMenuItem>}
+              {canViewCorrection && <DropdownMenuItem onClick={() => onViewCorrection(offering)}>View correction details</DropdownMenuItem>}
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null;

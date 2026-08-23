@@ -3,11 +3,13 @@ import { Permissions, requirePermission } from "@/lib/authorization";
 import { resolveCurrentAcademicTerm } from "@/lib/academic-term-current";
 import { interpretFinalizedShsTermResult } from "@/lib/shs-term-result-interpretation";
 import prisma from "@/lib/prisma";
+import { mapCurrentOfferingIdsToActiveIdentities } from "@/lib/subject-offering-lineage";
 import { findShsElectiveEnrollmentPolicyByScope } from "@/repositories/shs-elective-enrollment-policy.repository";
 import { findPublishedShsTermResultInterpretationPolicyForEnrollment } from "@/repositories/shs-term-result-interpretation-policy.repository";
 import {
   findActiveAcademicYearCalendars,
   findEligibleShsOfferingsForEnrollment,
+  findOfferingReplacementAncestors,
   findShsEnrollmentForCurrentTerm,
   findStudentSubjectEnrollments,
 } from "@/repositories/student-subject-enrollment.repository";
@@ -91,12 +93,24 @@ export async function getShsCurrentTermProgressionContext(enrollmentId: string, 
     findEligibleShsOfferingsForEnrollment(enrollment.academicYearId, enrollment.section.gradeLevel),
     findStudentSubjectEnrollments({ enrollmentId }),
   ]);
+  const lineage = await findOfferingReplacementAncestors(offerings.map(({ id }) => id));
+  const ancestorIdsByOfferingId = new Map<string, Set<string>>();
+  for (const { offeringId, ancestorOfferingId } of lineage) {
+    const ancestors = ancestorIdsByOfferingId.get(offeringId) ?? new Set<string>();
+    ancestors.add(ancestorOfferingId);
+    ancestorIdsByOfferingId.set(offeringId, ancestors);
+  }
   const currentRows = rows.filter((row) => row.status === "ACTIVE" && row.terms.some(({ academicTermId }) => academicTermId === resolved.academicTerm.id));
   const currentElectives = currentRows.filter((row) => row.shsClassification === "ACADEMIC_ELECTIVE" || row.shsClassification === "TECHPRO_ELECTIVE");
   const droppedIdentities = new Set(rows.filter((row) => row.status === "DROPPED" && row.terms.some(({ academicTermId }) => academicTermId === resolved.academicTerm.id)).map(({ subjectOfferingId }) => subjectOfferingId));
   const eligibleElectives = offerings.filter((offering) =>
     (offering.shsContext?.classification === "ACADEMIC_ELECTIVE" || offering.shsContext?.classification === "TECHPRO_ELECTIVE") &&
     offering.terms.some(({ academicTermId }) => academicTermId === resolved.academicTerm.id));
+  const currentElectiveOfferingIds = mapCurrentOfferingIdsToActiveIdentities(
+    currentElectives.map(({ subjectOfferingId }) => subjectOfferingId),
+    eligibleElectives.map(({ id }) => id),
+    lineage,
+  );
   const hasShsHistory = rows.some(({ shsCurriculumStatus }) => shsCurriculumStatus !== null);
   const hasActiveOtherGrade = rows.some(({ gradeLevel, status, shsCurriculumStatus }) => status === "ACTIVE" && shsCurriculumStatus !== null && gradeLevel !== enrollment.section.gradeLevel);
   const progressionBlockReason = hasActiveOtherGrade
@@ -114,15 +128,15 @@ export async function getShsCurrentTermProgressionContext(enrollmentId: string, 
     reason: progressionBlockReason,
     policy,
     currentElectiveCount: currentElectives.length,
-    currentElectiveOfferingIds: currentElectives.map(({ subjectOfferingId }) => subjectOfferingId),
+    currentElectiveOfferingIds,
     core: {
       activeCount: currentRows.filter(({ shsClassification }) => shsClassification === "CORE").length,
       eligibleCount: offerings.filter(({ shsContext }) => shsContext?.classification === "CORE").length,
     },
     eligibleElectives: eligibleElectives.map((offering) => ({
       ...offering,
-      selected: currentElectives.some(({ subjectOfferingId }) => subjectOfferingId === offering.id),
-      dropped: droppedIdentities.has(offering.id),
+      selected: currentElectives.some(({ subjectOfferingId }) => subjectOfferingId === offering.id || ancestorIdsByOfferingId.get(offering.id)?.has(subjectOfferingId)),
+      dropped: droppedIdentities.has(offering.id) || [...(ancestorIdsByOfferingId.get(offering.id) ?? [])].some((ancestorId) => droppedIdentities.has(ancestorId)),
     })),
   };
 }

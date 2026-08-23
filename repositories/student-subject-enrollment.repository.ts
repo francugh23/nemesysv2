@@ -213,6 +213,7 @@ export function findShsStudentSubjectEnrollmentHistory(
 
 const shsOfferingSelection = {
   id: true,
+  replacesSubjectOfferingId: true,
   academicYearId: true,
   gradeLevel: true,
   deletedAt: true,
@@ -221,6 +222,32 @@ const shsOfferingSelection = {
   terms: { select: { academicTermId: true, academicTerm: { select: { name: true, position: true } } }, orderBy: { academicTerm: { position: "asc" } } },
   shsContext: { select: { classification: true, curriculumStatus: true, sourceReference: true, approvalReference: true, cluster: { select: { code: true, name: true, deletedAt: true } } } },
 } satisfies Prisma.SubjectOfferingSelect;
+
+export async function findOfferingReplacementAncestors(
+  offeringIds: string[],
+  transaction?: Prisma.TransactionClient,
+) {
+  const orderedIds = [...new Set(offeringIds)].sort();
+  if (!orderedIds.length) return [];
+  return (transaction ?? prisma).$queryRaw<Array<{ offeringId: string; ancestorOfferingId: string }>>(Prisma.sql`
+    WITH RECURSIVE lineage AS (
+      SELECT offering."id" AS "offeringId",
+        offering."replacesSubjectOfferingId" AS "ancestorOfferingId"
+      FROM "SubjectOffering" offering
+      WHERE offering."id" IN (${Prisma.join(orderedIds)})
+        AND offering."replacesSubjectOfferingId" IS NOT NULL
+      UNION ALL
+      SELECT lineage."offeringId", predecessor."replacesSubjectOfferingId"
+      FROM lineage
+      JOIN "SubjectOffering" predecessor
+        ON predecessor."id" = lineage."ancestorOfferingId"
+      WHERE predecessor."replacesSubjectOfferingId" IS NOT NULL
+    )
+    SELECT "offeringId", "ancestorOfferingId"
+    FROM lineage
+    ORDER BY "offeringId", "ancestorOfferingId"
+  `);
+}
 
 export async function findEligibleShsOfferingsForEnrollment(academicYearId: string, gradeLevel: string, transaction?: Prisma.TransactionClient) {
   return (transaction ?? prisma).subjectOffering.findMany({

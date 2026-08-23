@@ -53,6 +53,7 @@ function buildInput(
       provisionalShsOfferingCount: 1,
       pendingShsOfferingCount: 1,
       schoolApprovedShsOfferingCount: 0,
+      controlledCorrectionCount: 0,
     },
     electivePolicies: [],
     includeResultPolicy: false,
@@ -249,6 +250,7 @@ test("historical configuration gaps are informational rather than actionable", (
         provisionalShsOfferingCount: 0,
         pendingShsOfferingCount: 0,
         schoolApprovedShsOfferingCount: 0,
+        controlledCorrectionCount: 0,
       },
     }),
   );

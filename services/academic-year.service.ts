@@ -25,6 +25,7 @@ import {
 import { findAcademicTermsByAcademicYear } from "@/repositories/academic-term.repository";
 import {
   countOfferings,
+  countCurriculumCorrections,
   findAcademicYearOfferingGradeCounts,
 } from "@/repositories/subject-offering.repository";
 import { findShsElectiveEnrollmentPolicies } from "@/repositories/shs-elective-enrollment-policy.repository";
@@ -223,6 +224,10 @@ export async function getAcademicYearConfigurationSummaryService(
         { academicYearId, curriculumStatus: "SCHOOL_APPROVED" },
         transaction,
       );
+      const controlledCorrectionCount = await countCurriculumCorrections(
+        academicYearId,
+        transaction,
+      );
       const electivePolicies = await findShsElectiveEnrollmentPolicies(
         academicYearId,
         transaction,
@@ -250,6 +255,7 @@ export async function getAcademicYearConfigurationSummaryService(
           provisionalShsOfferingCount,
           pendingShsOfferingCount,
           schoolApprovedShsOfferingCount,
+          controlledCorrectionCount,
         },
         electivePolicies,
         includeResultPolicy,

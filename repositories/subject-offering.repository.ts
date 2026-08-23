@@ -6,6 +6,15 @@ import type { CreateSubjectOfferingInput } from "@/schemas";
 const clusterSelect = { id: true, code: true, name: true, track: true, sourceReference: true, isSchoolFacing: true } satisfies Prisma.ShsCurriculumClusterSelect;
 const select = {
   id: true, subjectId: true, academicYearId: true, gradeLevel: true, subjectCode: true, subjectDescription: true, deletedAt: true,
+  replacesSubjectOfferingId: true,
+  replacesSubjectOffering: { select: { id: true, subjectCode: true, subjectDescription: true } },
+  replacementCurriculumCorrection: {
+    select: {
+      id: true,
+      correctedAt: true,
+      effectiveAcademicTerm: { select: { id: true, name: true, position: true } },
+    },
+  },
   academicYear: { select: { label: true, status: true, curriculumFinalization: { select: { finalizedAt: true } } } },
   terms: { include: { academicTerm: true } },
   shsContext: { select: { classification: true, curriculumStatus: true, sourceReference: true, approvalReference: true, approvedById: true, approvedAt: true, cluster: { select: clusterSelect } } },
@@ -52,6 +61,9 @@ export async function findAcademicYearOfferingGradeCounts(academicYearId: string
     _count: { _all: true },
     orderBy: { gradeLevel: "asc" },
   });
+}
+export async function countCurriculumCorrections(academicYearId: string, tx?: Prisma.TransactionClient) {
+  return (tx ?? prisma).curriculumCorrection.count({ where: { academicYearId } });
 }
 export async function findOffering(id: string, tx?: Prisma.TransactionClient) { return (tx ?? prisma).subjectOffering.findFirst({ where: { id, deletedAt: null }, select }); }
 export async function hasOfferingStudentDependencies(id: string, tx: Prisma.TransactionClient) {

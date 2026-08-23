@@ -175,6 +175,11 @@ export function AcademicYearViewDialog({
                         Finalized by {summary.curriculum.finalization.finalizedBy} on {formatDateTime(summary.curriculum.finalization.finalizedAt)}
                       </span>
                     )}
+                    {summary.curriculum.controlledCorrectionCount > 0 && (
+                      <Badge variant="outline">
+                        {summary.curriculum.controlledCorrectionCount} controlled correction{summary.curriculum.controlledCorrectionCount === 1 ? "" : "s"}
+                      </Badge>
+                    )}
                   </div>
 
                   <div className="mt-4 space-y-2">

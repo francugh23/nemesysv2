@@ -42,6 +42,7 @@ export function buildAcademicYearConfigurationSummary({
     provisionalShsOfferingCount: number;
     pendingShsOfferingCount: number;
     schoolApprovedShsOfferingCount: number;
+    controlledCorrectionCount: number;
   };
   electivePolicies: ElectivePolicyRecord[];
   includeResultPolicy: boolean;
@@ -164,6 +165,7 @@ export function buildAcademicYearConfigurationSummary({
       pendingShsOfferingCount: curriculum.pendingShsOfferingCount,
       schoolApprovedShsOfferingCount:
         curriculum.schoolApprovedShsOfferingCount,
+      controlledCorrectionCount: curriculum.controlledCorrectionCount,
       state: historical
         ? "HISTORICAL" as const
         : curriculumFinalization

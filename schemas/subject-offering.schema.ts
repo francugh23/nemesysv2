@@ -62,6 +62,46 @@ export const PromoteShsSubjectOfferingSchema = z.object({
 });
 export type PromoteShsSubjectOfferingInput = z.infer<typeof PromoteShsSubjectOfferingSchema>;
 
+export const CurriculumCorrectionShsContextSchema = z
+  .object({
+    classification: ShsSubjectClassificationSchema,
+    clusterId: z.string().trim().min(1).optional(),
+    sourceReference: z.string().trim().min(1).max(500),
+    approvalReference: z.string().trim().min(1).max(500),
+  })
+  .superRefine((values, context) => {
+    if (values.classification === "CORE" && values.clusterId) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["clusterId"], message: "Core subjects cannot have a curriculum cluster." });
+    }
+    if (values.classification !== "CORE" && !values.clusterId) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["clusterId"], message: "Electives require a curriculum cluster." });
+    }
+  });
+
+export const CorrectSubjectOfferingSchema = z
+  .object({
+    sourceOfferingId: z.string().trim().min(1),
+    effectiveAcademicTermId: z.string().trim().min(1),
+    reason: z.string().trim().min(1).max(1000),
+    evidenceReference: z.string().trim().min(1).max(500),
+    confirmation: z.string().trim().min(1).max(200),
+    replacement: z.object({
+      subjectId: z.string().trim().min(1),
+      gradeLevel: z.enum(SUBJECT_GRADE_LEVELS),
+      academicTermIds: z.array(z.string().trim().min(1)).min(1),
+      shsContext: CurriculumCorrectionShsContextSchema.optional(),
+    }),
+  })
+  .superRefine((values, context) => {
+    if (isJhsGradeLevel(values.replacement.gradeLevel) && values.replacement.shsContext) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["replacement", "shsContext"], message: "SHS context is only valid for Grades 11 and 12." });
+    }
+    if (!isJhsGradeLevel(values.replacement.gradeLevel) && !values.replacement.shsContext) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["replacement", "shsContext"], message: "Grades 11 and 12 corrections require complete approved SHS context." });
+    }
+  });
+export type CorrectSubjectOfferingInput = z.infer<typeof CorrectSubjectOfferingSchema>;
+
 export const ShsCurriculumClusterFieldsSchema = z.object({
   code: z.string().trim().min(1).max(50).transform((value) => value.toUpperCase()),
   name: z.string().trim().min(1).max(150),

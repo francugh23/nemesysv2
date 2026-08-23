@@ -51,7 +51,7 @@ export function ShsCurrentTermSubjectSelection({
   const details = context && hasProgressionDetails(context) ? context : null;
   const existingOfferingIds = details?.currentElectiveOfferingIds ?? [];
   const validNewOfferingIds = newOfferingIds.filter((id) => details?.eligibleElectives.some((offering) => offering.id === id && !offering.selected && !offering.dropped));
-  const selectedCount = existingOfferingIds.length + validNewOfferingIds.length;
+  const selectedCount = (details?.currentElectiveCount ?? 0) + validNewOfferingIds.length;
   const selectionWithinPolicy = details?.policy
     ? selectedCount >= details.policy.minimumElectives &&
       selectedCount <= details.policy.maximumElectives
