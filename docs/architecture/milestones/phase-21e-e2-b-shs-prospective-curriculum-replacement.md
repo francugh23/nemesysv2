@@ -4,7 +4,7 @@
 
 Phase 21E-E2-B completes the SHS prospective behavior built on the controlled E2-A archive-and-replace foundation. It derives the only valid effective Term and successor Term set, validates every supported SHS classification transition, and resolves compatible correction lineage for future student participation without moving or rewriting historical records.
 
-Curriculum correction changes school Curriculum configuration only. It does not repair a student's Enrollment placement, grade level, elective selection, Student Subject Enrollment, Term membership, result, or participation mistake. Those student-specific corrections remain separate deferred work.
+Curriculum correction changes school Curriculum configuration only. It does not repair a student's grade or Section placement, JHS participation, SHS Core or Academic/TechPro elective selection, Term-specific participation, Student Subject Enrollment or Term membership, or result mistake. Those student-specific corrections remain separate deferred work.
 
 ## Prospective Correction Rules
 
@@ -34,9 +34,9 @@ Curriculum correction changes school Curriculum configuration only. It does not 
 
 ## PostgreSQL Enforcement
 
-- One additive migration strengthens the E2-A deferred completion guard; no lifecycle record or operational data is migrated.
+- The E2-B completion migration strengthens the E2-A deferred guard. After that migration entered committed history, one follow-up migration closed non-space whitespace evidence bypasses and revalidates the replacement snapshot when a direct writer forces deferred checks early and then inserts Offering Terms or SHS context. Neither migration changes lifecycle records or operational data.
 - PostgreSQL independently validates the immediately next effective Term, exact remaining predecessor Term set, SHS classification and cluster rules, elective policy coverage, new provenance, independent approval evidence, and approval actor/timestamp.
-- Direct writes with reused or absent evidence, mismatched approval facts, or a missing transaction-scoped correction identity are rejected.
+- Direct writes with reused, absent, or whitespace-disguised evidence, mismatched approval facts, or a missing transaction-scoped correction identity are rejected.
 - The E1 exception remains bound to the exact correction intent and exact source/replacement identities. Existing finalization, dependency, and correction-linked immutability guards are not weakened.
 
 ## UI
@@ -52,7 +52,7 @@ Curriculum correction changes school Curriculum configuration only. It does not 
 - Affected E2-A, SHS progression/drop, and Curriculum adoption regression boundary: 63 passed, zero failed.
 - Disposable cloned-database correction race: one passed, zero failed; the temporary database was removed.
 - Complete sequential repository suite: 296 passed, six expected environment-gated skips, zero failed.
-- `npx prisma validate`, `npx prisma generate`, migration status, and live Prisma schema drift checks pass with 32 applied migrations and no drift.
+- `npx prisma validate`, `npx prisma generate`, migration status, and live Prisma schema drift checks pass with 33 applied migrations and no drift.
 - `npx tsc --noEmit`, targeted ESLint, `npm run build`, and `git diff --check` pass.
 - Protected counts remain 3 Academic Terms, 204 Subjects, 139 Offerings, 261 Offering Terms, 107 SHS contexts, 4 Enrollments, 28 Student Subject Enrollments, and 84 Student Subject Enrollment Terms.
 - Protected Offering and participation projections remain at `44b0869a89e5c14d633d35107f4b25cf8593368b72a46258d11eaa4de8d59e08` and `e775508efa14339b40eca27539965ea7fe22b9f7091dacdcec275f38841b4e1e`; zero correction or lineage rows persist after verification.

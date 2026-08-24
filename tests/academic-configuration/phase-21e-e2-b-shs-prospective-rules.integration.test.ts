@@ -212,7 +212,13 @@ async function attemptDirectCoreCorrection(
     otherActorId: string;
     correctedAt: Date;
   }) => DirectCorrectionFacts,
-  options: { clearProtocolContext?: boolean } = {},
+  options: {
+    clearProtocolContext?: boolean;
+    afterValidation?: (transaction: Prisma.TransactionClient, fixture: {
+      source: Awaited<ReturnType<typeof sourceFixture>>["source"];
+      replacementOfferingId: string;
+    }) => Promise<void>;
+  } = {},
 ) {
   return prisma.$transaction(async (transaction) => {
     const { source, effectiveTerm } = await sourceFixture("CORE", 2, transaction);
@@ -300,6 +306,7 @@ async function attemptDirectCoreCorrection(
       },
     });
     await transaction.$executeRawUnsafe("SET CONSTRAINTS ALL IMMEDIATE");
+    await options.afterValidation?.(transaction, { source, replacementOfferingId });
   });
 }
 
@@ -425,6 +432,22 @@ test("E2-B database rejects reused successor provenance and approval evidence", 
     attemptDirectCoreCorrection((facts, { source }) => ({ ...facts, approvalReference: `  ${source.shsContext!.approvalReference}  ` })),
     /requires independent approval evidence/i,
   );
+  await assert.rejects(
+    attemptDirectCoreCorrection((facts, { source }) => ({ ...facts, sourceReference: `\t\n${source.shsContext!.sourceReference}\r\f` })),
+    /requires newly supplied provenance/i,
+  );
+  await assert.rejects(
+    attemptDirectCoreCorrection((facts, { source }) => ({ ...facts, approvalReference: `\t\n${source.shsContext!.approvalReference}\r\f` })),
+    /requires independent approval evidence/i,
+  );
+  await assert.rejects(
+    attemptDirectCoreCorrection((facts) => ({ ...facts, sourceReference: "\t\n\r\f\v" })),
+    /requires newly supplied provenance/i,
+  );
+  await assert.rejects(
+    attemptDirectCoreCorrection((facts) => ({ ...facts, approvalReference: "\t\n\r\f\v" })),
+    /requires independent approval evidence/i,
+  );
 });
 
 test("E2-B database rejects absent successor approval evidence", async () => {
@@ -449,6 +472,17 @@ test("E2-B direct writes cannot bypass the scoped correction protocol", async ()
   await assert.rejects(
     attemptDirectCoreCorrection((facts) => facts, { clearProtocolContext: true }),
     /Correction-linked Curriculum Offerings are immutable/i,
+  );
+  await assert.rejects(
+    attemptDirectCoreCorrection((facts) => facts, {
+      afterValidation: async (transaction, { source, replacementOfferingId }) => {
+        const preEffectiveTerm = source.academicYear.terms.find(({ position }) => position === 1)!;
+        await transaction.subjectOfferingTerm.create({
+          data: { subjectOfferingId: replacementOfferingId, academicTermId: preEffectiveTerm.id },
+        });
+      },
+    }),
+    /replacement configuration is immutable after completion validation/i,
   );
 });
 

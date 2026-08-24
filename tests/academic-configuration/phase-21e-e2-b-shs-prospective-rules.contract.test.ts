@@ -23,9 +23,10 @@ test("E2-B derives immediate-next effective and exact remaining source Terms", a
 });
 
 test("E2-B enforces classification, cluster, policy, and independent approval facts", async () => {
-  const [service, migration, repository, dialog] = await Promise.all([
+  const [service, migration, hardeningMigration, repository, dialog] = await Promise.all([
     readSource("services/curriculum-correction.service.ts"),
     readSource("prisma/migrations/20260823003000_phase21e_e2_b_shs_prospective_rules/migration.sql"),
+    readSource("prisma/migrations/20260824000000_phase21e_e2_b_whitespace_evidence_guard/migration.sql"),
     readSource("repositories/curriculum-correction.repository.ts"),
     readSource("app/(protected)/dashboard/subject-offerings/components/curriculum-correction-dialog.tsx"),
   ]);
@@ -38,6 +39,9 @@ test("E2-B enforces classification, cluster, policy, and independent approval fa
   assert.match(migration, /newly supplied provenance/);
   assert.match(migration, /independent approval evidence/);
   assert.match(migration, /approval facts must match the correction actor and timestamp/);
+  assert.match(hardeningMigration, /whitespace_characters/);
+  assert.match(hardeningMigration, /SubjectOfferingTerm_revalidate_correction_snapshot_trigger/);
+  assert.match(hardeningMigration, /SubjectOfferingShsContext_revalidate_correction_snapshot_trigger/);
   assert.match(repository, /curriculumStatus: "SCHOOL_APPROVED"/);
   assert.match(repository, /approvedById: actorId/);
   assert.match(repository, /approvedAt: correctedAt/);
