@@ -10,6 +10,12 @@ import {
   correctStudentEnrollmentGradePlacementInTransaction,
   getGradeCorrectionTypedConfirmationPhrase,
 } from "../../services/student-enrollment-grade-correction-mutation.service";
+import {
+  findRegularJhsGradeCorrectionDestinations,
+  findSameGradePlacementDestinations,
+  findStudentEnrollmentCorrectionContext,
+  findStudentEnrollmentCorrectionHistory,
+} from "../../repositories/student-enrollment-correction.repository";
 
 class RollbackFixture extends Error {}
 
@@ -233,6 +239,104 @@ function correctFixture(
     correctionId,
   );
 }
+
+async function readCorrectionContext(
+  enrollmentId: string,
+  transaction: Prisma.TransactionClient,
+) {
+  const enrollment = await findStudentEnrollmentCorrectionContext(
+    enrollmentId,
+    transaction,
+  );
+  if (!enrollment) return null;
+  const [history, sameGradeDestinations, gradeLevelDestinations] = await Promise.all([
+    findStudentEnrollmentCorrectionHistory(enrollmentId, transaction),
+    findSameGradePlacementDestinations(
+      enrollment.section.gradeLevel,
+      enrollment.sectionId,
+      transaction,
+    ),
+    findRegularJhsGradeCorrectionDestinations(
+      enrollment.sectionId,
+      enrollment.section.gradeLevel,
+      transaction,
+    ),
+  ]);
+  return {
+    enrollment,
+    history,
+    destinations: [...sameGradeDestinations, ...gradeLevelDestinations],
+  };
+}
+
+test("active Enrollment context returns same-grade and grade-level destinations with empty history", async () => {
+  await withRollback(async (transaction) => {
+    const fixture = await createFixture(transaction);
+    const sameGradeDestination = await createSection(
+      transaction,
+      fixture.actor.id,
+      fixture.source.gradeLevel,
+    );
+
+    const context = await readCorrectionContext(
+      fixture.enrollment.id,
+      transaction,
+    );
+
+    assert.ok(context);
+    assert.equal(context.enrollment.id, fixture.enrollment.id);
+    assert.deepEqual(context.history, []);
+    assert.equal(
+      context.destinations.some(({ id }) => id === fixture.destination.id),
+      true,
+    );
+    assert.equal(
+      context.destinations.some(({ id }) => id === sameGradeDestination.id),
+      true,
+    );
+    assert.deepEqual(JSON.parse(JSON.stringify(context)).history, []);
+  });
+});
+
+test("unified grade correction history is serializable and keeps participation counts", async () => {
+  await withRollback(async (transaction) => {
+    const fixture = await createFixture(transaction);
+    await correctFixture(fixture, transaction);
+
+    const context = await readCorrectionContext(
+      fixture.enrollment.id,
+      transaction,
+    );
+    assert.ok(context);
+    const serialized = JSON.parse(JSON.stringify(context)) as {
+      history: Array<Record<string, unknown>>;
+    };
+
+    assert.equal(context.history.length, 1);
+    assert.equal(context.history[0]?.correctionType, "GRADE_LEVEL");
+    assert.equal(context.history[0]?.sourceParticipationCount, 0);
+    assert.equal(context.history[0]?.replacementParticipationCount, 8);
+    assert.equal(typeof serialized.history[0]?.correctedAt, "string");
+  });
+});
+
+test("terminal Enrollment history remains readable while missing Enrollment is rejected", async () => {
+  await withRollback(async (transaction) => {
+    const fixture = await createFixture(transaction, { enrollmentStatus: "COMPLETED" });
+    const context = await readCorrectionContext(
+      fixture.enrollment.id,
+      transaction,
+    );
+
+    assert.ok(context);
+    assert.equal(context.enrollment.id, fixture.enrollment.id);
+    assert.deepEqual(context.history, []);
+    assert.equal(
+      await readCorrectionContext(`missing-${randomUUID()}`, transaction),
+      null,
+    );
+  });
+});
 
 test("Grade 7 exact baseline is replaced one-to-one by Grade 8 with immutable audited history", async () => {
   await withRollback(async (transaction) => {

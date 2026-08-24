@@ -292,7 +292,7 @@ test("dialog branches to reviewed grade correction with blockers and confirmatio
   const submit = between(dialog, "async function submit()", "const options =");
   const review = between(dialog, "function GradeCorrectionReview(", "function SubjectCoverage(");
 
-  assert.match(dialog, /destination\.gradeLevel !== context\?\.gradeLevel/);
+  assert.match(dialog, /destination\.gradeLevel !== context\.gradeLevel/);
   assert.match(submit, /if \(isDifferentGrade\)[\s\S]*gradeCorrection\.mutateAsync/);
   assert.match(submit, /const result = await correction\.mutateAsync/);
   assert.match(dialog, /<GradeCorrectionReview[\s\S]*preview=\{preview\}/);
@@ -309,7 +309,7 @@ test("correction history unifies placement and grade events in deterministic ord
   const repository = source("repositories/student-enrollment-correction.repository.ts");
   const gradeHistory = between(
     repository,
-    "export function findStudentEnrollmentGradeCorrectionHistory",
+    "export function findStudentEnrollmentCorrectionHistory",
     "export function findSameGradePlacementDestinations",
   );
   const service = source("services/student-enrollment-correction.service.ts");
@@ -323,14 +323,15 @@ test("correction history unifies placement and grade events in deterministic ord
     "app/(protected)/dashboard/enrollment/components/student-enrollment-correction-history.tsx",
   );
 
-  assert.match(gradeHistory, /FROM "StudentEnrollmentGradeCorrection" correction/);
-  assert.match(gradeHistory, /JOIN "User" actor ON actor\."id" = correction\."correctedById"/);
-  assert.match(contextService, /Promise\.all\(\[[\s\S]*findStudentEnrollmentCorrectionContext\(enrollmentId, transaction\)[\s\S]*findStudentEnrollmentGradeCorrectionHistory\(enrollmentId, transaction\)/);
+  assert.match(gradeHistory, /FROM "StudentEnrollmentCorrection" correction[\s\S]*UNION ALL[\s\S]*FROM "StudentEnrollmentGradeCorrection" correction/);
+  assert.equal((gradeHistory.match(/JOIN "User" actor ON actor\."id" = correction\."correctedById"/g) ?? []).length, 2);
+  assert.match(contextService, /Promise\.all\(\[[\s\S]*findStudentEnrollmentCorrectionContext\(enrollmentId, transaction\)[\s\S]*findStudentEnrollmentCorrectionHistory\(enrollmentId, transaction\)/);
   assert.match(contextService, /Prisma\.TransactionIsolationLevel\.RepeatableRead/);
-  assert.match(contextService, /correctionType: "PLACEMENT"/);
-  assert.match(contextService, /correctionType: "GRADE_LEVEL"/);
+  assert.match(gradeHistory, /'PLACEMENT'::TEXT AS "correctionType"/);
+  assert.match(gradeHistory, /'GRADE_LEVEL'::TEXT AS "correctionType"/);
   assert.match(contextService, /sourceParticipationCount: correction\.sourceParticipationCount/);
-  assert.match(contextService, /right\.correctedAt\.getTime\(\) - left\.correctedAt\.getTime\(\)[\s\S]*right\.id\.localeCompare\(left\.id\)/);
+  assert.match(gradeHistory, /ORDER BY "correctedAt" DESC, "id" DESC/);
+  assert.doesNotMatch(repository, /placementCorrections:\s*\{/);
   assert.match(schema, /correctionType: "PLACEMENT" \| "GRADE_LEVEL"/);
   assert.match(historyUi, /Enrollment Correction History/);
   assert.match(historyUi, /correction\.correctionType === "GRADE_LEVEL"/);
@@ -363,6 +364,33 @@ test("preview refreshes after stale mutation errors and renders subject result b
   assert.match(previewSchema, /resultBlockers: Array<\{/);
   assert.match(previewSchema, /studentSubjectEnrollmentId: string/);
   assert.match(previewSchema, /resultCount: number/);
+});
+
+test("dialog isolates unavailable context and stale preview data from its ready form", () => {
+  const dialog = source(
+    "app/(protected)/dashboard/enrollment/components/correct-enrollment-placement-dialog.tsx",
+  );
+  const shell = between(
+    dialog,
+    "export function CorrectEnrollmentPlacementDialog",
+    "function ReadyCorrectEnrollmentPlacementDialog",
+  );
+  const ready = between(
+    dialog,
+    "function ReadyCorrectEnrollmentPlacementDialog",
+    "type GradeCorrectionPreview",
+  );
+
+  assert.match(dialog, /function hasCorrectionDestinations\([\s\S]*value !== null[\s\S]*"destinations" in value && Array\.isArray\(value\.destinations\)/);
+  assert.match(shell, /const context = hasCorrectionDestinations\(contextQuery\.data\)[\s\S]*\? contextQuery\.data[\s\S]*: undefined/);
+  assert.match(shell, /!open \|\| !context/);
+  assert.match(shell, /Loading placement context/);
+  assert.match(shell, /Unable to load placement correction context/);
+  assert.match(shell, /<ReadyCorrectEnrollmentPlacementDialog[\s\S]*context=\{context\}/);
+  assert.match(ready, /previewQuery\.data\?\.destinationSectionId === destinationSectionId/);
+  assert.match(ready, /commonInvalid \|\| !previewQuery\.isSuccess \|\| !preview/);
+  assert.match(ready, /if \(!destination\) return/);
+  assert.doesNotMatch(ready, /context!|destination!/);
 });
 
 test("direct SHS destinations are rejected before an empty Offering lock query", () => {

@@ -22,40 +22,42 @@ export function findStudentEnrollmentCorrectionContext(
       sectionId: true,
       section: { select: { gradeLevel: true, trackStrand: true, sectionName: true } },
       _count: { select: { studentSubjectEnrollments: true } },
-      placementCorrections: {
-        select: {
-          id: true,
-          sourcePlacementSnapshot: true,
-          destinationPlacementSnapshot: true,
-          reason: true,
-          evidenceReference: true,
-          correctedAt: true,
-          correctedBy: { select: { firstName: true, middleName: true, lastName: true } },
-        },
-        orderBy: [{ correctedAt: "desc" }, { id: "desc" }],
-      },
     },
   });
 }
 
-export function findStudentEnrollmentGradeCorrectionHistory(
+export function findStudentEnrollmentCorrectionHistory(
   enrollmentId: string,
   transaction: Prisma.TransactionClient,
 ) {
   return transaction.$queryRaw<Array<{
     id: string;
+    correctionType: "PLACEMENT" | "GRADE_LEVEL";
     sourcePlacementSnapshot: Prisma.JsonValue;
     destinationPlacementSnapshot: Prisma.JsonValue;
     reason: string;
     evidenceReference: string;
-    sourceParticipationCount: number;
-    replacementParticipationCount: number;
+    sourceParticipationCount: number | null;
+    replacementParticipationCount: number | null;
     correctedAt: Date;
     correctedByFirstName: string;
     correctedByMiddleName: string | null;
     correctedByLastName: string;
   }>>(Prisma.sql`
-    SELECT correction."id", correction."sourcePlacementSnapshot",
+    SELECT correction."id", 'PLACEMENT'::TEXT AS "correctionType",
+           correction."sourcePlacementSnapshot",
+           correction."destinationPlacementSnapshot", correction."reason",
+           correction."evidenceReference", NULL::INTEGER AS "sourceParticipationCount",
+           NULL::INTEGER AS "replacementParticipationCount", correction."correctedAt",
+           actor."firstName" AS "correctedByFirstName",
+           actor."middleName" AS "correctedByMiddleName",
+           actor."lastName" AS "correctedByLastName"
+    FROM "StudentEnrollmentCorrection" correction
+    JOIN "User" actor ON actor."id" = correction."correctedById"
+    WHERE correction."enrollmentId" = ${enrollmentId}
+    UNION ALL
+    SELECT correction."id", 'GRADE_LEVEL'::TEXT AS "correctionType",
+           correction."sourcePlacementSnapshot",
            correction."destinationPlacementSnapshot", correction."reason",
            correction."evidenceReference", correction."sourceParticipationCount",
            correction."replacementParticipationCount", correction."correctedAt",
@@ -65,7 +67,7 @@ export function findStudentEnrollmentGradeCorrectionHistory(
     FROM "StudentEnrollmentGradeCorrection" correction
     JOIN "User" actor ON actor."id" = correction."correctedById"
     WHERE correction."enrollmentId" = ${enrollmentId}
-    ORDER BY correction."correctedAt" DESC, correction."id" DESC
+    ORDER BY "correctedAt" DESC, "id" DESC
   `);
 }
 

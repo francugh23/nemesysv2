@@ -26,7 +26,17 @@ import {
   useStudentEnrollmentCorrectionContext,
   useStudentEnrollmentGradeCorrectionPreview,
 } from "@/hooks/enrollment.hook";
-import type { EnrollmentListItem } from "@/schemas";
+import type {
+  EnrollmentListItem,
+  StudentEnrollmentCorrectionContext,
+} from "@/schemas";
+
+function hasCorrectionDestinations(
+  value: unknown,
+): value is StudentEnrollmentCorrectionContext {
+  return typeof value === "object" && value !== null &&
+    "destinations" in value && Array.isArray(value.destinations);
+}
 
 export function CorrectEnrollmentPlacementDialog({
   enrollment,
@@ -37,10 +47,59 @@ export function CorrectEnrollmentPlacementDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { data: context, isLoading, isError } = useStudentEnrollmentCorrectionContext(
+  const contextQuery = useStudentEnrollmentCorrectionContext(
     enrollment.id,
     open,
   );
+  const context = hasCorrectionDestinations(contextQuery.data)
+    ? contextQuery.data
+    : undefined;
+
+  if (!open || !context) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="w-[96vw] max-w-4xl!">
+          <DialogHeader>
+            <DialogTitle>Correct Placement</DialogTitle>
+            <DialogDescription>
+              Load the controlled placement correction context before selecting a destination Section.
+            </DialogDescription>
+          </DialogHeader>
+          {contextQuery.isError || contextQuery.data !== undefined ? (
+            <p className="text-sm text-destructive" role="alert">
+              Unable to load placement correction context.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground" aria-live="polite">
+              Loading placement context...
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <ReadyCorrectEnrollmentPlacementDialog
+      enrollment={enrollment}
+      context={context}
+      open={open}
+      onOpenChange={onOpenChange}
+    />
+  );
+}
+
+function ReadyCorrectEnrollmentPlacementDialog({
+  enrollment,
+  context,
+  open,
+  onOpenChange,
+}: {
+  enrollment: EnrollmentListItem;
+  context: StudentEnrollmentCorrectionContext;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const correction = useCorrectStudentEnrollmentPlacement();
   const gradeCorrection = useCorrectStudentEnrollmentGradePlacement();
   const [destinationSectionId, setDestinationSectionId] = useState("");
@@ -48,37 +107,42 @@ export function CorrectEnrollmentPlacementDialog({
   const [evidenceReference, setEvidenceReference] = useState("");
   const [typedConfirmation, setTypedConfirmation] = useState("");
   const [confirmed, setConfirmed] = useState(false);
-  const destination = context?.destinations.find(
+  const destination = context.destinations.find(
     (section) => section.id === destinationSectionId,
   );
   const isDifferentGrade = Boolean(
-    destination && destination.gradeLevel !== context?.gradeLevel,
+    destination && destination.gradeLevel !== context.gradeLevel,
   );
   const previewQuery = useStudentEnrollmentGradeCorrectionPreview(
     enrollment.id,
     destinationSectionId,
     open && isDifferentGrade,
   );
-  const preview = previewQuery.data;
+  const preview = isDifferentGrade &&
+      previewQuery.data?.destinationSectionId === destinationSectionId
+    ? previewQuery.data
+    : undefined;
   const isPending = correction.isPending || gradeCorrection.isPending;
   const trimmedReason = reason.trim();
   const trimmedEvidence = evidenceReference.trim();
   const hasPreviewResultBlockers = Boolean(preview?.resultBlockers.length);
-  const commonInvalid = !destinationSectionId || !trimmedReason ||
+  const commonInvalid = !destination || !trimmedReason ||
     !trimmedEvidence || reason.length > 500 ||
     evidenceReference.length > 500 || !confirmed;
-  const gradeCorrectionInvalid = commonInvalid || !preview ||
+  const gradeCorrectionInvalid = commonInvalid || !previewQuery.isSuccess || !preview ||
     !preview.eligible || preview.blockers.length > 0 ||
     hasPreviewResultBlockers ||
     (preview.requiresTypedConfirmation &&
       typedConfirmation !== preview.typedConfirmationPhrase);
 
   async function submit() {
+    if (!destination) return;
+
     if (isDifferentGrade) {
       const result = await gradeCorrection.mutateAsync({
         id: enrollment.id,
         values: {
-          sourceSectionId: context!.currentSectionId,
+          sourceSectionId: context.currentSectionId,
           destinationSectionId,
           reason: trimmedReason,
           evidenceReference: trimmedEvidence,
@@ -99,7 +163,7 @@ export function CorrectEnrollmentPlacementDialog({
     const result = await correction.mutateAsync({
       id: enrollment.id,
       values: {
-        sourceSectionId: context!.currentSectionId,
+        sourceSectionId: context.currentSectionId,
         destinationSectionId,
         reason: trimmedReason,
         evidenceReference: trimmedEvidence,
@@ -114,11 +178,11 @@ export function CorrectEnrollmentPlacementDialog({
     onOpenChange(false);
   }
 
-  const options = context?.destinations.map((section) => ({
+  const options = context.destinations.map((section) => ({
     value: section.id,
     label: `Grade ${section.gradeLevel}${section.trackStrand ? ` - ${section.trackStrand}` : ""} - ${section.sectionName}`,
     searchValue: `${section.gradeLevel} ${section.trackStrand ?? ""} ${section.sectionName}`,
-  })) ?? [];
+  }));
 
   const title = isDifferentGrade
     ? "Grade-Level Correction Review"
@@ -143,10 +207,7 @@ export function CorrectEnrollmentPlacementDialog({
 
         <ScrollArea className="min-h-0 flex-1">
           <div className="space-y-5 px-4 py-5 sm:px-6">
-          {isLoading ? <p className="text-sm text-muted-foreground">Loading placement context...</p> : null}
-          {isError ? <p className="text-sm text-destructive">Unable to load placement correction context.</p> : null}
-          {context ? (
-            <div className="space-y-5">
+          <div className="space-y-5">
             <div className="grid gap-3 rounded-lg border bg-muted/30 p-4 sm:grid-cols-2">
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Current Section</p>
@@ -187,15 +248,15 @@ export function CorrectEnrollmentPlacementDialog({
               <FieldDescription>Active regular JHS Sections are available. A different grade requires a separate review.</FieldDescription>
             </Field>
 
-            {isDifferentGrade ? (
+            {isDifferentGrade && destination ? (
               <GradeCorrectionReview
                 isLoading={previewQuery.isLoading}
                 isError={previewQuery.isError}
                 preview={preview}
                 sourceGrade={context.gradeLevel}
                 sourceSection={context.currentSection}
-                destinationGrade={destination!.gradeLevel}
-                destinationSection={`${destination!.trackStrand ? `${destination!.trackStrand} - ` : ""}${destination!.sectionName}`}
+                destinationGrade={destination.gradeLevel}
+                destinationSection={`${destination.trackStrand ? `${destination.trackStrand} - ` : ""}${destination.sectionName}`}
               />
             ) : null}
 
@@ -265,7 +326,6 @@ export function CorrectEnrollmentPlacementDialog({
               </span>}
             </label>
             </div>
-          ) : null}
           </div>
         </ScrollArea>
 
@@ -273,7 +333,7 @@ export function CorrectEnrollmentPlacementDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>Cancel</Button>
           <Button
             onClick={() => void submit()}
-            disabled={!context || isPending || (isDifferentGrade ? gradeCorrectionInvalid : commonInvalid)}
+            disabled={isPending || (isDifferentGrade ? gradeCorrectionInvalid : commonInvalid)}
           >
             {isPending
               ? "Correcting..."

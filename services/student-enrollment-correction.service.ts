@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import {
   findSameGradePlacementDestinations,
   findStudentEnrollmentCorrectionContext,
-  findStudentEnrollmentGradeCorrectionHistory,
+  findStudentEnrollmentCorrectionHistory,
   findRegularJhsGradeCorrectionDestinations,
 } from "@/repositories/student-enrollment-correction.repository";
 import type {
@@ -77,10 +77,22 @@ export async function getStudentEnrollmentCorrectionContextService(
   enrollmentId: string,
 ): Promise<StudentEnrollmentCorrectionContext> {
   await requirePermission(Permissions.STUDENT_CORRECTIONS);
-  return prisma.$transaction(async (transaction) => {
-    const [enrollment, gradeCorrections] = await Promise.all([
+  return prisma.$transaction(
+    (transaction) => getStudentEnrollmentCorrectionContextInTransaction(
+      enrollmentId,
+      transaction,
+    ),
+    { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+  );
+}
+
+async function getStudentEnrollmentCorrectionContextInTransaction(
+  enrollmentId: string,
+  transaction: Prisma.TransactionClient,
+): Promise<StudentEnrollmentCorrectionContext> {
+    const [enrollment, corrections] = await Promise.all([
       findStudentEnrollmentCorrectionContext(enrollmentId, transaction),
-      findStudentEnrollmentGradeCorrectionHistory(enrollmentId, transaction),
+      findStudentEnrollmentCorrectionHistory(enrollmentId, transaction),
     ]);
     if (!enrollment) throw new StudentEnrollmentCorrectionError("Enrollment not found.");
     const isRegularJhs = enrollment.section.trackStrand === null &&
@@ -113,20 +125,10 @@ export async function getStudentEnrollmentCorrectionContextService(
       currentSection: placementSectionLabel({ sectionId: enrollment.sectionId, ...enrollment.section }),
       participationCount: enrollment._count.studentSubjectEnrollments,
       destinations,
-      history: [
-        ...enrollment.placementCorrections.map((correction) => ({
+      history: corrections.map((correction) => {
+        const item = {
           id: correction.id,
-          correctionType: "PLACEMENT" as const,
-          sourceSection: placementSectionLabel(parseSnapshot(correction.sourcePlacementSnapshot)),
-          destinationSection: placementSectionLabel(parseSnapshot(correction.destinationPlacementSnapshot)),
-          correctedBy: actorName(correction.correctedBy),
-          correctedAt: correction.correctedAt,
-          reason: correction.reason,
-          evidenceReference: correction.evidenceReference,
-        })),
-        ...gradeCorrections.map((correction) => ({
-          id: correction.id,
-          correctionType: "GRADE_LEVEL" as const,
+          correctionType: correction.correctionType,
           sourceSection: placementSectionLabel(parseSnapshot(correction.sourcePlacementSnapshot)),
           destinationSection: placementSectionLabel(parseSnapshot(correction.destinationPlacementSnapshot)),
           correctedBy: actorName({
@@ -137,14 +139,21 @@ export async function getStudentEnrollmentCorrectionContextService(
           correctedAt: correction.correctedAt,
           reason: correction.reason,
           evidenceReference: correction.evidenceReference,
+        };
+        if (correction.correctionType === "PLACEMENT") return item;
+        if (
+          correction.sourceParticipationCount === null ||
+          correction.replacementParticipationCount === null
+        ) {
+          throw new StudentEnrollmentCorrectionError("Stored grade correction history is invalid.");
+        }
+        return {
+          ...item,
           sourceParticipationCount: correction.sourceParticipationCount,
           replacementParticipationCount: correction.replacementParticipationCount,
-        })),
-      ].sort((left, right) =>
-        right.correctedAt.getTime() - left.correctedAt.getTime() ||
-        right.id.localeCompare(left.id)),
+        };
+      }),
     };
-  }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
 }
 
 export async function correctStudentEnrollmentPlacementService(
