@@ -366,6 +366,9 @@ export async function findActiveEnrollmentById(
       status: true,
       shsTrack: true,
       entryAcademicTermId: true,
+      semester: true,
+      createdById: true,
+      createdAt: true,
       student: {
         select: {
           lrn: true,

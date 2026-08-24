@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { Download } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 import { CrudToolbar } from "@/components/common/crud-toolbar";
 import { DataTable, resolveServerPagination } from "@/components/data-table";
@@ -16,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEnrollments } from "@/hooks/enrollment.hook";
 import { useTableUrlState } from "@/hooks/use-table-url-state.hook";
+import { hasPermission, Permissions } from "@/lib/permissions";
 import {
   EnrollmentStatusSchema,
   type EnrollmentTableQueryInput,
@@ -52,6 +54,11 @@ export default function EnrollmentPage() {
 }
 
 function EnrollmentPageContent() {
+  const { data: session } = useSession();
+  const canCorrectPlacement = hasPermission(
+    session?.user.role,
+    Permissions.STUDENT_CORRECTIONS,
+  );
   const tableState = useTableUrlState({
     filterKeys: enrollmentFilterKeys,
     sortableColumns: enrollmentSortFields,
@@ -120,13 +127,6 @@ function EnrollmentPageContent() {
   const columns = useMemo(
     () =>
       enrollmentColumns({
-        onEdit: (enrollment) => {
-          setDialogState((current) => ({
-            selectedEnrollment: enrollment,
-            dialog: "edit",
-            instanceId: current.instanceId + 1,
-          }));
-        },
         onTransition: (enrollment, nextStatus) => {
           setDialogState((current) => ({
             selectedEnrollment: enrollment,
@@ -272,7 +272,15 @@ function EnrollmentPageContent() {
             enrollment={selectedEnrollment}
             dialog={dialog}
             instanceId={instanceId}
+            canCorrectPlacement={canCorrectPlacement}
             onClose={closeDialog}
+            onSelectDialog={(nextDialog) => {
+              setDialogState((current) => ({
+                ...current,
+                dialog: nextDialog,
+                instanceId: current.instanceId + 1,
+              }));
+            }}
           />
         </CardContent>
       </Card>

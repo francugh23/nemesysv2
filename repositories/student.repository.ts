@@ -353,8 +353,13 @@ export async function lockStudentForEnrollmentSynchronization(
   id: string,
   transaction: Prisma.TransactionClient,
 ) {
-  return transaction.$queryRaw<{ id: string }[]>(Prisma.sql`
-    SELECT "id"
+  return transaction.$queryRaw<Array<{
+    id: string;
+    status: string;
+    currentSectionId: string | null;
+    deletedAt: Date | null;
+  }>>(Prisma.sql`
+    SELECT "id", "status", "currentSectionId", "deletedAt"
     FROM "Student"
     WHERE "id" = ${id}
     FOR UPDATE

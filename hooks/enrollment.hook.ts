@@ -9,12 +9,15 @@ import {
 
 import {
   createEnrollmentAction,
-  correctEnrollmentPlacementAction,
   getEnrollmentFilterOptionsAction,
   getEnrollmentFormOptionsAction,
   getEnrollmentsAction,
   transitionEnrollmentAction,
 } from "@/actions/enrollment.action";
+import {
+  correctStudentEnrollmentPlacementAction,
+  getStudentEnrollmentCorrectionContextAction,
+} from "@/actions/student-enrollment-correction.action";
 import type { EnrollmentTableQueryInput } from "@/schemas";
 
 export function useEnrollments(query: EnrollmentTableQueryInput) {
@@ -63,7 +66,15 @@ export function useCreateEnrollment() {
   });
 }
 
-export function useCorrectEnrollmentPlacement() {
+export function useStudentEnrollmentCorrectionContext(enrollmentId: string, enabled = true) {
+  return useQuery({
+    queryKey: ["student-enrollment-corrections", enrollmentId],
+    queryFn: () => getStudentEnrollmentCorrectionContextAction(enrollmentId),
+    enabled: enabled && Boolean(enrollmentId),
+  });
+}
+
+export function useCorrectStudentEnrollmentPlacement() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -72,8 +83,8 @@ export function useCorrectEnrollmentPlacement() {
       values,
     }: {
       id: string;
-      values: Parameters<typeof correctEnrollmentPlacementAction>[1];
-    }) => correctEnrollmentPlacementAction(id, values),
+      values: Parameters<typeof correctStudentEnrollmentPlacementAction>[1];
+    }) => correctStudentEnrollmentPlacementAction(id, values),
     onSuccess: async (result, values) => {
       if (result.error) {
         return;
@@ -83,10 +94,7 @@ export function useCorrectEnrollmentPlacement() {
         queryClient.invalidateQueries({ queryKey: ["enrollments"] }),
         queryClient.invalidateQueries({ queryKey: ["students"] }),
         queryClient.invalidateQueries({
-          queryKey: ["student-subject-enrollments", values.id],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["shs-current-term-progression", values.id],
+          queryKey: ["student-enrollment-corrections", values.id],
         }),
         queryClient.invalidateQueries({
           queryKey: ["enrollment-filter-options"],

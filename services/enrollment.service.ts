@@ -7,24 +7,18 @@ import {
   createEnrollment,
   countNonArchivedEnrollments,
   findActiveAcademicYearsForEnrollment,
-  findActiveEnrollmentById,
   findEnrollmentFilterOptionValues,
   findEnrollmentByIdentity,
-  findLatestActiveEnrollmentByStudent,
-  findLatestTerminalEnrollmentByStudent,
   findNonArchivedEnrollments,
   findNonArchivedEnrollmentsByGrade,
   lockAcademicYearForEnrollment,
   lockAcademicTermForEnrollment,
-  updateEnrollment,
 } from "@/repositories/enrollment.repository";
 import {
   deriveApprovedRegularJhsStudentSubjectEnrollments,
-  reconcileApprovedRegularJhsStudentSubjectEnrollments,
 } from "@/services/jhs-student-subject-enrollment-derivation.service";
 import {
   getEnrollmentFoundationValidationError,
-  getEnrollmentPlacementCompatibilityError,
 } from "@/services/enrollment-foundation.service";
 import {
   findActiveSectionForAssignment,
@@ -42,7 +36,6 @@ import {
 } from "@/services/enrollment-lifecycle.service";
 import type {
   CreateEnrollmentInput,
-  CorrectEnrollmentPlacementInput,
   EnrollmentFilterOptions,
   EnrollmentListItem,
   EnrollmentPage,
@@ -277,55 +270,6 @@ function addStudentSynchronizationChanges(
   }
 }
 
-async function synchronizeStudentFromEnrollments(
-  studentId: string,
-  transaction: Prisma.TransactionClient,
-) {
-  const activeEnrollment = await findLatestActiveEnrollmentByStudent(
-    studentId,
-    transaction,
-  );
-
-  let status: StudentStatus = "ENROLLED";
-  let currentSectionId: string | null = activeEnrollment?.sectionId ?? null;
-  let currentSection: SectionSummary | null = activeEnrollment?.section ?? null;
-
-  if (!activeEnrollment) {
-    const terminalEnrollment = await findLatestTerminalEnrollmentByStudent(
-      studentId,
-      transaction,
-    );
-
-    currentSectionId = null;
-    currentSection = null;
-
-    if (terminalEnrollment?.status === "COMPLETED") {
-      status = "ENROLLED";
-    } else if (terminalEnrollment?.status === "TRANSFERRED") {
-      status = "TRANSFERRED";
-    } else if (terminalEnrollment?.status === "DROPPED") {
-      status = "DROPPED";
-    } else {
-      status = "UNENROLLED";
-    }
-  }
-
-  await updateStudentEnrollmentSummary(
-    studentId,
-    {
-      status,
-      currentSectionId,
-    },
-    transaction,
-  );
-
-  return {
-    status,
-    currentSectionId,
-    currentSection,
-  };
-}
-
 async function createEnrollmentInTransaction(
   values: CreateEnrollmentInput,
   actorId: string,
@@ -466,174 +410,6 @@ export async function createEnrollmentService(values: CreateEnrollmentInput) {
   } catch (error) {
     rethrowEnrollmentConflict(error);
   }
-}
-
-function getReadOnlyEnrollmentMessage(status?: string) {
-  return status === "LOCKED" || status === "ARCHIVED"
-    ? "Enrollment is read-only because its academic year is locked or archived."
-    : "Enrollment cannot be updated because its academic year is not active.";
-}
-
-export async function correctEnrollmentPlacementInTransaction(
-  id: string,
-  values: CorrectEnrollmentPlacementInput,
-  actorId: string,
-  transaction: Prisma.TransactionClient,
-) {
-  const enrollmentReference = await findActiveEnrollmentById(id, transaction);
-
-  if (!enrollmentReference) {
-    throw new EnrollmentServiceError("Enrollment not found.");
-  }
-
-  if (!isAcademicYearWritable(enrollmentReference.academicYear.status)) {
-    throw new EnrollmentServiceError(
-      getReadOnlyEnrollmentMessage(enrollmentReference.academicYear.status),
-    );
-  }
-
-  await lockStudentForEnrollmentSynchronization(
-    enrollmentReference.studentId,
-    transaction,
-  );
-
-  const academicYearReference = await lockAcademicYearForEnrollment(
-    enrollmentReference.academicYearId,
-    transaction,
-  );
-
-  if (
-    !academicYearReference ||
-    !isAcademicYearWritable(academicYearReference.status)
-  ) {
-    throw new EnrollmentServiceError(
-      getReadOnlyEnrollmentMessage(academicYearReference?.status),
-    );
-  }
-
-  const enrollment = await findActiveEnrollmentById(id, transaction);
-
-  if (!enrollment) {
-    throw new EnrollmentServiceError("Enrollment not found.");
-  }
-
-  if (enrollment.status !== "ACTIVE") {
-    throw new EnrollmentServiceError(
-      "Only active enrollments can have their placement corrected.",
-    );
-  }
-
-  let section = enrollment.section;
-
-  if (values.sectionId !== enrollment.sectionId) {
-    const activeSection = await findActiveSectionForAssignment(
-      values.sectionId,
-      transaction,
-    );
-
-    if (!activeSection) {
-      throw new EnrollmentServiceError("Section not found or inactive.");
-    }
-
-    section = activeSection;
-  }
-
-
-  const placementCompatibilityError = getEnrollmentPlacementCompatibilityError({
-    destinationGradeLevel: section.gradeLevel,
-    entryAcademicTermId: enrollment.entryAcademicTermId,
-    shsTrack: enrollment.shsTrack,
-  });
-  if (placementCompatibilityError) {
-    throw new EnrollmentServiceError(placementCompatibilityError);
-  }
-
-  const changes: AuditChanges = {};
-
-  if (values.sectionId !== enrollment.sectionId) {
-    changes.section = {
-      from: `${enrollment.sectionId} | Grade ${enrollment.section.gradeLevel}${enrollment.section.trackStrand ? ` - ${enrollment.section.trackStrand}` : ""} - ${enrollment.section.sectionName}`,
-      to: `${values.sectionId} | Grade ${section.gradeLevel}${section.trackStrand ? ` - ${section.trackStrand}` : ""} - ${section.sectionName}`,
-    };
-  }
-
-  const updateResult = await updateEnrollment(
-    {
-      id: enrollment.id,
-      deletedAt: null,
-      status: "ACTIVE",
-      academicYear: { status: "ACTIVE" },
-    },
-    { sectionId: values.sectionId },
-    transaction,
-  );
-
-  if (updateResult.count !== 1) {
-    throw new EnrollmentServiceError(
-      "Enrollment is no longer active and cannot be updated.",
-    );
-  }
-
-  if (values.sectionId !== enrollment.sectionId) {
-    await reconcileApprovedRegularJhsStudentSubjectEnrollments(
-      {
-        enrollmentId: enrollment.id,
-        academicYearId: enrollment.academicYearId,
-        academicYearLabel: enrollment.academicYear.label,
-        enrollmentStatus: "ACTIVE",
-        previousSection: enrollment.section,
-        nextSection: section,
-        studentLrn: enrollment.student.lrn,
-        actorId,
-      },
-      transaction,
-    );
-  }
-
-  const synchronizedStudent = await synchronizeStudentFromEnrollments(
-    enrollment.studentId,
-    transaction,
-  );
-
-  addStudentSynchronizationChanges(
-    changes,
-    enrollment.student,
-    synchronizedStudent,
-  );
-
-  const changedFields = Object.keys(changes);
-
-  await createAuditLogs(
-    [{
-      userId: actorId,
-      action: "UPDATE",
-      module: "Enrollment",
-      recordId: enrollment.id,
-      recordName: `${enrollment.student.lrn} - ${getStudentName(enrollment.student)} - ${enrollment.academicYear.label}`,
-      description: changedFields.length
-        ? "Corrected enrollment placement."
-        : "Confirmed enrollment placement without changes.",
-      metadata: changedFields.length ? { changes } : undefined,
-    }],
-    transaction,
-  );
-
-  return enrollment.id;
-}
-
-export async function correctEnrollmentPlacementService(
-  id: string,
-  values: CorrectEnrollmentPlacementInput,
-) {
-  const session = await requirePermission(Permissions.ENROLLMENT);
-  return prisma.$transaction((transaction) =>
-    correctEnrollmentPlacementInTransaction(
-      id,
-      values,
-      session.user.id,
-      transaction,
-    ),
-  );
 }
 
 export async function transitionEnrollmentService(

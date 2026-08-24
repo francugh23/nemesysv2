@@ -17,12 +17,16 @@ export const EnrollmentStatusSchema = z.enum([
   "TRANSFERRED",
 ]);
 
-export const CorrectEnrollmentPlacementSchema = z.object({
-  sectionId: z.string().min(1, "Section is required."),
+export const CorrectStudentEnrollmentPlacementSchema = z.object({
+  sourceSectionId: z.string().min(1, "Source Section is required."),
+  destinationSectionId: z.string().min(1, "Destination Section is required."),
+  reason: z.string().trim().min(1, "Reason is required.").max(500),
+  evidenceReference: z.string().trim().min(1, "Evidence/reference is required.").max(500),
+  confirmed: z.boolean().refine((value) => value, "Confirm the historical correction."),
 });
 
-export type CorrectEnrollmentPlacementInput = z.infer<
-  typeof CorrectEnrollmentPlacementSchema
+export type CorrectStudentEnrollmentPlacementInput = z.infer<
+  typeof CorrectStudentEnrollmentPlacementSchema
 >;
 
 export const EnrollmentTerminalStatusSchema = z.enum([
@@ -39,10 +43,37 @@ export type TransitionEnrollmentInput = z.infer<
   typeof TransitionEnrollmentSchema
 >;
 
-// Retained for the legacy Semester-retirement contract; lifecycle writes use the
-// explicitly named placement and transition schemas above.
-export const UpdateEnrollmentSchema = CorrectEnrollmentPlacementSchema;
-export type UpdateEnrollmentInput = CorrectEnrollmentPlacementInput;
+export interface StudentEnrollmentCorrectionHistoryItem {
+  id: string;
+  sourceSection: string;
+  destinationSection: string;
+  correctedBy: string;
+  correctedAt: Date;
+  reason: string;
+  evidenceReference: string;
+}
+
+export interface StudentEnrollmentCorrectionContext {
+  enrollmentId: string;
+  gradeLevel: string;
+  currentSectionId: string;
+  currentSection: string;
+  participationCount: number;
+  destinations: Array<{
+    id: string;
+    gradeLevel: string;
+    trackStrand: string | null;
+    sectionName: string;
+  }>;
+  history: StudentEnrollmentCorrectionHistoryItem[];
+}
+
+// Retained only for the legacy Semester-retirement contract. Operational
+// placement correction uses CorrectStudentEnrollmentPlacementSchema.
+export const UpdateEnrollmentSchema = z.object({
+  sectionId: z.string().min(1, "Section is required."),
+});
+export type UpdateEnrollmentInput = z.infer<typeof UpdateEnrollmentSchema>;
 
 export const EnrollmentSortFieldSchema = z.enum([
   "studentLrn",

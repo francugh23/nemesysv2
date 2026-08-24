@@ -82,7 +82,7 @@ test("policy, Offering, and Enrollment mutations refresh affected progression co
   const enrollmentHook = source("hooks/enrollment.hook.ts");
   assert.match(policyHook, /\["shs-current-term-progression"\]/);
   assert.match(offeringHook, /\["shs-current-term-progression"\]/);
-  assert.match(enrollmentHook, /\["shs-current-term-progression", values\.id\]/);
+  assert.doesNotMatch(enrollmentHook, /\["shs-current-term-progression", values\.id\]/);
   assert.match(enrollmentHook, /\["shs-current-term-progression", id\]/);
   const sharedInvalidation = source("hooks/query-invalidation.ts");
   assert.match(sharedInvalidation, /\["shs-current-term-progression"\]/);

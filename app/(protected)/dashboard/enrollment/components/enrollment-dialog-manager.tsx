@@ -2,13 +2,13 @@
 
 import type { EnrollmentListItem } from "@/schemas";
 
-import { EditEnrollmentDialog } from "./edit-enrollment-dialog";
+import { CorrectEnrollmentPlacementDialog } from "./correct-enrollment-placement-dialog";
 import { EnrollmentTransitionDialog } from "./enrollment-transition-dialog";
 import { EnrollmentViewDialog } from "./enrollment-view-dialog";
 
 export type EnrollmentDialogType =
   | "view"
-  | "edit"
+  | "correct-placement"
   | "COMPLETED"
   | "DROPPED"
   | "TRANSFERRED"
@@ -18,18 +18,24 @@ interface EnrollmentDialogManagerProps {
   enrollment: EnrollmentListItem | null;
   dialog: EnrollmentDialogType;
   instanceId: number;
+  canCorrectPlacement: boolean;
   onClose: (instanceId: number) => void;
+  onSelectDialog: (dialog: EnrollmentDialogType) => void;
 }
 
 export function EnrollmentDialogManager({
   enrollment,
   dialog,
   instanceId,
+  canCorrectPlacement,
   onClose,
+  onSelectDialog,
 }: EnrollmentDialogManagerProps) {
   if (!enrollment) {
     return null;
   }
+  const canOpenPlacementCorrection = canCorrectPlacement &&
+    enrollment.status === "ACTIVE" && enrollment.academicYearStatus === "ACTIVE";
 
   return (
     <>
@@ -37,12 +43,17 @@ export function EnrollmentDialogManager({
         enrollment={enrollment}
         open={dialog === "view"}
         onOpenChange={(open) => !open && onClose(instanceId)}
+        canViewPlacementCorrections={canCorrectPlacement}
+        onCorrectPlacement={canOpenPlacementCorrection ? () => onSelectDialog("correct-placement") : undefined}
       />
-      <EditEnrollmentDialog
-        enrollment={enrollment}
-        open={dialog === "edit"}
-        onOpenChange={(open) => !open && onClose(instanceId)}
-      />
+      {canOpenPlacementCorrection ? (
+        <CorrectEnrollmentPlacementDialog
+          key={`${enrollment.id}-${instanceId}`}
+          enrollment={enrollment}
+          open={dialog === "correct-placement"}
+          onOpenChange={(open) => !open && onClose(instanceId)}
+        />
+      ) : null}
       {dialog === "COMPLETED" ||
       dialog === "DROPPED" ||
       dialog === "TRANSFERRED" ? (

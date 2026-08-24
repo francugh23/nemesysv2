@@ -152,6 +152,7 @@ model User {
   finalizedShsTermResults                      ShsTermResult[]                     @relation("ShsTermResultFinalizer")
   finalizedCurricula                           CurriculumFinalization[]            @relation("CurriculumFinalizer")
   curriculumCorrections                        CurriculumCorrection[]              @relation("CurriculumCorrectionActor")
+  studentEnrollmentCorrections                 StudentEnrollmentCorrection[]       @relation("StudentEnrollmentCorrectionActor")
   createdShsTermResultInterpretationPolicies   ShsTermResultInterpretationPolicy[] @relation("ShsTermResultInterpretationPolicyCreator")
   publishedShsTermResultInterpretationPolicies ShsTermResultInterpretationPolicy[] @relation("ShsTermResultInterpretationPolicyPublisher")
   auditLogs                                    AuditLog[]
@@ -268,9 +269,11 @@ model Section {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  subjectAssignments SubjectAssignment[]
-  enrollments        Enrollment[]
-  currentStudents    Student[]           @relation("StudentCurrentSection")
+  subjectAssignments               SubjectAssignment[]
+  enrollments                      Enrollment[]
+  currentStudents                  Student[]                     @relation("StudentCurrentSection")
+  sourceEnrollmentCorrections      StudentEnrollmentCorrection[] @relation("StudentEnrollmentCorrectionSourceSection")
+  destinationEnrollmentCorrections StudentEnrollmentCorrection[] @relation("StudentEnrollmentCorrectionDestinationSection")
 }
 
 model Subject {
@@ -352,10 +355,42 @@ model Enrollment {
 
   grades                    Grade[]
   studentSubjectEnrollments StudentSubjectEnrollment[]
+  placementCorrections      StudentEnrollmentCorrection[]
 
   @@unique([studentId, academicYearId])
   @@index([academicYearId])
   @@index([entryAcademicTermId])
+}
+
+model StudentEnrollmentCorrection {
+  id       String @id @default(cuid())
+  sequence BigInt @unique @default(autoincrement())
+
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+
+  sourceSectionId String
+  sourceSection   Section @relation("StudentEnrollmentCorrectionSourceSection", fields: [sourceSectionId], references: [id], onDelete: Restrict)
+
+  destinationSectionId String
+  destinationSection   Section @relation("StudentEnrollmentCorrectionDestinationSection", fields: [destinationSectionId], references: [id], onDelete: Restrict)
+
+  sourcePlacementSnapshot      Json
+  destinationPlacementSnapshot Json
+  enrollmentCreatedAtSnapshot  DateTime
+
+  reason            String
+  evidenceReference String
+
+  correctedById String
+  correctedBy   User     @relation("StudentEnrollmentCorrectionActor", fields: [correctedById], references: [id], onDelete: Restrict)
+  correctedAt   DateTime
+  createdAt     DateTime @default(now())
+
+  @@index([enrollmentId, correctedAt])
+  @@index([sourceSectionId])
+  @@index([destinationSectionId])
+  @@index([correctedById])
 }
 
 model AcademicYear {

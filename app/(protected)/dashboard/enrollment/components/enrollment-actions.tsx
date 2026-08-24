@@ -13,7 +13,6 @@ import type { EnrollmentListItem } from "@/schemas";
 
 interface EnrollmentActionsProps {
   enrollment: EnrollmentListItem;
-  onEdit: (enrollment: EnrollmentListItem) => void;
   onTransition: (
     enrollment: EnrollmentListItem,
     status: "COMPLETED" | "DROPPED" | "TRANSFERRED",
@@ -22,7 +21,6 @@ interface EnrollmentActionsProps {
 
 export function EnrollmentActions({
   enrollment,
-  onEdit,
   onTransition,
 }: EnrollmentActionsProps) {
   const operational =
@@ -43,15 +41,6 @@ export function EnrollmentActions({
         }
       />
       <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          onClick={(event) => {
-            event.stopPropagation();
-            onEdit(enrollment);
-          }}
-          disabled={!operational}
-        >
-          Correct placement
-        </DropdownMenuItem>
         <DropdownMenuItem
           disabled={!operational}
           onClick={(event) => {

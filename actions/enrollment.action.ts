@@ -5,14 +5,12 @@ import * as z from "zod";
 import { Permissions, requirePermission } from "@/lib/authorization";
 import {
   CreateEnrollmentSchema,
-  CorrectEnrollmentPlacementSchema,
   EnrollmentTableQuerySchema,
   TransitionEnrollmentSchema,
   type EnrollmentTableQueryInput,
 } from "@/schemas";
 import {
   createEnrollmentService,
-  correctEnrollmentPlacementService,
   EnrollmentServiceError,
   getEnrollmentFilterOptions,
   getEnrollmentFormOptions,
@@ -68,49 +66,6 @@ export async function createEnrollmentAction(
 
     return {
       success: "Enrollment created successfully.",
-    };
-  } catch (error) {
-    if (error instanceof EnrollmentServiceError) {
-      return {
-        error: error.message,
-      };
-    }
-
-    return {
-      error: "Something went wrong.",
-    };
-  }
-}
-
-export async function correctEnrollmentPlacementAction(
-  id: string,
-  values: z.infer<typeof CorrectEnrollmentPlacementSchema>,
-): Promise<ActionResponse> {
-  try {
-    await requirePermission(Permissions.ENROLLMENT);
-  } catch {
-    return {
-      error: "Unauthorized.",
-    };
-  }
-
-  const validatedId = z.string().min(1).safeParse(id);
-  const validatedFields = CorrectEnrollmentPlacementSchema.safeParse(values);
-
-  if (!validatedId.success || !validatedFields.success) {
-    return {
-      error: "Invalid fields.",
-    };
-  }
-
-  try {
-    await correctEnrollmentPlacementService(
-      validatedId.data,
-      validatedFields.data,
-    );
-
-    return {
-      success: "Enrollment placement corrected successfully.",
     };
   } catch (error) {
     if (error instanceof EnrollmentServiceError) {

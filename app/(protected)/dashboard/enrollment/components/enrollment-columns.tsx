@@ -17,7 +17,6 @@ const statusVariants = {
 } as const;
 
 interface EnrollmentColumnOptions {
-  onEdit: (enrollment: EnrollmentListItem) => void;
   onTransition: (
     enrollment: EnrollmentListItem,
     status: "COMPLETED" | "DROPPED" | "TRANSFERRED",
@@ -25,7 +24,6 @@ interface EnrollmentColumnOptions {
 }
 
 export function enrollmentColumns({
-  onEdit,
   onTransition,
 }: EnrollmentColumnOptions): ColumnDef<EnrollmentListItem>[] {
   return [
@@ -91,7 +89,6 @@ export function enrollmentColumns({
       cell: ({ row }) => (
         <EnrollmentActions
           enrollment={row.original}
-          onEdit={onEdit}
           onTransition={onTransition}
         />
       ),

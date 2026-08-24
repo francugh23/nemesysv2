@@ -14,6 +14,7 @@ import {
   getEnrollmentFoundationValidationError,
   getEnrollmentPlacementCompatibilityError,
 } from "../../services/enrollment-foundation.service";
+import { correctStudentEnrollmentPlacementInTransaction } from "../../services/student-enrollment-correction-mutation.service";
 
 class RollbackFixture extends Error {}
 
@@ -367,10 +368,22 @@ test("placement correction preserves facts and rejects SHS to JHS", async () => 
       },
     });
 
-    await transaction.enrollment.update({
-      where: { id: enrollment.id },
-      data: { sectionId: destinationShs.section.id },
+    await transaction.student.update({
+      where: { id: source.student.id },
+      data: { status: "ENROLLED", currentSectionId: source.section.id },
     });
+    await correctStudentEnrollmentPlacementInTransaction(
+      enrollment.id,
+      {
+        sourceSectionId: source.section.id,
+        destinationSectionId: destinationShs.section.id,
+        reason: "Verified same-grade SHS placement mistake.",
+        evidenceReference: "Phase 21D-A regression reference",
+        confirmed: true,
+      },
+      fixture.actor.id,
+      transaction,
+    );
     assert.deepEqual(
       await transaction.enrollment.findUniqueOrThrow({
         where: { id: enrollment.id },
