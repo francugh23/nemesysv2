@@ -368,7 +368,10 @@ test("evidence and Section mutations cannot precede a correction in the same tra
         transaction,
       );
     });
-    assert.match(String(evidenceFirstError), /cannot follow participation, Term, result, or Grade evidence mutation/);
+    assert.match(
+      String(evidenceFirstError),
+      /cannot follow participation, Term, result, or Grade evidence mutation|Regular JHS Student Subject Enrollment replacement requires its exact active Student Enrollment Grade Correction mapping/,
+    );
 
     const offering = await transaction.subjectOffering.findUniqueOrThrow({
       where: { id: participation.subjectOfferingId },

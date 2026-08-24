@@ -126,7 +126,10 @@ export function EnrollmentViewDialog({
           <div>
             <h3 className="font-semibold">Administrative Placement</h3>
             <p className="text-sm text-muted-foreground">
-              Correct Placement changes only the same-grade Section. Subject participation and results remain unchanged.
+              Same-grade correction preserves participation and results. A
+              regular-JHS grade-level correction preserves the old derived
+              participation as history and creates replacement participation
+              for the corrected grade.
             </p>
           </div>
           <Button

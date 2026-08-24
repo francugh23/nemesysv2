@@ -4,6 +4,8 @@ import prisma from "@/lib/prisma";
 import {
   findSameGradePlacementDestinations,
   findStudentEnrollmentCorrectionContext,
+  findStudentEnrollmentGradeCorrectionHistory,
+  findRegularJhsGradeCorrectionDestinations,
 } from "@/repositories/student-enrollment-correction.repository";
 import type {
   CorrectStudentEnrollmentPlacementInput,
@@ -75,29 +77,74 @@ export async function getStudentEnrollmentCorrectionContextService(
   enrollmentId: string,
 ): Promise<StudentEnrollmentCorrectionContext> {
   await requirePermission(Permissions.STUDENT_CORRECTIONS);
-  const enrollment = await findStudentEnrollmentCorrectionContext(enrollmentId);
-  if (!enrollment) throw new StudentEnrollmentCorrectionError("Enrollment not found.");
-  const destinations = await findSameGradePlacementDestinations(
-    enrollment.section.gradeLevel,
-    enrollment.sectionId,
-  );
-  return {
-    enrollmentId: enrollment.id,
-    gradeLevel: enrollment.section.gradeLevel,
-    currentSectionId: enrollment.sectionId,
-    currentSection: placementSectionLabel({ sectionId: enrollment.sectionId, ...enrollment.section }),
-    participationCount: enrollment._count.studentSubjectEnrollments,
-    destinations,
-    history: enrollment.placementCorrections.map((correction) => ({
-      id: correction.id,
-      sourceSection: placementSectionLabel(parseSnapshot(correction.sourcePlacementSnapshot)),
-      destinationSection: placementSectionLabel(parseSnapshot(correction.destinationPlacementSnapshot)),
-      correctedBy: actorName(correction.correctedBy),
-      correctedAt: correction.correctedAt,
-      reason: correction.reason,
-      evidenceReference: correction.evidenceReference,
-    })),
-  };
+  return prisma.$transaction(async (transaction) => {
+    const [enrollment, gradeCorrections] = await Promise.all([
+      findStudentEnrollmentCorrectionContext(enrollmentId, transaction),
+      findStudentEnrollmentGradeCorrectionHistory(enrollmentId, transaction),
+    ]);
+    if (!enrollment) throw new StudentEnrollmentCorrectionError("Enrollment not found.");
+    const isRegularJhs = enrollment.section.trackStrand === null &&
+      ["7", "8", "9", "10"].includes(enrollment.section.gradeLevel);
+    const [sameGradeDestinations, differentGradeDestinations] = await Promise.all([
+      findSameGradePlacementDestinations(
+        enrollment.section.gradeLevel,
+        enrollment.sectionId,
+        transaction,
+      ),
+      isRegularJhs
+        ? findRegularJhsGradeCorrectionDestinations(
+          enrollment.sectionId,
+          enrollment.section.gradeLevel,
+          transaction,
+        )
+        : Promise.resolve([]),
+    ]);
+    const destinations = [...new Map(
+      [...sameGradeDestinations, ...differentGradeDestinations].map((section) => [section.id, section]),
+    ).values()].sort((left, right) =>
+      Number(left.gradeLevel) - Number(right.gradeLevel) ||
+      (left.trackStrand ?? "").localeCompare(right.trackStrand ?? "") ||
+      left.sectionName.localeCompare(right.sectionName) ||
+      left.id.localeCompare(right.id));
+    return {
+      enrollmentId: enrollment.id,
+      gradeLevel: enrollment.section.gradeLevel,
+      currentSectionId: enrollment.sectionId,
+      currentSection: placementSectionLabel({ sectionId: enrollment.sectionId, ...enrollment.section }),
+      participationCount: enrollment._count.studentSubjectEnrollments,
+      destinations,
+      history: [
+        ...enrollment.placementCorrections.map((correction) => ({
+          id: correction.id,
+          correctionType: "PLACEMENT" as const,
+          sourceSection: placementSectionLabel(parseSnapshot(correction.sourcePlacementSnapshot)),
+          destinationSection: placementSectionLabel(parseSnapshot(correction.destinationPlacementSnapshot)),
+          correctedBy: actorName(correction.correctedBy),
+          correctedAt: correction.correctedAt,
+          reason: correction.reason,
+          evidenceReference: correction.evidenceReference,
+        })),
+        ...gradeCorrections.map((correction) => ({
+          id: correction.id,
+          correctionType: "GRADE_LEVEL" as const,
+          sourceSection: placementSectionLabel(parseSnapshot(correction.sourcePlacementSnapshot)),
+          destinationSection: placementSectionLabel(parseSnapshot(correction.destinationPlacementSnapshot)),
+          correctedBy: actorName({
+            firstName: correction.correctedByFirstName,
+            middleName: correction.correctedByMiddleName,
+            lastName: correction.correctedByLastName,
+          }),
+          correctedAt: correction.correctedAt,
+          reason: correction.reason,
+          evidenceReference: correction.evidenceReference,
+          sourceParticipationCount: correction.sourceParticipationCount,
+          replacementParticipationCount: correction.replacementParticipationCount,
+        })),
+      ].sort((left, right) =>
+        right.correctedAt.getTime() - left.correctedAt.getTime() ||
+        right.id.localeCompare(left.id)),
+    };
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
 }
 
 export async function correctStudentEnrollmentPlacementService(

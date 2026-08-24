@@ -64,40 +64,6 @@ export async function findActiveStudentSubjectEnrollmentByIdentity(
   });
 }
 
-export async function replaceActiveStudentSubjectEnrollments(
-  enrollmentId: string,
-  replacedAt: Date,
-  transaction: Prisma.TransactionClient,
-) {
-  const studentSubjectEnrollments = await transaction.studentSubjectEnrollment.findMany({
-    where: { enrollmentId, status: "ACTIVE" },
-    select: {
-      id: true,
-      subjectOfferingId: true,
-      subjectCode: true,
-      subjectDescription: true,
-      gradeLevel: true,
-      terms: {
-        select: { academicTermId: true },
-        orderBy: { academicTerm: { position: "asc" } },
-      },
-    },
-    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-  });
-
-  if (!studentSubjectEnrollments.length) return [];
-
-  await transaction.studentSubjectEnrollment.updateMany({
-    where: {
-      id: { in: studentSubjectEnrollments.map(({ id }) => id) },
-      status: "ACTIVE",
-    },
-    data: { status: "REPLACED", replacedAt },
-  });
-
-  return studentSubjectEnrollments;
-}
-
 export async function createStudentSubjectEnrollmentsFromOfferings(
   enrollmentId: string,
   offerings: Array<{

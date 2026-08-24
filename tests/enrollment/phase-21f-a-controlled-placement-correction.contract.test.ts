@@ -35,7 +35,11 @@ test("dedicated permission allows only Super Admin and Registrar", () => {
   assert.equal(hasPermission("TEACHER", Permissions.STUDENT_CORRECTIONS), false);
   const action = source("actions/student-enrollment-correction.action.ts");
   const service = source("services/student-enrollment-correction.service.ts");
-  assert.equal((action.match(/requirePermission\(Permissions\.STUDENT_CORRECTIONS\)/g) ?? []).length, 2);
+  const sameGradeAction = action.match(
+    /export async function correctStudentEnrollmentPlacementAction\([\s\S]*?\n}\n\nexport async function getStudentEnrollmentGradeCorrectionPreviewAction/,
+  )?.[0];
+  assert.ok(sameGradeAction);
+  assert.equal((sameGradeAction.match(/requirePermission\(Permissions\.STUDENT_CORRECTIONS\)/g) ?? []).length, 1);
   assert.equal((service.match(/requirePermission\(Permissions\.STUDENT_CORRECTIONS\)/g) ?? []).length, 2);
   assert.doesNotMatch(action, /Permissions\.ENROLLMENT/);
   assert.doesNotMatch(service, /Permissions\.ENROLLMENT/);
@@ -126,7 +130,8 @@ test("Enrollment Details owns a focused workflow and compact immutable history",
   assert.match(dialog, /flex max-h-\[92dvh\][\s\S]*overflow-hidden p-0/);
   assert.match(dialog, /ScrollArea className="min-h-0 flex-1"/);
   assert.match(dialog, /DialogFooter className="mx-0 mb-0 shrink-0/);
-  assert.match(history, /Placement Correction History/);
+  assert.match(history, /Enrollment Correction History/);
+  assert.match(history, /correctionType === "GRADE_LEVEL" \? "Grade-Level" : "Placement"/);
   assert.match(history, /Corrected by/);
   assert.match(history, /Evidence \/ Reference/);
   const manager = source("app/(protected)/dashboard/enrollment/components/enrollment-dialog-manager.tsx");
@@ -141,7 +146,7 @@ test("Enrollment Details owns a focused workflow and compact immutable history",
 
 test("placement correction invalidates only Enrollment, Student, and correction-history keys", () => {
   const hook = source("hooks/enrollment.hook.ts");
-  const body = hook.match(/export function useCorrectStudentEnrollmentPlacement\(\)[\s\S]*?\n}\n\nexport function useTransitionEnrollment/)?.[0];
+  const body = hook.match(/export function useCorrectStudentEnrollmentPlacement\(\)[\s\S]*?\n}\n\nexport function useCorrectStudentEnrollmentGradePlacement/)?.[0];
   assert.ok(body);
   assert.match(body, /\["enrollments"\]/);
   assert.match(body, /\["students"\]/);

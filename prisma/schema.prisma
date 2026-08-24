@@ -153,6 +153,7 @@ model User {
   finalizedCurricula                           CurriculumFinalization[]            @relation("CurriculumFinalizer")
   curriculumCorrections                        CurriculumCorrection[]              @relation("CurriculumCorrectionActor")
   studentEnrollmentCorrections                 StudentEnrollmentCorrection[]       @relation("StudentEnrollmentCorrectionActor")
+  studentEnrollmentGradeCorrections            StudentEnrollmentGradeCorrection[]  @relation("StudentEnrollmentGradeCorrectionActor")
   createdShsTermResultInterpretationPolicies   ShsTermResultInterpretationPolicy[] @relation("ShsTermResultInterpretationPolicyCreator")
   publishedShsTermResultInterpretationPolicies ShsTermResultInterpretationPolicy[] @relation("ShsTermResultInterpretationPolicyPublisher")
   auditLogs                                    AuditLog[]
@@ -269,11 +270,13 @@ model Section {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  subjectAssignments               SubjectAssignment[]
-  enrollments                      Enrollment[]
-  currentStudents                  Student[]                     @relation("StudentCurrentSection")
-  sourceEnrollmentCorrections      StudentEnrollmentCorrection[] @relation("StudentEnrollmentCorrectionSourceSection")
-  destinationEnrollmentCorrections StudentEnrollmentCorrection[] @relation("StudentEnrollmentCorrectionDestinationSection")
+  subjectAssignments                    SubjectAssignment[]
+  enrollments                           Enrollment[]
+  currentStudents                       Student[]                          @relation("StudentCurrentSection")
+  sourceEnrollmentCorrections           StudentEnrollmentCorrection[]      @relation("StudentEnrollmentCorrectionSourceSection")
+  destinationEnrollmentCorrections      StudentEnrollmentCorrection[]      @relation("StudentEnrollmentCorrectionDestinationSection")
+  sourceEnrollmentGradeCorrections      StudentEnrollmentGradeCorrection[] @relation("StudentEnrollmentGradeCorrectionSourceSection")
+  destinationEnrollmentGradeCorrections StudentEnrollmentGradeCorrection[] @relation("StudentEnrollmentGradeCorrectionDestinationSection")
 }
 
 model Subject {
@@ -356,6 +359,7 @@ model Enrollment {
   grades                    Grade[]
   studentSubjectEnrollments StudentSubjectEnrollment[]
   placementCorrections      StudentEnrollmentCorrection[]
+  gradeCorrections          StudentEnrollmentGradeCorrection[]
 
   @@unique([studentId, academicYearId])
   @@index([academicYearId])
@@ -391,6 +395,63 @@ model StudentEnrollmentCorrection {
   @@index([sourceSectionId])
   @@index([destinationSectionId])
   @@index([correctedById])
+}
+
+model StudentEnrollmentGradeCorrection {
+  id       String @id @default(cuid())
+  sequence BigInt @unique @default(autoincrement())
+
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+
+  sourceSectionId String
+  sourceSection   Section @relation("StudentEnrollmentGradeCorrectionSourceSection", fields: [sourceSectionId], references: [id], onDelete: Restrict)
+
+  destinationSectionId String
+  destinationSection   Section @relation("StudentEnrollmentGradeCorrectionDestinationSection", fields: [destinationSectionId], references: [id], onDelete: Restrict)
+
+  sourcePlacementSnapshot      Json
+  destinationPlacementSnapshot Json
+  enrollmentCreatedAtSnapshot  DateTime
+
+  reason            String
+  evidenceReference String
+
+  sourceParticipationCount      Int
+  replacementParticipationCount Int
+
+  correctedById String
+  correctedBy   User     @relation("StudentEnrollmentGradeCorrectionActor", fields: [correctedById], references: [id], onDelete: Restrict)
+  correctedAt   DateTime
+  createdAt     DateTime @default(now())
+
+  participationCorrections StudentParticipationCorrection[]
+
+  @@index([enrollmentId, correctedAt])
+  @@index([sourceSectionId])
+  @@index([destinationSectionId])
+  @@index([correctedById])
+}
+
+model StudentParticipationCorrection {
+  id String @id @default(cuid())
+
+  studentEnrollmentGradeCorrectionId String
+  studentEnrollmentGradeCorrection   StudentEnrollmentGradeCorrection @relation(fields: [studentEnrollmentGradeCorrectionId], references: [id], onDelete: Restrict, map: "StudentParticipationCorrection_gradeCorrectionId_fkey")
+
+  sourceStudentSubjectEnrollmentId String                   @unique(map: "StudentParticipationCorrection_sourceStudentSubjectEnrollmentId")
+  sourceStudentSubjectEnrollment   StudentSubjectEnrollment @relation("StudentParticipationCorrectionSource", fields: [sourceStudentSubjectEnrollmentId], references: [id], onDelete: Restrict, map: "StudentParticipationCorrection_sourceSseId_fkey")
+
+  replacementStudentSubjectEnrollmentId String                   @unique(map: "StudentParticipationCorrection_replacementStudentSubjectEnrollm")
+  replacementStudentSubjectEnrollment   StudentSubjectEnrollment @relation("StudentParticipationCorrectionReplacement", fields: [replacementStudentSubjectEnrollmentId], references: [id], onDelete: Restrict, map: "StudentParticipationCorrection_replacementSseId_fkey")
+
+  canonicalSubjectPrefix           String
+  sourceParticipationSnapshot      Json
+  replacementParticipationSnapshot Json
+  createdAt                        DateTime @default(now())
+
+  @@unique([studentEnrollmentGradeCorrectionId, canonicalSubjectPrefix], map: "StudentParticipationCorrection_correction_prefix_key")
+  @@index([studentEnrollmentGradeCorrectionId], map: "StudentParticipationCorrection_studentEnrollmentGradeCorrection")
 }
 
 model AcademicYear {
@@ -618,7 +679,9 @@ model StudentSubjectEnrollment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  terms StudentSubjectEnrollmentTerm[]
+  terms                              StudentSubjectEnrollmentTerm[]
+  sourceParticipationCorrection      StudentParticipationCorrection? @relation("StudentParticipationCorrectionSource")
+  replacementParticipationCorrection StudentParticipationCorrection? @relation("StudentParticipationCorrectionReplacement")
 
   @@index([enrollmentId, status])
   @@index([subjectOfferingId])

@@ -29,6 +29,19 @@ export type CorrectStudentEnrollmentPlacementInput = z.infer<
   typeof CorrectStudentEnrollmentPlacementSchema
 >;
 
+export const CorrectStudentEnrollmentGradePlacementSchema = z.object({
+  sourceSectionId: z.string().min(1, "Source Section is required."),
+  destinationSectionId: z.string().min(1, "Destination Section is required."),
+  reason: z.string().trim().min(1, "Reason is required.").max(500),
+  evidenceReference: z.string().trim().min(1, "Evidence/reference is required.").max(500),
+  confirmed: z.boolean().refine((value) => value, "Confirm the historical correction."),
+  typedConfirmation: z.string().optional(),
+});
+
+export type CorrectStudentEnrollmentGradePlacementInput = z.infer<
+  typeof CorrectStudentEnrollmentGradePlacementSchema
+>;
+
 export const EnrollmentTerminalStatusSchema = z.enum([
   "COMPLETED",
   "DROPPED",
@@ -45,12 +58,15 @@ export type TransitionEnrollmentInput = z.infer<
 
 export interface StudentEnrollmentCorrectionHistoryItem {
   id: string;
+  correctionType: "PLACEMENT" | "GRADE_LEVEL";
   sourceSection: string;
   destinationSection: string;
   correctedBy: string;
   correctedAt: Date;
   reason: string;
   evidenceReference: string;
+  sourceParticipationCount?: number;
+  replacementParticipationCount?: number;
 }
 
 export interface StudentEnrollmentCorrectionContext {
@@ -66,6 +82,33 @@ export interface StudentEnrollmentCorrectionContext {
     sectionName: string;
   }>;
   history: StudentEnrollmentCorrectionHistoryItem[];
+}
+
+export interface StudentEnrollmentGradeCorrectionSubjectPreview {
+  subjectCode: string;
+  subjectDescription: string;
+  gradeLevel: string;
+  termNames: string[];
+  resultBlockers: string[];
+}
+
+export interface StudentEnrollmentGradeCorrectionPreview {
+  enrollmentId: string;
+  sourceSectionId: string;
+  destinationSectionId: string;
+  sourceGradeLevel: string;
+  destinationGradeLevel: string;
+  eligible: boolean;
+  blockers: string[];
+  resultBlockers: Array<{
+    studentSubjectEnrollmentId: string;
+    subjectCode: string;
+    resultCount: number;
+  }>;
+  sourceSubjects: StudentEnrollmentGradeCorrectionSubjectPreview[];
+  destinationSubjects: StudentEnrollmentGradeCorrectionSubjectPreview[];
+  requiresTypedConfirmation: boolean;
+  typedConfirmationPhrase: string;
 }
 
 // Retained only for the legacy Semester-retirement contract. Operational

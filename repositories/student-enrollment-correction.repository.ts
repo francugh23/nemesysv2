@@ -11,8 +11,11 @@ export function findStudentEnrollmentCorrectionReference(
   });
 }
 
-export function findStudentEnrollmentCorrectionContext(enrollmentId: string) {
-  return prisma.enrollment.findFirst({
+export function findStudentEnrollmentCorrectionContext(
+  enrollmentId: string,
+  transaction: Prisma.TransactionClient,
+) {
+  return transaction.enrollment.findFirst({
     where: { id: enrollmentId, deletedAt: null },
     select: {
       id: true,
@@ -35,11 +38,63 @@ export function findStudentEnrollmentCorrectionContext(enrollmentId: string) {
   });
 }
 
-export function findSameGradePlacementDestinations(gradeLevel: string, sourceSectionId: string) {
-  return prisma.section.findMany({
+export function findStudentEnrollmentGradeCorrectionHistory(
+  enrollmentId: string,
+  transaction: Prisma.TransactionClient,
+) {
+  return transaction.$queryRaw<Array<{
+    id: string;
+    sourcePlacementSnapshot: Prisma.JsonValue;
+    destinationPlacementSnapshot: Prisma.JsonValue;
+    reason: string;
+    evidenceReference: string;
+    sourceParticipationCount: number;
+    replacementParticipationCount: number;
+    correctedAt: Date;
+    correctedByFirstName: string;
+    correctedByMiddleName: string | null;
+    correctedByLastName: string;
+  }>>(Prisma.sql`
+    SELECT correction."id", correction."sourcePlacementSnapshot",
+           correction."destinationPlacementSnapshot", correction."reason",
+           correction."evidenceReference", correction."sourceParticipationCount",
+           correction."replacementParticipationCount", correction."correctedAt",
+           actor."firstName" AS "correctedByFirstName",
+           actor."middleName" AS "correctedByMiddleName",
+           actor."lastName" AS "correctedByLastName"
+    FROM "StudentEnrollmentGradeCorrection" correction
+    JOIN "User" actor ON actor."id" = correction."correctedById"
+    WHERE correction."enrollmentId" = ${enrollmentId}
+    ORDER BY correction."correctedAt" DESC, correction."id" DESC
+  `);
+}
+
+export function findSameGradePlacementDestinations(
+  gradeLevel: string,
+  sourceSectionId: string,
+  transaction: Prisma.TransactionClient,
+) {
+  return transaction.section.findMany({
     where: { gradeLevel, id: { not: sourceSectionId }, deletedAt: null },
     select: { id: true, gradeLevel: true, trackStrand: true, sectionName: true },
     orderBy: [{ trackStrand: "asc" }, { sectionName: "asc" }, { id: "asc" }],
+  });
+}
+
+export function findRegularJhsGradeCorrectionDestinations(
+  sourceSectionId: string,
+  sourceGradeLevel: string,
+  transaction: Prisma.TransactionClient,
+) {
+  return transaction.section.findMany({
+    where: {
+      id: { not: sourceSectionId },
+      gradeLevel: { in: ["7", "8", "9", "10"], not: sourceGradeLevel },
+      trackStrand: null,
+      deletedAt: null,
+    },
+    select: { id: true, gradeLevel: true, trackStrand: true, sectionName: true },
+    orderBy: [{ gradeLevel: "asc" }, { sectionName: "asc" }, { id: "asc" }],
   });
 }
 
