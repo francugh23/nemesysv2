@@ -339,6 +339,35 @@ test("correction history unifies placement and grade events in deterministic ord
   assert.match(historyUi, /replacement participation/);
 });
 
+test("correction context reads retain the dedicated authorization and serializable action payload", () => {
+  const permissions = source("lib/permissions.ts");
+  const action = source("actions/student-enrollment-correction.action.ts");
+  const service = source("services/student-enrollment-correction.service.ts");
+  const contextAction = between(
+    action,
+    "export async function getStudentEnrollmentCorrectionContextAction",
+    "export async function correctStudentEnrollmentPlacementAction",
+  );
+  const contextService = between(
+    service,
+    "export async function getStudentEnrollmentCorrectionContextService",
+    "export async function correctStudentEnrollmentPlacementService",
+  );
+
+  assert.match(
+    permissions,
+    /\[Permissions\.STUDENT_CORRECTIONS\]: \["SUPER_ADMIN", "REGISTRAR"\]/,
+  );
+  assert.match(contextAction, /requirePermission\(Permissions\.STUDENT_CORRECTIONS\)/);
+  assert.match(contextAction, /z\.string\(\)\.min\(1\)\.safeParse\(enrollmentId\)/);
+  assert.match(contextAction, /return getStudentEnrollmentCorrectionContextService\(validatedId\.data\)/);
+  assert.match(contextService, /requirePermission\(Permissions\.STUDENT_CORRECTIONS\)/);
+  assert.match(contextService, /StudentEnrollmentCorrectionError\("Enrollment not found\."\)/);
+  assert.match(contextService, /enrollmentId: enrollment\.id/);
+  assert.match(contextService, /destinations,/);
+  assert.match(contextService, /history: corrections\.map/);
+});
+
 test("preview refreshes after stale mutation errors and renders subject result blockers", () => {
   const dialog = source(
     "app/(protected)/dashboard/enrollment/components/correct-enrollment-placement-dialog.tsx",
