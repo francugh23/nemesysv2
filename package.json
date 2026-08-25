@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "walkthrough:database": "tsx scripts/create-clean-walkthrough-database.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",

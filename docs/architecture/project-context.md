@@ -17,6 +17,8 @@ Academic Year remains the canonical period identity for academic configuration a
 
 Phase 21F-C1/C2 controlled SHS participation correction and Phase 21F-D immutable SHS Term Result revision are implemented. C1 and result-revision concurrency coverage is environment-gated because no safe disposable database URL is configured; shared development is intentionally never used for those races.
 
+Phase 22A provides a guarded development-only clean-school walkthrough database workflow. It preserves a protected source-backed template and creates isolated prefixed targets without deleting or weakening the populated `nemesysv2` development database.
+
 ### Completed Modules
 
 - Student CRUD, UI, import, URL-driven server-table UX, complete filtered CSV/XLSX export, and XLSX import template
@@ -114,6 +116,7 @@ Phase 21F-C1/C2 controlled SHS participation correction and Phase 21F-D immutabl
 - [Phase 21F-C2: SHS Participation Correction Read And UI](./milestones/phase-21f-c2-shs-participation-correction-ui.md)
 - [Phase 21F-C3: SHS Participation Correction Final Verification](./milestones/phase-21f-c3-shs-participation-correction-final-verification.md)
 - [Phase 21F-D: SHS Term Result Revision](./milestones/phase-21f-d-shs-term-result-revision.md)
+- [Development Clean-School Walkthrough Database](../development/clean-school-walkthrough.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -203,6 +206,7 @@ Phase 21F-C1/C2 controlled SHS participation correction and Phase 21F-D immutabl
 - Focused Phase 21F-C2 contract checks pass 4/4 and affected C1 contract/integration regressions pass 9/9. Prisma validation, TypeScript, targeted ESLint, and diff checks pass.
 - Phase 21F-C3 complete sequential suite passes 367 tests with nine expected disposable-database concurrency skips and zero failures. The C1 checkout has no concurrency suite or environment gate; no disposable database is configured and shared development was not used.
 - Phase 21F-D migrations are current with no schema drift. Focused 21F-D, 21D-C/D, and C1 regressions pass 31/31, with one expected result-revision concurrency skip because `C_RUN_CONCURRENCY` is not enabled for a disposable database. Prisma validation/generation, TypeScript, targeted ESLint, build, and diff checks pass. Protected counts remain Enrollment 4, Student 4, StudentSubjectEnrollment 28, StudentSubjectEnrollmentTerm 84, ShsTermResult 0, ShsTermResultRevision 0, Grade 0, and CurriculumCorrection 0.
+- Phase 22A created protected `nemesysv2_walkthrough_template` and verified `nemesysv2_walkthrough_phase22a`. Both retain 6 Users, 3 Teachers, 203 Subjects (32 JHS and 171 source-backed SHS), 16 SHS clusters, and 171 SHS references while all operational and audit tables are empty. The source database migration identity and data fingerprints were unchanged.
 - C3 protected counts and hashes match the established baseline: Enrollment 4 / `a12eb1d395076fb1051ade3baa8191da`, Student 4 / `7d54b06c42e58ecc8e55c02116dd32a5`, StudentSubjectEnrollment 28 / `4ba2face0627f5b8d19dc4142761feb1`, StudentSubjectEnrollmentTerm 84 / `5427f5041243ea9cccf306f9aca67f3b`, SubjectOffering 139 / `a20d80538c18443bc87f9fdc6913222f`, and AcademicTerm 3 / `b684716570674856108ba49e7ec0c439`; ShsTermResult, Grade, and CurriculumCorrection remain zero. All 53 migrations are current with no Docker/Linux Prisma schema drift. Prisma validation/generation, TypeScript, targeted ESLint, build, and diff checks pass. Authenticated browser verification is pending.
 
 ## Active Constraints
