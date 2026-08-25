@@ -17,6 +17,7 @@ import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   useFinalizeShsTermResult,
+  useReviseFinalizedShsTermResult,
   useSaveShsTermResultDraft,
 } from "@/hooks/student-subject-enrollment.hook";
 import { getPhilippineCalendarDate } from "@/lib/academic-term-current";
@@ -32,8 +33,15 @@ export interface ShsTermResultTarget {
     endDate: Date;
   };
   result: {
+    id: string;
     finalResult: number | null;
+    originalFinalResult: number | null;
+    authoritativeFinalResult: number | null;
+    authoritativeSource: "ORIGINAL" | "REVISION";
+    latestRevisionId: string | null;
+    latestRevisionSequence: number;
     status: "DRAFT" | "FINALIZED";
+    revisions: Array<{ id: string; sequence: number; priorAuthoritativeResult: number; revisedFinalResult: number; reason: string; evidenceReference: string; revisedAt: Date; revisedBy: { firstName: string; middleName: string | null; lastName: string } }>;
   } | null;
 }
 
@@ -49,10 +57,14 @@ export function ShsTermResultDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const [value, setValue] = useState(
-    target.result?.finalResult?.toFixed(2) ?? "",
+    target.result?.authoritativeFinalResult?.toFixed(2) ?? target.result?.finalResult?.toFixed(2) ?? "",
   );
   const saveDraft = useSaveShsTermResultDraft(enrollmentId);
   const finalize = useFinalizeShsTermResult(enrollmentId);
+  const revise = useReviseFinalizedShsTermResult(enrollmentId);
+  const [reason, setReason] = useState("");
+  const [evidenceReference, setEvidenceReference] = useState("");
+  const [typedConfirmation, setTypedConfirmation] = useState("");
   const numericValue = value === "" ? null : Number(value);
   const invalid = numericValue !== null && (
     !Number.isFinite(numericValue) ||
@@ -62,7 +74,9 @@ export function ShsTermResultDialog({
   );
   const canFinalize =
     getPhilippineCalendarDate() >= target.academicTerm.endDate.toISOString().slice(0, 10);
-  const pending = saveDraft.isPending || finalize.isPending;
+  const pending = saveDraft.isPending || finalize.isPending || revise.isPending;
+  const finalized = target.result?.status === "FINALIZED";
+  const revisionPhrase = `REVISE ${target.subjectCode} ${target.academicTerm.name} RESULT`;
   const identity = {
     enrollmentId,
     studentSubjectEnrollmentId: target.studentSubjectEnrollmentId,
@@ -83,15 +97,32 @@ export function ShsTermResultDialog({
     onOpenChange(false);
   }
 
+  async function reviseResult() {
+    if (!target.result) return;
+    const result = await revise.mutateAsync({
+      ...identity,
+      shsTermResultId: target.result.id,
+      expectedLatestRevisionId: target.result.latestRevisionId,
+      expectedLatestRevisionSequence: target.result.latestRevisionSequence,
+      expectedPriorAuthoritativeResult: target.result.authoritativeFinalResult ?? target.result.finalResult ?? 0,
+      revisedFinalResult: numericValue ?? -1,
+      reason,
+      evidenceReference,
+      typedConfirmation,
+    });
+    if (result.error) return toast.error(result.error);
+    toast.success(result.success);
+    onOpenChange(false);
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-lg">
+      <DialogContent className="max-h-[90dvh] w-[95vw] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>SHS Term Result</DialogTitle>
-          <DialogDescription>
-            A finalized numeric result is immutable evidence only. It does not
-            determine passing, completion, credits, or progression.
-          </DialogDescription>
+          <DialogDescription>{finalized
+            ? "The original finalized evidence remains unchanged. A revision changes only the authoritative result and does not correct subject participation."
+            : "A finalized numeric result is immutable evidence only. It does not determine passing, completion, credits, or progression."}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2 rounded-md border bg-muted/30 p-3">
@@ -101,6 +132,14 @@ export function ShsTermResultDialog({
             name={target.academicTerm.name}
           />
         </div>
+
+        {finalized && target.result ? (
+          <div className="space-y-3 rounded-md border bg-muted/30 p-3 text-sm">
+            <p>Original FINALIZED value: <strong>{target.result.originalFinalResult?.toFixed(2)}</strong></p>
+            <p>Current authoritative value: <strong>{target.result.authoritativeFinalResult?.toFixed(2)}</strong> ({target.result.authoritativeSource})</p>
+            {target.result.revisions.map((revision) => <div key={revision.id} className="border-t pt-2"><p>Revision {revision.sequence}: {revision.priorAuthoritativeResult.toFixed(2)} to {revision.revisedFinalResult.toFixed(2)}</p><p className="text-muted-foreground">{revision.reason} | {revision.evidenceReference}</p></div>)}
+          </div>
+        ) : null}
 
         <Field data-invalid={invalid || undefined}>
           <FieldLabel htmlFor="shs-term-final-result">Final result</FieldLabel>
@@ -117,16 +156,20 @@ export function ShsTermResultDialog({
             aria-invalid={invalid || undefined}
             placeholder="0.00-100.00"
           />
-          <FieldDescription>
-            A draft may be blank. Finalization requires a value from 0.00 to 100.00 with at most two decimal places.
-          </FieldDescription>
+          <FieldDescription>{finalized ? "Proposed revised value. The original finalized value will remain immutable." : "A draft may be blank. Finalization requires a value from 0.00 to 100.00 with at most two decimal places."}</FieldDescription>
         </Field>
+
+        {finalized ? <>
+          <Field><FieldLabel htmlFor="shs-result-revision-reason">Revision reason</FieldLabel><Input id="shs-result-revision-reason" value={reason} onChange={(event) => setReason(event.target.value)} maxLength={500} disabled={pending} /></Field>
+          <Field><FieldLabel htmlFor="shs-result-revision-evidence">Evidence/reference</FieldLabel><Input id="shs-result-revision-evidence" value={evidenceReference} onChange={(event) => setEvidenceReference(event.target.value)} maxLength={500} disabled={pending} /></Field>
+          <Field><FieldLabel htmlFor="shs-result-revision-confirmation">Type {revisionPhrase}</FieldLabel><Input id="shs-result-revision-confirmation" value={typedConfirmation} onChange={(event) => setTypedConfirmation(event.target.value)} disabled={pending} /></Field>
+        </> : null}
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>Cancel</Button>
-          <Button variant="outline" onClick={() => void save()} disabled={invalid || pending}>
+          {!finalized && <Button variant="outline" onClick={() => void save()} disabled={invalid || pending}>
             {saveDraft.isPending ? "Saving..." : "Save Draft"}
-          </Button>
+          </Button>}
           {target.result?.status === "DRAFT" && (
             <Button
               onClick={() => void finalizeResult()}
@@ -136,6 +179,7 @@ export function ShsTermResultDialog({
               {finalize.isPending ? "Finalizing..." : "Finalize existing draft"}
             </Button>
           )}
+          {finalized && <Button onClick={() => void reviseResult()} disabled={invalid || numericValue === null || !reason.trim() || !evidenceReference.trim() || typedConfirmation !== revisionPhrase || pending}>{revise.isPending ? "Revising..." : "Record Immutable Revision"}</Button>}
         </DialogFooter>
       </DialogContent>
     </Dialog>

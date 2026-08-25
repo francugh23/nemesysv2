@@ -13,6 +13,18 @@ export async function lockEnrollmentForShsTermResult(
   return rows[0] ?? null;
 }
 
+export async function lockAcademicYearForShsTermResult(
+  enrollmentId: string,
+  transaction: Prisma.TransactionClient,
+) {
+  const rows = await transaction.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT year."id" FROM "AcademicYear" year
+    JOIN "Enrollment" enrollment ON enrollment."academicYearId" = year."id"
+    WHERE enrollment."id" = ${enrollmentId} FOR SHARE OF year
+  `);
+  return rows[0] ?? null;
+}
+
 export async function lockStudentSubjectEnrollmentForTermResult(
   id: string,
   transaction: Prisma.TransactionClient,
@@ -88,6 +100,46 @@ export async function lockShsTermResult(
       },
     },
   });
+}
+
+export function lockShsTermResultRevisions(
+  shsTermResultId: string,
+  transaction: Prisma.TransactionClient,
+) {
+  return transaction.shsTermResultRevision.findMany({
+    where: { shsTermResultId },
+    orderBy: { sequence: "asc" },
+  });
+}
+
+export async function lockShsTermResultParticipationCorrectionState(
+  studentSubjectEnrollmentId: string,
+  transaction: Prisma.TransactionClient,
+) {
+  const rows = await transaction.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT "id" FROM "ShsStudentParticipationCorrection"
+    WHERE "sourceStudentSubjectEnrollmentId" = ${studentSubjectEnrollmentId}
+       OR "replacementStudentSubjectEnrollmentId" = ${studentSubjectEnrollmentId}
+    FOR SHARE
+  `);
+  return rows;
+}
+
+export function createShsTermResultRevision(
+  data: {
+    shsTermResultId: string;
+    sequence: number;
+    predecessorRevisionId: string | null;
+    originalFinalResultSnapshot: number;
+    priorAuthoritativeResult: number;
+    revisedFinalResult: number;
+    reason: string;
+    evidenceReference: string;
+    revisedById: string;
+  },
+  transaction: Prisma.TransactionClient,
+) {
+  return transaction.shsTermResultRevision.create({ data });
 }
 
 export function createShsTermResultDraft(

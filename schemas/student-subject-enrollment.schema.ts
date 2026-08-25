@@ -51,5 +51,17 @@ export const SaveShsTermResultDraftSchema = ShsTermResultIdentitySchema.extend({
 
 export const FinalizeShsTermResultSchema = ShsTermResultIdentitySchema.strict();
 
+export const ReviseFinalizedShsTermResultSchema = ShsTermResultIdentitySchema.extend({
+  shsTermResultId: z.string().min(1),
+  expectedLatestRevisionId: z.string().min(1).nullable(),
+  expectedLatestRevisionSequence: z.number().int().min(0),
+  expectedPriorAuthoritativeResult: z.number().min(0).max(100).multipleOf(0.01),
+  revisedFinalResult: z.number().min(0).max(100).multipleOf(0.01),
+  reason: z.string().trim().min(1, "Revision reason is required.").max(500),
+  evidenceReference: z.string().trim().min(1, "Revision evidence is required.").max(500),
+  typedConfirmation: z.string().trim().min(1),
+}).strict();
+
 export type SaveShsTermResultDraftInput = z.infer<typeof SaveShsTermResultDraftSchema>;
 export type FinalizeShsTermResultInput = z.infer<typeof FinalizeShsTermResultSchema>;
+export type ReviseFinalizedShsTermResultInput = z.infer<typeof ReviseFinalizedShsTermResultSchema>;

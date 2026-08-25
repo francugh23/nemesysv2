@@ -156,6 +156,7 @@ model User {
   createdShsElectiveEnrollmentPolicies         ShsElectiveEnrollmentPolicy[]
   createdShsTermResults                        ShsTermResult[]                     @relation("ShsTermResultCreator")
   finalizedShsTermResults                      ShsTermResult[]                     @relation("ShsTermResultFinalizer")
+  revisedShsTermResults                        ShsTermResultRevision[]             @relation("ShsTermResultRevisionActor")
   finalizedCurricula                           CurriculumFinalization[]            @relation("CurriculumFinalizer")
   curriculumCorrections                        CurriculumCorrection[]              @relation("CurriculumCorrectionActor")
   studentEnrollmentCorrections                 StudentEnrollmentCorrection[]       @relation("StudentEnrollmentCorrectionActor")
@@ -797,6 +798,8 @@ model ShsTermResult {
   finalizedBy   User?     @relation("ShsTermResultFinalizer", fields: [finalizedById], references: [id], onDelete: Restrict)
   finalizedAt   DateTime?
 
+  revisions ShsTermResultRevision[] @relation("ShsTermResultRevisions")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -804,6 +807,33 @@ model ShsTermResult {
   @@index([academicTermId])
   @@index([createdById])
   @@index([finalizedById])
+}
+
+model ShsTermResultRevision {
+  id String @id @default(cuid())
+
+  shsTermResultId String
+  shsTermResult   ShsTermResult @relation("ShsTermResultRevisions", fields: [shsTermResultId], references: [id], onDelete: Restrict)
+
+  sequence Int
+  predecessorRevisionId String? @unique
+  predecessorRevision   ShsTermResultRevision? @relation("ShsTermResultRevisionChain", fields: [predecessorRevisionId], references: [id], onDelete: Restrict)
+  successorRevision     ShsTermResultRevision? @relation("ShsTermResultRevisionChain")
+
+  originalFinalResultSnapshot Decimal @db.Decimal(5, 2)
+  priorAuthoritativeResult     Decimal @db.Decimal(5, 2)
+  revisedFinalResult           Decimal @db.Decimal(5, 2)
+
+  reason            String
+  evidenceReference String
+
+  revisedById String
+  revisedBy   User @relation("ShsTermResultRevisionActor", fields: [revisedById], references: [id], onDelete: Restrict)
+  revisedAt   DateTime @default(now())
+
+  @@unique([shsTermResultId, sequence])
+  @@index([shsTermResultId, sequence])
+  @@index([revisedById])
 }
 
 model ShsTermResultInterpretationPolicy {

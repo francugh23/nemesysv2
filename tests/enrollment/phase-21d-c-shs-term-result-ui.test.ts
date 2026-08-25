@@ -16,8 +16,8 @@ test("SHS Term Result actions and services independently require GRADES authorit
   assert.equal(hasPermission("TEACHER", Permissions.GRADES), false);
   const action = source("actions/shs-term-result.action.ts");
   const service = source("services/shs-term-result.service.ts");
-  assert.equal((action.match(/requirePermission\(Permissions\.GRADES\)/g) ?? []).length, 2);
-  assert.equal((service.match(/requirePermission\(Permissions\.GRADES\)/g) ?? []).length, 2);
+  assert.equal((action.match(/requirePermission\(Permissions\.GRADES\)/g) ?? []).length, 3);
+  assert.equal((service.match(/requirePermission\(Permissions\.GRADES\)/g) ?? []).length, 3);
   assert.doesNotMatch(action + service, /SubjectAssignment|Permissions\.ENROLLMENT/);
 });
 
@@ -25,7 +25,7 @@ test("Enrollment Details shows exact-Term SHS evidence and excludes history cont
   const list = source("app/(protected)/dashboard/enrollment/components/student-subject-enrollment-list.tsx");
   const dialog = source("app/(protected)/dashboard/enrollment/components/shs-term-result-dialog.tsx");
   assert.match(list, /term\.result\.status/);
-  assert.match(list, /term\.result\.finalResult/);
+  assert.match(list, /term\.result\.authoritativeFinalResult/);
   assert.match(list, /row\.status === "ACTIVE"/);
   assert.match(list, /StudentSubjectEnrollmentTable rows=\{replacedRows\} showResults=\{isShs\}/);
   assert.match(list, /StudentSubjectEnrollmentTable rows=\{droppedRows\} showDropDetails showResults=\{isShs\}/);

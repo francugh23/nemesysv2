@@ -10,11 +10,13 @@ import {
 } from "@/actions/student-subject-enrollment.action";
 import {
   finalizeShsTermResultAction,
+  reviseFinalizedShsTermResultAction,
   saveShsTermResultDraftAction,
 } from "@/actions/shs-term-result.action";
 import type {
   DropStudentSubjectEnrollmentInput,
   FinalizeShsTermResultInput,
+  ReviseFinalizedShsTermResultInput,
   SaveShsTermResultDraftInput,
   ShsCurrentTermProgressionInput,
 } from "@/schemas";
@@ -106,6 +108,16 @@ export function useFinalizeShsTermResult(enrollmentId: string) {
   return useMutation({
     mutationFn: (values: FinalizeShsTermResultInput) =>
       finalizeShsTermResultAction(values),
+    onSuccess: async (result) => {
+      if (!result.error) await invalidate();
+    },
+  });
+}
+
+export function useReviseFinalizedShsTermResult(enrollmentId: string) {
+  const invalidate = useShsTermResultInvalidation(enrollmentId);
+  return useMutation({
+    mutationFn: (values: ReviseFinalizedShsTermResultInput) => reviseFinalizedShsTermResultAction(values),
     onSuccess: async (result) => {
       if (!result.error) await invalidate();
     },

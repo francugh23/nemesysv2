@@ -3,10 +3,12 @@ import { Permissions, requirePermission } from "@/lib/authorization";
 import prisma from "@/lib/prisma";
 import type {
   FinalizeShsTermResultInput,
+  ReviseFinalizedShsTermResultInput,
   SaveShsTermResultDraftInput,
 } from "@/schemas";
 import {
   finalizeShsTermResultInTransaction,
+  reviseFinalizedShsTermResultInTransaction,
   saveShsTermResultDraftInTransaction,
   ShsTermResultError,
 } from "@/services/shs-term-result-mutation.service";
@@ -44,5 +46,12 @@ export async function finalizeShsTermResultService(values: FinalizeShsTermResult
   const session = await requirePermission(Permissions.GRADES);
   return runSerializableMutation((transaction) =>
     finalizeShsTermResultInTransaction(values, session.user.id, transaction),
+  );
+}
+
+export async function reviseFinalizedShsTermResultService(values: ReviseFinalizedShsTermResultInput) {
+  const session = await requirePermission(Permissions.GRADES);
+  return runSerializableMutation((transaction) =>
+    reviseFinalizedShsTermResultInTransaction(values, session.user.id, transaction),
   );
 }

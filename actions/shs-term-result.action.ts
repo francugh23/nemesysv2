@@ -3,10 +3,12 @@
 import { Permissions, requirePermission } from "@/lib/authorization";
 import {
   FinalizeShsTermResultSchema,
+  ReviseFinalizedShsTermResultSchema,
   SaveShsTermResultDraftSchema,
 } from "@/schemas";
 import {
   finalizeShsTermResultService,
+  reviseFinalizedShsTermResultService,
   saveShsTermResultDraftService,
 } from "@/services/shs-term-result.service";
 
@@ -33,6 +35,17 @@ export async function finalizeShsTermResultAction(values: unknown) {
       success: "SHS Term Result finalized.",
       data: await finalizeShsTermResultService(parsed.data),
     };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Something went wrong." };
+  }
+}
+
+export async function reviseFinalizedShsTermResultAction(values: unknown) {
+  try {
+    await requirePermission(Permissions.GRADES);
+    const parsed = ReviseFinalizedShsTermResultSchema.safeParse(values);
+    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid fields." };
+    return { success: "SHS Term Result revision recorded.", data: await reviseFinalizedShsTermResultService(parsed.data) };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Something went wrong." };
   }

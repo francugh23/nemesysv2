@@ -2,6 +2,7 @@ import { Prisma } from "@/app/generated/prisma/client";
 import { Permissions, requirePermission } from "@/lib/authorization";
 import { resolveCurrentAcademicTerm } from "@/lib/academic-term-current";
 import { interpretFinalizedShsTermResult } from "@/lib/shs-term-result-interpretation";
+import { resolveShsTermResultAuthority } from "@/lib/shs-term-result-authority";
 import prisma from "@/lib/prisma";
 import { mapCurrentOfferingIdsToActiveIdentities } from "@/lib/subject-offering-lineage";
 import { findShsElectiveEnrollmentPolicyByScope } from "@/repositories/shs-elective-enrollment-policy.repository";
@@ -56,16 +57,27 @@ export async function getStudentSubjectEnrollments(query: StudentSubjectEnrollme
     ...row,
     terms: row.terms.map((term) => ({
       ...term,
-      result: term.result
-        ? {
-            ...term.result,
-            finalResult: term.result.finalResult?.toNumber() ?? null,
-            interpretation: interpretFinalizedShsTermResult(
-              term.result,
+      result: term.result ? (() => {
+        const authority = resolveShsTermResultAuthority(term.result);
+        const resolved = {
+          ...term.result,
+          ...authority,
+          finalResult: term.result.finalResult?.toNumber() ?? null,
+          originalFinalResult: authority.originalFinalResult?.toNumber() ?? null,
+          authoritativeFinalResult: authority.authoritativeFinalResult?.toNumber() ?? null,
+          revisions: term.result.revisions.map((revision) => ({
+            ...revision,
+            originalFinalResultSnapshot: revision.originalFinalResultSnapshot.toNumber(),
+            priorAuthoritativeResult: revision.priorAuthoritativeResult.toNumber(),
+            revisedFinalResult: revision.revisedFinalResult.toNumber(),
+          })),
+          interpretation: interpretFinalizedShsTermResult(
+              { ...term.result, authoritativeFinalResult: authority.authoritativeFinalResult },
               interpretationPolicy,
             ),
-          }
-        : null,
+        };
+        return resolved;
+      })() : null,
     })),
   }));
 }

@@ -298,7 +298,7 @@ function StudentSubjectEnrollmentTable({
                         {term.result ? (
                           <>
                             <Badge variant={term.result.status === "FINALIZED" ? "default" : "secondary"}>
-                              {term.result.status} | {term.result.finalResult?.toFixed(2) ?? "No result"}
+                              {term.result.status} | {term.result.authoritativeFinalResult?.toFixed(2) ?? "No result"}
                             </Badge>
                             {term.result.interpretation ? (
                               <Badge variant={term.result.interpretation.outcome === "PASSED" ? "default" : "destructive"}>
@@ -313,7 +313,7 @@ function StudentSubjectEnrollmentTable({
                         ) : (
                           <span className="text-xs text-muted-foreground">No result</span>
                         )}
-                        {canManageResults && row.status === "ACTIVE" && term.result?.status !== "FINALIZED" && (
+                        {canManageResults && row.status === "ACTIVE" && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -327,7 +327,7 @@ function StudentSubjectEnrollmentTable({
                               result: term.result,
                             })}
                           >
-                            {term.result ? "Edit Draft" : "Add Draft"}
+                            {term.result?.status === "FINALIZED" ? "Revise Result" : term.result ? "Edit Draft" : "Add Draft"}
                           </Button>
                         )}
                       </div>
