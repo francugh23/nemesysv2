@@ -16,6 +16,7 @@ import type { EnrollmentListItem } from "@/schemas";
 import { StudentSubjectEnrollmentList } from "./student-subject-enrollment-list";
 import { ShsCurrentTermSubjectSelection } from "./shs-current-term-subject-selection";
 import { StudentEnrollmentCorrectionHistory } from "./student-enrollment-correction-history";
+import { ShsStudentParticipationCorrectionHistory } from "./shs-student-participation-correction-history";
 
 const statusVariants = {
   ACTIVE: "default",
@@ -30,6 +31,7 @@ interface EnrollmentViewDialogProps {
   onOpenChange: (open: boolean) => void;
   canViewPlacementCorrections: boolean;
   onCorrectPlacement?: () => void;
+  onCorrectSubjectParticipation?: () => void;
 }
 
 export function EnrollmentViewDialog({
@@ -38,6 +40,7 @@ export function EnrollmentViewDialog({
   onOpenChange,
   canViewPlacementCorrections,
   onCorrectPlacement,
+  onCorrectSubjectParticipation,
 }: EnrollmentViewDialogProps) {
   const studentName = formatFullName(
     enrollment.studentFirstName,
@@ -143,6 +146,20 @@ export function EnrollmentViewDialog({
 
         {canViewPlacementCorrections ? (
           <StudentEnrollmentCorrectionHistory enrollmentId={enrollment.id} open={open} />
+        ) : null}
+
+        {onCorrectSubjectParticipation ? (
+          <div className="flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50/50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900 dark:bg-amber-950/20">
+            <div>
+              <h3 className="font-semibold">SHS Subject Participation</h3>
+              <p className="text-sm text-muted-foreground">Correct one active SHS Core or elective participation record while preserving its source Term evidence and history.</p>
+            </div>
+            <Button onClick={onCorrectSubjectParticipation}>Correct Subject Participation</Button>
+          </div>
+        ) : null}
+
+        {canViewPlacementCorrections && ["11", "12"].includes(enrollment.sectionGradeLevel) ? (
+          <ShsStudentParticipationCorrectionHistory enrollmentId={enrollment.id} open={open} />
         ) : null}
 
         <StudentSubjectEnrollmentList

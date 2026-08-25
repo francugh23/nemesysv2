@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { Prisma } from "@/app/generated/prisma/client";
+import prisma from "@/lib/prisma";
 
 export type LockedShsParticipationCorrectionEnrollment = {
   id: string;
@@ -29,7 +30,7 @@ export type LockedShsParticipationCorrectionSse = {
   shsSourceReference: string | null;
   shsApprovalReference: string | null;
   status: string;
-  terms: Array<{ academicTermId: string; academicYearId: string; position: number; endDate: Date; resultId: string | null; resultStatus: string | null }>;
+  terms: Array<{ academicTermId: string; academicYearId: string; position: number; startDate: Date; endDate: Date; resultId: string | null; resultStatus: string | null }>;
 };
 
 export type LockedShsParticipationCorrectionOffering = {
@@ -90,8 +91,8 @@ export async function lockShsParticipationCorrectionSource(
   `);
   const source = rows[0];
   if (!source) return null;
-  const memberships = await transaction.$queryRaw<Array<{ academicTermId: string; academicYearId: string; position: number; endDate: Date }>>(Prisma.sql`
-    SELECT membership."academicTermId", term."academicYearId", term."position", term."endDate"
+  const memberships = await transaction.$queryRaw<Array<{ academicTermId: string; academicYearId: string; position: number; startDate: Date; endDate: Date }>>(Prisma.sql`
+    SELECT membership."academicTermId", term."academicYearId", term."position", term."startDate", term."endDate"
     FROM "StudentSubjectEnrollmentTerm" membership
     JOIN "AcademicTerm" term ON term."id" = membership."academicTermId"
     WHERE membership."studentSubjectEnrollmentId" = ${source.id}
@@ -176,6 +177,63 @@ export async function findShsParticipationCorrectionHistory(enrollmentId: string
     where: { enrollmentId, shsCurriculumStatus: { not: null } },
     select: { id: true, subjectOfferingId: true, status: true, shsClassification: true, selectionAcademicTermId: true, terms: { select: { academicTermId: true } } },
     orderBy: { id: "asc" },
+  });
+}
+
+export function findShsParticipationCorrectionPreviewContext(enrollmentId: string) {
+  return prisma.enrollment.findFirst({
+    where: { id: enrollmentId, deletedAt: null },
+    select: {
+      id: true, academicYearId: true, status: true, entryAcademicTermId: true, shsTrack: true,
+      section: { select: { gradeLevel: true } },
+      academicYear: { select: { status: true, terms: { select: { id: true, name: true, position: true, startDate: true, endDate: true }, orderBy: { position: "asc" } } } },
+      studentSubjectEnrollments: {
+        where: { shsCurriculumStatus: { not: null } },
+        select: {
+          id: true, subjectOfferingId: true, subjectCode: true, subjectDescription: true, gradeLevel: true,
+          shsClassification: true, shsClusterCode: true, shsClusterName: true, shsCurriculumStatus: true,
+          shsSourceReference: true, shsApprovalReference: true, selectionAcademicTermId: true, status: true,
+          terms: { select: { academicTermId: true, academicTerm: { select: { id: true, name: true, position: true, startDate: true, endDate: true, academicYearId: true } }, result: { select: { status: true } } }, orderBy: { academicTerm: { position: "asc" } } },
+        },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      },
+    },
+  });
+}
+
+export function findShsParticipationCorrectionReplacementCandidates(academicYearId: string, gradeLevel: string) {
+  return prisma.subjectOffering.findMany({
+    where: {
+      academicYearId, gradeLevel, deletedAt: null,
+      shsContext: { is: { curriculumStatus: "SCHOOL_APPROVED", sourceReference: { not: null }, approvalReference: { not: null }, OR: [{ classification: "CORE" }, { cluster: { is: { deletedAt: null } } }] } },
+    },
+    select: {
+      id: true, subjectCode: true, subjectDescription: true,
+      terms: { select: { academicTermId: true, academicTerm: { select: { name: true, position: true } } }, orderBy: { academicTerm: { position: "asc" } } },
+      shsContext: { select: { classification: true, cluster: { select: { name: true } } } },
+    },
+    orderBy: [{ subjectCode: "asc" }, { id: "asc" }],
+  });
+}
+
+export function findShsParticipationCorrectionPolicy(academicYearId: string, academicTermId: string, gradeLevel: string) {
+  return prisma.shsElectiveEnrollmentPolicy.findUnique({
+    where: { academicYearId_academicTermId_gradeLevel: { academicYearId, academicTermId, gradeLevel } },
+    select: { minimumElectives: true, maximumElectives: true },
+  });
+}
+
+export function findShsParticipationCorrectionEventHistory(enrollmentId: string) {
+  return prisma.shsStudentParticipationCorrection.findMany({
+    where: { enrollmentId },
+    select: {
+      id: true, kind: true, reason: true, evidenceReference: true, correctedAt: true,
+      sourceAcademicTerm: { select: { name: true } }, replacementAcademicTerm: { select: { name: true } },
+      sourceStudentSubjectEnrollment: { select: { subjectCode: true, subjectDescription: true } },
+      replacementStudentSubjectEnrollment: { select: { subjectCode: true, subjectDescription: true } },
+      correctedBy: { select: { firstName: true, middleName: true, lastName: true } },
+    },
+    orderBy: [{ correctedAt: "desc" }, { id: "desc" }],
   });
 }
 

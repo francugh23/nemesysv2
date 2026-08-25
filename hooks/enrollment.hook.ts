@@ -20,6 +20,12 @@ import {
   getStudentEnrollmentGradeCorrectionPreviewAction,
   getStudentEnrollmentCorrectionContextAction,
 } from "@/actions/student-enrollment-correction.action";
+import {
+  correctShsStudentParticipationAction,
+  getShsStudentParticipationCorrectionContextAction,
+  getShsStudentParticipationCorrectionHistoryAction,
+  getShsStudentParticipationCorrectionPreviewAction,
+} from "@/actions/shs-student-participation-correction.action";
 import type { EnrollmentTableQueryInput } from "@/schemas";
 
 export function useEnrollments(query: EnrollmentTableQueryInput) {
@@ -94,6 +100,35 @@ export function useStudentEnrollmentGradeCorrectionPreview(
       ),
     enabled:
       enabled && Boolean(enrollmentId) && Boolean(destinationSectionId),
+  });
+}
+
+export function useShsStudentParticipationCorrectionContext(enrollmentId: string, enabled = true) {
+  return useQuery({ queryKey: ["shs-student-participation-correction-context", enrollmentId], queryFn: () => getShsStudentParticipationCorrectionContextAction(enrollmentId), enabled: enabled && Boolean(enrollmentId) });
+}
+
+export function useShsStudentParticipationCorrectionPreview(enrollmentId: string, sourceStudentSubjectEnrollmentId: string, sourceAcademicTermId: string, enabled = true) {
+  return useQuery({ queryKey: ["shs-student-participation-correction-preview", enrollmentId, sourceStudentSubjectEnrollmentId, sourceAcademicTermId], queryFn: () => getShsStudentParticipationCorrectionPreviewAction(enrollmentId, sourceStudentSubjectEnrollmentId, sourceAcademicTermId), enabled: enabled && Boolean(enrollmentId) && Boolean(sourceStudentSubjectEnrollmentId) && Boolean(sourceAcademicTermId) });
+}
+
+export function useShsStudentParticipationCorrectionHistory(enrollmentId: string, enabled = true) {
+  return useQuery({ queryKey: ["shs-student-participation-correction-history", enrollmentId], queryFn: () => getShsStudentParticipationCorrectionHistoryAction(enrollmentId), enabled: enabled && Boolean(enrollmentId) });
+}
+
+export function useCorrectShsStudentParticipation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, values }: { id: string; values: Parameters<typeof correctShsStudentParticipationAction>[1] }) => correctShsStudentParticipationAction(id, values),
+    onSuccess: async (result, { id }) => {
+      if (result.error) return;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["student-subject-enrollments", id] }),
+        queryClient.invalidateQueries({ queryKey: ["shs-current-term-progression", id] }),
+        queryClient.invalidateQueries({ queryKey: ["shs-student-participation-correction-context", id] }),
+        queryClient.invalidateQueries({ queryKey: ["shs-student-participation-correction-preview", id] }),
+        queryClient.invalidateQueries({ queryKey: ["shs-student-participation-correction-history", id] }),
+      ]);
+    },
   });
 }
 

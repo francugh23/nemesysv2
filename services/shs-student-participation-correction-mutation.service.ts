@@ -19,6 +19,14 @@ import type { CorrectShsStudentParticipationInput } from "@/schemas";
 
 export class ShsStudentParticipationCorrectionError extends Error {}
 
+export function getShsParticipationCorrectionTypedConfirmationPhrase(sourceCode: string) {
+  return `CORRECT ${sourceCode} PARTICIPATION`;
+}
+
+export function shsParticipationCorrectionRequiresTypedConfirmation(termStartDate: Date, now: Date = new Date()) {
+  return getPhilippineCalendarDate(now) >= termStartDate.toISOString().slice(0, 10);
+}
+
 function isElective(kind: string) {
   return kind === "ACADEMIC_ELECTIVE" || kind === "TECHPRO_ELECTIVE";
 }
@@ -85,6 +93,10 @@ export async function correctShsStudentParticipationInTransaction(
     : [sourceTerm.academicTermId];
   if (!plannedTermIds.length || plannedTermIds.some((academicTermId) => !replacementOfferingTermIds.has(academicTermId))) {
     throw new ShsStudentParticipationCorrectionError("Replacement Offering does not cover the exact safe correction Term scope.");
+  }
+  if (shsParticipationCorrectionRequiresTypedConfirmation(sourceTerm.startDate, clock()) &&
+      values.typedConfirmation !== getShsParticipationCorrectionTypedConfirmationPhrase(source.subjectCode)) {
+    throw new ShsStudentParticipationCorrectionError("Type the exact correction confirmation phrase to continue after the Academic Term has started.");
   }
   if (sourceKind !== "CORE" && (source.selectionAcademicTermId !== sourceTerm.academicTermId || sourceTermIds.length !== 1)) {
     throw new ShsStudentParticipationCorrectionError("Elective correction requires an exact one-Term source participation identity.");

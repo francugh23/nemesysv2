@@ -20,4 +20,4 @@ Phase 21F-C1 provides an immutable, one-to-one controlled correction for active 
 
 ## Deferred Work
 
-- No C2 UI workflow is included. Repeat, cross-year, generic reconciliation, result revision, and other SHS correction expansions remain separately approved work.
+- Repeat, cross-year, generic reconciliation, result revision, and other SHS correction expansions remain separately approved work. C2's authorized read/UI workflow is recorded separately in `phase-21f-c2-shs-participation-correction-ui.md`.

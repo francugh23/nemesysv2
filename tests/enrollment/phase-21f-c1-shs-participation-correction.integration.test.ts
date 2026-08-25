@@ -135,6 +135,7 @@ function values(data: Awaited<ReturnType<typeof fixture>>) {
     replacementSubjectOfferingId: data.replacementOffering.id,
     reason: "Registrar verified immutable SHS participation was assigned to the wrong subject.",
     evidenceReference: "C1-INT-001",
+    typedConfirmation: `CORRECT ${data.source.subjectCode} PARTICIPATION`,
     confirmed: true as const,
   };
 }
