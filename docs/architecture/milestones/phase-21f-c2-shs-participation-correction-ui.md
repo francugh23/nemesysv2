@@ -14,4 +14,4 @@ Phase 21F-C2 exposes the approved C1 command through an authorized, server-deriv
 
 ## Verification
 
-- C1 contract and integration regressions, focused C2 contracts, TypeScript, targeted ESLint, Prisma validation, and diff checks pass.
+- C1 contract and integration regressions, focused C2 contracts, TypeScript, targeted ESLint, Prisma validation/generation, build, and diff checks pass. Phase 21F-C3 full sequential verification passes 367 tests with nine expected disposable-database concurrency skips and zero failures.

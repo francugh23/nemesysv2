@@ -321,7 +321,7 @@ test("Phase 21C population preserves school-approved Grade 12 Offerings and exac
       where: { id: offering.id },
       select: { subjectCode: true, subjectDescription: true, gradeLevel: true, shsContext: { include: { cluster: true } } },
     });
-    const createLegacySnapshot = (academicTermId: string) => tx.studentSubjectEnrollment.create({ data: {
+    const createLegacySnapshot = (academicTermId: string, status: "ACTIVE" | "REPLACED" = "ACTIVE") => tx.studentSubjectEnrollment.create({ data: {
       enrollmentId: enrollment.id,
       subjectOfferingId: offering.id,
       subjectCode: source.subjectCode,
@@ -334,10 +334,11 @@ test("Phase 21C population preserves school-approved Grade 12 Offerings and exac
       shsSourceReference: source.shsContext!.sourceReference,
       shsApprovalReference: source.shsContext!.approvalReference,
       createdById: fixture.actor.id,
+      status,
+      replacedAt: status === "REPLACED" ? new Date() : null,
       terms: { create: { academicTermId } },
     } });
-    const first = await createLegacySnapshot(firstTermId);
-    await tx.studentSubjectEnrollment.update({ where: { id: first.id }, data: { status: "REPLACED", replacedAt: new Date() } });
+    await createLegacySnapshot(firstTermId, "REPLACED");
     await createLegacySnapshot(secondTermId);
     const before = await tx.studentSubjectEnrollment.findMany({
       where: { enrollmentId: enrollment.id },

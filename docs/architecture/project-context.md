@@ -15,7 +15,7 @@ Phase 21C SSHS Curriculum Term Applicability, the focused Curriculum UI bug fixe
 
 Academic Year remains the canonical period identity for academic configuration and operations. Enrollment supports unchanged same-grade Section correction and a separate controlled regular JHS Grades 7-10 different-grade correction that preserves old participation history and creates a new full-year destination baseline under the same Enrollment identity.
 
-Phase 21F-C1/C2 controlled SHS participation correction is implemented with an authorized Enrollment Details preview, mutation, and separate history workflow. C1's disposable concurrency suite remains environment-gated because no safe disposable database URL is configured; shared development is intentionally never used for those races.
+Phase 21F-C1/C2 controlled SHS participation correction is implemented with an authorized Enrollment Details preview, mutation, and separate history workflow. C1 concurrency coverage is not present in this checkout, and no safe disposable database URL is configured; shared development is intentionally never used for those races.
 
 ### Completed Modules
 
@@ -112,6 +112,7 @@ Phase 21F-C1/C2 controlled SHS participation correction is implemented with an a
 - [Phase 21F-B: Regular JHS Grade-Level Correction](./milestones/phase-21f-b-jhs-grade-level-correction.md)
 - [Phase 21F-C1: Controlled SHS Participation Correction](./milestones/phase-21f-c1-shs-participation-correction.md)
 - [Phase 21F-C2: SHS Participation Correction Read And UI](./milestones/phase-21f-c2-shs-participation-correction-ui.md)
+- [Phase 21F-C3: SHS Participation Correction Final Verification](./milestones/phase-21f-c3-shs-participation-correction-final-verification.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)
@@ -196,11 +197,11 @@ Phase 21F-C1/C2 controlled SHS participation correction is implemented with an a
 
 ## Current Verification
 
-- Phase 21F-B migrations `20260824014000_phase21f_b_jhs_grade_correction` and `20260824015000_phase21f_b_jhs_replacement_scope_hardening` are applied. The focused follow-up closes malformed Grade 7-10 replacement bypasses without changing SHS lifecycle behavior. All 48 migrations are applied with no Prisma schema drift.
+- Phase 21F-B migrations `20260824014000_phase21f_b_jhs_grade_correction` and `20260824015000_phase21f_b_jhs_replacement_scope_hardening` are applied. The focused follow-up closes malformed Grade 7-10 replacement bypasses without changing SHS lifecycle behavior. All 53 migrations are applied with no Prisma schema drift.
 - Focused Phase 21F-B and affected Phase 21F-A checks pass 54/54; disposable-database concurrency checks pass 2/2.
 - Focused Phase 21F-C2 contract checks pass 4/4 and affected C1 contract/integration regressions pass 9/9. Prisma validation, TypeScript, targeted ESLint, and diff checks pass.
-- The complete sequential suite passes 346 tests with nine expected environment-gated skips and zero failures. Prisma validation, TypeScript, targeted ESLint, build, and diff checks pass.
-- Protected hashes are unchanged, and zero correction, fixture, or temporary-database rows remain. Authenticated browser verification is pending.
+- Phase 21F-C3 complete sequential suite passes 367 tests with nine expected disposable-database concurrency skips and zero failures. The C1 checkout has no concurrency suite or environment gate; no disposable database is configured and shared development was not used.
+- C3 protected counts and hashes match the established baseline: Enrollment 4 / `a12eb1d395076fb1051ade3baa8191da`, Student 4 / `7d54b06c42e58ecc8e55c02116dd32a5`, StudentSubjectEnrollment 28 / `4ba2face0627f5b8d19dc4142761feb1`, StudentSubjectEnrollmentTerm 84 / `5427f5041243ea9cccf306f9aca67f3b`, SubjectOffering 139 / `a20d80538c18443bc87f9fdc6913222f`, and AcademicTerm 3 / `b684716570674856108ba49e7ec0c439`; ShsTermResult, Grade, and CurriculumCorrection remain zero. All 53 migrations are current with no Docker/Linux Prisma schema drift. Prisma validation/generation, TypeScript, targeted ESLint, build, and diff checks pass. Authenticated browser verification is pending.
 
 ## Active Constraints
 

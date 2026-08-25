@@ -182,7 +182,7 @@ export function CurriculumAdoptionDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="flex max-h-[92vh] w-[96vw] max-w-6xl! flex-col overflow-hidden p-0">
+      <DialogContent className="flex max-h-[92dvh] w-[96vw] max-w-6xl! flex-col overflow-hidden p-0">
         <DialogHeader className="border-b px-6 pt-6 pb-4">
           <DialogTitle className="flex items-center gap-2 text-lg">
             <Copy className="size-5" /> Adopt Curriculum

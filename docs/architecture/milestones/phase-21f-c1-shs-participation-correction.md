@@ -15,7 +15,7 @@ Phase 21F-C1 provides an immutable, one-to-one controlled correction for active 
 
 - C1 contract and integration/adversarial tests pass, including Core, Academic Elective, TechPro Elective, result, policy, duplicate, replay, capability, Term, and result-mutation boundaries.
 - PostgreSQL 17.10 rollback-only controls confirmed direct newly inserted tuple `xmin` is `in progress` in plain SQL and PL/pgSQL. The previous anomaly was the `%ROWTYPE.xmin` lookup defect, not committed new data.
-- C1 disposable concurrency remains implemented/environment-gated but was not executed: repository concurrency suites require an externally supplied disposable `DATABASE_URL`, and none is configured. Shared development was intentionally not used.
+- No C1 concurrency suite or environment gate exists in this checkout. No disposable `DATABASE_URL` is configured, and shared development was intentionally not used for C1 races.
 - Shared dialog overflow uses bounded outer dialogs and shrinkable body scroll regions while retaining Base UI focus and dismissal behavior.
 
 ## Deferred Work

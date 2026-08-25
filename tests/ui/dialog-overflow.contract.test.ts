@@ -28,10 +28,29 @@ test("FormDialog keeps its header visible while its body can shrink and scroll",
 test("representative structured dialogs retain bounded scroll regions", () => {
   for (const relativePath of [
     "app/(protected)/dashboard/enrollment/components/enrollment-view-dialog.tsx",
+    "app/(protected)/dashboard/enrollment/components/correct-enrollment-placement-dialog.tsx",
+    "app/(protected)/dashboard/enrollment/components/correct-shs-student-participation-dialog.tsx",
     "app/(protected)/dashboard/academic-years/components/academic-year-view-dialog.tsx",
+    "app/(protected)/dashboard/academic-years/components/curriculum-adoption-dialog.tsx",
+    "app/(protected)/dashboard/academic-years/components/shs-elective-enrollment-policy-dialog.tsx",
+    "app/(protected)/dashboard/academic-years/components/shs-term-result-interpretation-policy-dialog.tsx",
   ]) {
     const dialog = source(relativePath);
-    assert.match(dialog, /flex max-h-\[92(?:d)?vh\][\s\S]*flex-col overflow-hidden/);
+    assert.match(dialog, /flex max-h-\[92dvh\][\s\S]*flex-col overflow-hidden/);
     assert.match(dialog, /ScrollArea className="min-h-0 flex-1"/);
   }
+});
+
+test("representative direct-scroll dialogs use dynamic viewport bounds", () => {
+  for (const relativePath of [
+    "app/(protected)/dashboard/audit-logs/components/audit-log-details-dialog.tsx",
+    "app/(protected)/dashboard/students/components/student-view-dialog.tsx",
+    "app/(protected)/dashboard/teachers/components/teacher-view-dialog.tsx",
+  ]) {
+    const dialog = source(relativePath);
+    assert.match(dialog, /max-h-\[90dvh\][\s\S]*overflow-y-auto/);
+  }
+
+  const placement = source("app/(protected)/dashboard/enrollment/components/correct-enrollment-placement-dialog.tsx");
+  assert.match(placement, /max-h-\[92dvh\][\s\S]*overflow-y-auto[\s\S]*Load the controlled placement correction context/);
 });
