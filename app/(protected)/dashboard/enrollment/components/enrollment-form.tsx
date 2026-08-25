@@ -97,7 +97,7 @@ export function EnrollmentForm({ form }: EnrollmentFormProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 overflow-hidden">
       <Field>
         <FieldLabel>Student</FieldLabel>
         <Controller

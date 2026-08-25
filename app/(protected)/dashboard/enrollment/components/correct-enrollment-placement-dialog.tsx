@@ -58,7 +58,7 @@ export function CorrectEnrollmentPlacementDialog({
   if (!open || !context) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[96vw] max-w-4xl!">
+        <DialogContent className="flex max-h-[92dvh] w-[96vw] max-w-4xl! flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>Correct Placement</DialogTitle>
             <DialogDescription>

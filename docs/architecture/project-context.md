@@ -15,6 +15,8 @@ Phase 21C SSHS Curriculum Term Applicability, the focused Curriculum UI bug fixe
 
 Academic Year remains the canonical period identity for academic configuration and operations. Enrollment supports unchanged same-grade Section correction and a separate controlled regular JHS Grades 7-10 different-grade correction that preserves old participation history and creates a new full-year destination baseline under the same Enrollment identity.
 
+Phase 21F-C1 controlled SHS participation correction is implemented and verified through integration/adversarial coverage. Its disposable concurrency suite remains environment-gated because no safe disposable database URL is configured; shared development is intentionally never used for those races.
+
 ### Completed Modules
 
 - Student CRUD, UI, import, URL-driven server-table UX, complete filtered CSV/XLSX export, and XLSX import template
@@ -107,6 +109,7 @@ Academic Year remains the canonical period identity for academic configuration a
 - [Phase 21E-E2-B: SHS Prospective Curriculum Replacement Rules](./milestones/phase-21e-e2-b-shs-prospective-curriculum-replacement.md)
 - [Phase 21F-A: Controlled Enrollment Placement Correction](./milestones/phase-21f-a-controlled-enrollment-placement-correction.md)
 - [Phase 21F-B: Regular JHS Grade-Level Correction](./milestones/phase-21f-b-jhs-grade-level-correction.md)
+- [Phase 21F-C1: Controlled SHS Participation Correction](./milestones/phase-21f-c1-shs-participation-correction.md)
 - [Security Hardening Phase S1: Authorization Architecture](./milestones/phase-s1-authorization.md)
 - [Security Hardening Phase S2: Session Revalidation](./milestones/phase-s2-session-revalidation.md)
 - [Security Hardening Phase S3: Immediate Production Security](./milestones/phase-s3-security.md)

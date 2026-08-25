@@ -128,27 +128,26 @@ test("non-member Terms and cross-Enrollment identities are rejected", async () =
   });
 });
 
-test("REPLACED and DROPPED participation cannot receive a result", async () => {
-  for (const status of ["REPLACED", "DROPPED"] as const) {
-    await withRollback(async (transaction) => {
-      const found = await fixture(transaction);
-      await transaction.studentSubjectEnrollment.update({
-        where: { id: found.participation.id },
-        data: status === "REPLACED"
-          ? { status, replacedAt: new Date() }
-          : { status, replacedAt: null, droppedAt: new Date(), dropReason: "Result eligibility test" },
-      });
-      await assert.rejects(
-        saveShsTermResultDraftInTransaction(
-          { ...found.identity, finalResult: 80 },
-          found.actor.id,
-          transaction,
-          onDate(found.term.academicTerm.startDate),
-        ),
-        /Only active SHS subject participation/,
-      );
+test("generic REPLACED is blocked and DROPPED participation cannot receive a result", async () => {
+  await assert.rejects(prisma.$transaction(async (transaction) => {
+    const found = await fixture(transaction);
+    await transaction.studentSubjectEnrollment.update({
+      where: { id: found.participation.id }, data: { status: "REPLACED", replacedAt: new Date() },
     });
-  }
+  }));
+  await withRollback(async (transaction) => {
+    const found = await fixture(transaction);
+    await transaction.studentSubjectEnrollment.update({
+      where: { id: found.participation.id },
+      data: { status: "DROPPED", replacedAt: null, droppedAt: new Date(), dropReason: "Result eligibility test" },
+    });
+    await assert.rejects(
+      saveShsTermResultDraftInTransaction(
+        { ...found.identity, finalResult: 80 }, found.actor.id, transaction, onDate(found.term.academicTerm.startDate),
+      ),
+      /Only active SHS subject participation/,
+    );
+  });
 });
 
 test("finalization requires a result and the target Term end date, including the end date", async () => {

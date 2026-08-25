@@ -83,6 +83,12 @@ enum ShsSubjectClassification {
   TECHPRO_ELECTIVE
 }
 
+enum ShsStudentParticipationCorrectionKind {
+  CORE
+  ACADEMIC_ELECTIVE
+  TECHPRO_ELECTIVE
+}
+
 enum ShsCurriculumStatus {
   PROVISIONAL_DEPED
   SCHOOL_APPROVED
@@ -154,6 +160,7 @@ model User {
   curriculumCorrections                        CurriculumCorrection[]              @relation("CurriculumCorrectionActor")
   studentEnrollmentCorrections                 StudentEnrollmentCorrection[]       @relation("StudentEnrollmentCorrectionActor")
   studentEnrollmentGradeCorrections            StudentEnrollmentGradeCorrection[]  @relation("StudentEnrollmentGradeCorrectionActor")
+  shsStudentParticipationCorrections           ShsStudentParticipationCorrection[] @relation("ShsStudentParticipationCorrectionActor")
   createdShsTermResultInterpretationPolicies   ShsTermResultInterpretationPolicy[] @relation("ShsTermResultInterpretationPolicyCreator")
   publishedShsTermResultInterpretationPolicies ShsTermResultInterpretationPolicy[] @relation("ShsTermResultInterpretationPolicyPublisher")
   auditLogs                                    AuditLog[]
@@ -235,14 +242,16 @@ model AcademicTerm {
   createdById String?
   createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
-  createdAt                         DateTime                       @default(now())
-  updatedAt                         DateTime                       @updatedAt
-  subjectOfferings                  SubjectOfferingTerm[]
-  studentSubjectEnrollmentTerms     StudentSubjectEnrollmentTerm[]
-  selectedStudentSubjectEnrollments StudentSubjectEnrollment[]     @relation("StudentSubjectEnrollmentSelectionAcademicTerm")
-  entryEnrollments                  Enrollment[]                   @relation("EnrollmentEntryAcademicTerm")
-  shsElectiveEnrollmentPolicies     ShsElectiveEnrollmentPolicy[]
-  curriculumCorrections             CurriculumCorrection[]
+  createdAt                              DateTime                            @default(now())
+  updatedAt                              DateTime                            @updatedAt
+  subjectOfferings                       SubjectOfferingTerm[]
+  studentSubjectEnrollmentTerms          StudentSubjectEnrollmentTerm[]
+  selectedStudentSubjectEnrollments      StudentSubjectEnrollment[]          @relation("StudentSubjectEnrollmentSelectionAcademicTerm")
+  entryEnrollments                       Enrollment[]                        @relation("EnrollmentEntryAcademicTerm")
+  shsElectiveEnrollmentPolicies          ShsElectiveEnrollmentPolicy[]
+  curriculumCorrections                  CurriculumCorrection[]
+  sourceShsParticipationCorrections      ShsStudentParticipationCorrection[] @relation("ShsStudentParticipationCorrectionSourceAcademicTerm")
+  replacementShsParticipationCorrections ShsStudentParticipationCorrection[] @relation("ShsStudentParticipationCorrectionReplacementAcademicTerm")
 
   @@unique([academicYearId, position])
   @@unique([id, academicYearId])
@@ -356,10 +365,11 @@ model Enrollment {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  grades                    Grade[]
-  studentSubjectEnrollments StudentSubjectEnrollment[]
-  placementCorrections      StudentEnrollmentCorrection[]
-  gradeCorrections          StudentEnrollmentGradeCorrection[]
+  grades                      Grade[]
+  studentSubjectEnrollments   StudentSubjectEnrollment[]
+  placementCorrections        StudentEnrollmentCorrection[]
+  gradeCorrections            StudentEnrollmentGradeCorrection[]
+  shsParticipationCorrections ShsStudentParticipationCorrection[]
 
   @@unique([studentId, academicYearId])
   @@index([academicYearId])
@@ -452,6 +462,46 @@ model StudentParticipationCorrection {
 
   @@unique([studentEnrollmentGradeCorrectionId, canonicalSubjectPrefix], map: "StudentParticipationCorrection_correction_prefix_key")
   @@index([studentEnrollmentGradeCorrectionId], map: "StudentParticipationCorrection_studentEnrollmentGradeCorrection")
+}
+
+model ShsStudentParticipationCorrection {
+  id       String @id @default(cuid())
+  sequence BigInt @unique @default(autoincrement())
+
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+
+  sourceStudentSubjectEnrollmentId String                       @unique(map: "ShsStudentParticipationCorrection_source_sse_key")
+  sourceStudentSubjectEnrollment   StudentSubjectEnrollment     @relation("ShsStudentParticipationCorrectionSource", fields: [sourceStudentSubjectEnrollmentId], references: [id], onDelete: Restrict, map: "ShsStudentParticipationCorrection_sourceSseId_fkey")
+  sourceAcademicTermId             String
+  sourceAcademicTerm               AcademicTerm                 @relation("ShsStudentParticipationCorrectionSourceAcademicTerm", fields: [sourceAcademicTermId], references: [id], onDelete: Restrict, map: "ShsStudentParticipationCorrection_sourceTerm_fkey")
+  sourceTerm                       StudentSubjectEnrollmentTerm @relation("ShsStudentParticipationCorrectionSourceTerm", fields: [sourceStudentSubjectEnrollmentId, sourceAcademicTermId], references: [studentSubjectEnrollmentId, academicTermId], onDelete: Restrict, map: "ShsStudentParticipationCorrection_sourceMembership_fkey")
+
+  replacementStudentSubjectEnrollmentId String                       @unique(map: "ShsStudentParticipationCorrection_replacement_sse_key")
+  replacementStudentSubjectEnrollment   StudentSubjectEnrollment     @relation("ShsStudentParticipationCorrectionReplacement", fields: [replacementStudentSubjectEnrollmentId], references: [id], onDelete: Restrict, map: "ShsStudentParticipationCorrection_replacementSseId_fkey")
+  replacementAcademicTermId             String
+  replacementAcademicTerm               AcademicTerm                 @relation("ShsStudentParticipationCorrectionReplacementAcademicTerm", fields: [replacementAcademicTermId], references: [id], onDelete: Restrict, map: "ShsStudentParticipationCorrection_replacementTerm_fkey")
+  replacementTerm                       StudentSubjectEnrollmentTerm @relation("ShsStudentParticipationCorrectionReplacementTerm", fields: [replacementStudentSubjectEnrollmentId, replacementAcademicTermId], references: [studentSubjectEnrollmentId, academicTermId], onDelete: Restrict, map: "ShsStudentParticipationCorrection_replacementMembership_fkey")
+
+  kind ShsStudentParticipationCorrectionKind
+
+  reason            String
+  evidenceReference String
+
+  sourceParticipationSnapshot      Json
+  replacementParticipationSnapshot Json
+  plannedTermScopeSnapshot         Json
+  sourceResultStateSnapshot        Json
+
+  correctedById String
+  correctedBy   User     @relation("ShsStudentParticipationCorrectionActor", fields: [correctedById], references: [id], onDelete: Restrict)
+  correctedAt   DateTime
+  createdAt     DateTime @default(now())
+
+  @@unique([sourceStudentSubjectEnrollmentId, sourceAcademicTermId], map: "ShsStudentParticipationCorrection_source_term_key")
+  @@unique([replacementStudentSubjectEnrollmentId, replacementAcademicTermId], map: "ShsStudentParticipationCorrection_replacement_term_key")
+  @@index([enrollmentId, correctedAt])
+  @@index([correctedById])
 }
 
 model AcademicYear {
@@ -679,9 +729,11 @@ model StudentSubjectEnrollment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  terms                              StudentSubjectEnrollmentTerm[]
-  sourceParticipationCorrection      StudentParticipationCorrection? @relation("StudentParticipationCorrectionSource")
-  replacementParticipationCorrection StudentParticipationCorrection? @relation("StudentParticipationCorrectionReplacement")
+  terms                                 StudentSubjectEnrollmentTerm[]
+  sourceParticipationCorrection         StudentParticipationCorrection?    @relation("StudentParticipationCorrectionSource")
+  replacementParticipationCorrection    StudentParticipationCorrection?    @relation("StudentParticipationCorrectionReplacement")
+  sourceShsParticipationCorrection      ShsStudentParticipationCorrection? @relation("ShsStudentParticipationCorrectionSource")
+  replacementShsParticipationCorrection ShsStudentParticipationCorrection? @relation("ShsStudentParticipationCorrectionReplacement")
 
   @@index([enrollmentId, status])
   @@index([subjectOfferingId])
@@ -720,7 +772,9 @@ model StudentSubjectEnrollmentTerm {
   academicTermId String
   academicTerm   AcademicTerm @relation(fields: [academicTermId], references: [id], onDelete: Restrict)
 
-  result ShsTermResult?
+  result                                 ShsTermResult?
+  sourceShsParticipationCorrections      ShsStudentParticipationCorrection[] @relation("ShsStudentParticipationCorrectionSourceTerm")
+  replacementShsParticipationCorrections ShsStudentParticipationCorrection[] @relation("ShsStudentParticipationCorrectionReplacementTerm")
 
   @@id([studentSubjectEnrollmentId, academicTermId])
   @@index([academicTermId])

@@ -356,3 +356,16 @@ export async function replaceActiveStudentSubjectEnrollment(
   });
   return result.count === 1;
 }
+
+export function setProgressiveShsCoreReplacementCapability(
+  replacementStudentSubjectEnrollmentId: string,
+  transaction: Prisma.TransactionClient,
+) {
+  return transaction.$queryRaw<Array<{ set_config: string }>>`
+    SELECT set_config(
+      'nemesys.shs_progressive_core_replacement_id',
+      ${replacementStudentSubjectEnrollmentId},
+      true
+    )
+  `;
+}

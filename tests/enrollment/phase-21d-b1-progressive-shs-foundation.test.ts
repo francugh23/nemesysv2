@@ -58,15 +58,18 @@ async function createFixture(tx: Prisma.TransactionClient) {
   return { actor, year, enrollment, offering, createParticipation };
 }
 
-test("B1 lifecycle accepts valid states and rejects invalid timestamp combinations", async () => {
+test("B1 lifecycle reserves SHS replacement for controlled correction and rejects invalid timestamp combinations", async () => {
   await withRollback(async (tx) => {
     const fixture = await createFixture(tx);
-    const active = await fixture.createParticipation(fixture.offering.terms[0]!.academicTermId);
-    await tx.studentSubjectEnrollment.update({ where: { id: active.id }, data: { status: "REPLACED", replacedAt: new Date() } });
     const dropped = await fixture.createParticipation(fixture.offering.terms[0]!.academicTermId);
     await tx.studentSubjectEnrollment.update({ where: { id: dropped.id }, data: { status: "DROPPED", droppedAt: new Date(), dropReason: "Student withdrawal" } });
     await assert.rejects(tx.$executeRaw`UPDATE "StudentSubjectEnrollment" SET "status"='ACTIVE', "replacedAt"=NOW() WHERE "id"=${dropped.id}`);
   });
+  await assert.rejects(prisma.$transaction(async (tx) => {
+    const fixture = await createFixture(tx);
+    const active = await fixture.createParticipation(fixture.offering.terms[0]!.academicTermId);
+    await tx.studentSubjectEnrollment.update({ where: { id: active.id }, data: { status: "REPLACED", replacedAt: new Date() } });
+  }));
   await assert.rejects(prisma.$transaction(async (tx) => {
     const fixture = await createFixture(tx);
     const row = await fixture.createParticipation(fixture.offering.terms[0]!.academicTermId);
@@ -74,15 +77,13 @@ test("B1 lifecycle accepts valid states and rejects invalid timestamp combinatio
   }));
 });
 
-test("B1 lifecycle permits ACTIVE terminal transitions and freezes terminal records", async () => {
-  for (const terminal of ["REPLACED", "DROPPED"] as const) {
-    await withRollback(async (tx) => {
-      const fixture = await createFixture(tx);
-      const row = await fixture.createParticipation(fixture.offering.terms[0]!.academicTermId);
-      await tx.studentSubjectEnrollment.update({ where: { id: row.id }, data: terminal === "REPLACED" ? { status: terminal, replacedAt: new Date() } : { status: terminal, droppedAt: new Date(), dropReason: "Documented withdrawal" } });
-      await assert.rejects(tx.studentSubjectEnrollment.update({ where: { id: row.id }, data: { status: terminal === "REPLACED" ? "DROPPED" : "REPLACED", replacedAt: terminal === "DROPPED" ? new Date() : null, droppedAt: terminal === "REPLACED" ? new Date() : null, dropReason: terminal === "REPLACED" ? "Changed" : null } }));
-    });
-  }
+test("B1 lifecycle permits DROP and freezes terminal records", async () => {
+  await withRollback(async (tx) => {
+    const fixture = await createFixture(tx);
+    const row = await fixture.createParticipation(fixture.offering.terms[0]!.academicTermId);
+    await tx.studentSubjectEnrollment.update({ where: { id: row.id }, data: { status: "DROPPED", droppedAt: new Date(), dropReason: "Documented withdrawal" } });
+    await assert.rejects(tx.studentSubjectEnrollment.update({ where: { id: row.id }, data: { status: "REPLACED", replacedAt: new Date(), droppedAt: null, dropReason: null } }));
+  });
 });
 
 test("B1 Term memberships accept valid inserts and reject update, delete, and cross-year inserts", async () => {
@@ -114,8 +115,7 @@ test("B1 Term-scoped identity allows distinct Terms and rejects duplicate active
     await tx.$executeRaw`SET CONSTRAINTS ALL IMMEDIATE`;
     assert.notEqual(first.id, second.id);
     assert.equal((await tx.studentSubjectEnrollment.findUniqueOrThrow({ where: { id: first.id } })).selectionAcademicTermId, fixture.offering.terms[0]!.academicTermId);
-    await tx.studentSubjectEnrollment.update({ where: { id: first.id }, data: { status: "REPLACED", replacedAt: new Date() } });
-    assert.equal((await tx.studentSubjectEnrollment.findUniqueOrThrow({ where: { id: first.id } })).status, "REPLACED");
+    await assert.rejects(tx.studentSubjectEnrollment.update({ where: { id: first.id }, data: { status: "REPLACED", replacedAt: new Date() } }));
   });
   await assert.rejects(prisma.$transaction(async (tx) => {
     const fixture = await createFixture(tx);

@@ -18,6 +18,7 @@ import {
   lockActiveShsStudentSubjectEnrollments,
   lockShsOfferingsById,
   replaceActiveStudentSubjectEnrollment,
+  setProgressiveShsCoreReplacementCapability,
 } from "@/repositories/student-subject-enrollment.repository";
 import type {
   DropStudentSubjectEnrollmentInput,
@@ -182,12 +183,19 @@ export async function progressShsCurrentTermInTransaction(
   const transitionAt = clock();
   for (const { offering, academicTermIds, activeCore } of newCores) {
     if (activeCore) {
+      await setProgressiveShsCoreReplacementCapability(activeCore.id, transaction);
       if (!(await replaceActiveStudentSubjectEnrollment(activeCore.id, transitionAt, transaction))) {
         throw new ShsCurrentTermProgressionError("Existing Core participation changed. Refresh and try again.");
       }
       replacedCores.push(activeCore);
     }
-    createdCores.push(await createProgressiveShsCoreParticipation(enrollment.id, offering, academicTermIds, actorId, transaction));
+    createdCores.push(await createProgressiveShsCoreParticipation(
+      enrollment.id,
+      offering,
+      academicTermIds,
+      actorId,
+      transaction,
+    ));
   }
   const createdElectives = [];
   for (const offering of newElectives) {
