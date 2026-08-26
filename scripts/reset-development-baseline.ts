@@ -25,7 +25,7 @@ const tables = [
 ] as const;
 
 type Table = (typeof tables)[number][0];
-type Arguments = { apply: boolean; rollbackDb?: string; rollbackFingerprint?: string; superAdminId?: string };
+type Arguments = { apply: boolean; removeCuratedElectives: boolean; rollbackDb?: string; rollbackFingerprint?: string; superAdminId?: string };
 type Snapshot = { database: string; migrations: { count: number; hash: string }; schemaHash: string; databaseAclHash: string; tables: Record<Table, { count: number; hash: string }> };
 
 const clusters = [
@@ -47,15 +47,11 @@ const coreSubjects = [
   ["SSHS-G11-CORE-05", "Philippine History and Society"],
 ] as const;
 
-const electiveSubjects = [
-  ["SSHS-G11-ACA-ASSH-01", "Contemporary Literature 1"], ["SSHS-G11-ACA-ASSH-02", "Citizenship and Civic Engagement"],
-  ["SSHS-G11-ACA-BE-01", "Introduction to Organization and Management"], ["SSHS-G11-ACA-BE-02", "Business 1 - Basic Accounting"],
-  ["SSHS-G11-ACA-ICT-01", "Database Management"], ["SSHS-G11-ACA-ICT-02", "Fundamentals of Data Analytics"],
-  ["SSHS-G11-ACA-STEM-01", "Biology 1"], ["SSHS-G11-ACA-STEM-02", "Basic Calculus"],
-  ["SSHS-G11-TP-ASET-01", "Driving and Automotive Servicing"], ["SSHS-G11-TP-ASET-02", "Motorcycle and Small Engine Servicing"],
-  ["SSHS-G11-TP-CBT-01", "Carpentry"], ["SSHS-G11-TP-CBT-02", "Technical Drafting"],
-  ["SSHS-G11-TP-CADT-01", "Animation"], ["SSHS-G11-TP-CADT-02", "Visual Graphic Design"],
-  ["SSHS-G11-TP-HT-01", "Bakery Operations"], ["SSHS-G11-TP-HT-02", "Kitchen Operations"],
+const curatedElectiveCodes = [
+  "SSHS-G11-ACA-ASSH-01", "SSHS-G11-ACA-ASSH-02", "SSHS-G11-ACA-BE-01", "SSHS-G11-ACA-BE-02",
+  "SSHS-G11-ACA-ICT-01", "SSHS-G11-ACA-ICT-02", "SSHS-G11-ACA-STEM-01", "SSHS-G11-ACA-STEM-02",
+  "SSHS-G11-TP-ASET-01", "SSHS-G11-TP-ASET-02", "SSHS-G11-TP-CBT-01", "SSHS-G11-TP-CBT-02",
+  "SSHS-G11-TP-CADT-01", "SSHS-G11-TP-CADT-02", "SSHS-G11-TP-HT-01", "SSHS-G11-TP-HT-02",
 ] as const;
 
 function hash(value: unknown) { return createHash("sha256").update(JSON.stringify(value)).digest("hex"); }
@@ -75,14 +71,15 @@ function timestamp() { return new Date().toISOString().replaceAll(/[-:.TZ]/g, ""
 
 function parseArguments(): Arguments {
   const values = process.argv.slice(2);
-  const allowed = new Set(["--apply", "--super-admin-id", "--rollback-db", "--rollback-fingerprint"]);
+  const allowed = new Set(["--apply", "--remove-curated-electives", "--super-admin-id", "--rollback-db", "--rollback-fingerprint"]);
   for (const [index, value] of values.entries()) {
     if (!allowed.has(value) && !["--super-admin-id", "--rollback-db", "--rollback-fingerprint"].includes(values[index - 1] ?? "")) throw new Error(`Unknown argument: ${value}`);
   }
   const read = (flag: string) => { const index = values.indexOf(flag); const value = index === -1 ? undefined : values[index + 1]; if (index !== -1 && (!value || value.startsWith("--"))) throw new Error(`${flag} requires a value.`); return value; };
-  const result = { apply: values.includes("--apply"), superAdminId: read("--super-admin-id"), rollbackDb: read("--rollback-db"), rollbackFingerprint: read("--rollback-fingerprint") };
+  const result = { apply: values.includes("--apply"), removeCuratedElectives: values.includes("--remove-curated-electives"), superAdminId: read("--super-admin-id"), rollbackDb: read("--rollback-db"), rollbackFingerprint: read("--rollback-fingerprint") };
+  if (result.removeCuratedElectives && (result.superAdminId || result.rollbackDb || result.rollbackFingerprint)) throw new Error("Curated elective removal cannot include reset or rollback arguments.");
   if (result.rollbackDb && result.superAdminId) throw new Error("Rollback mode cannot include --super-admin-id.");
-  if (!result.rollbackDb && !result.superAdminId) throw new Error("Provide --super-admin-id for reset mode.");
+  if (!result.removeCuratedElectives && !result.rollbackDb && !result.superAdminId) throw new Error("Provide --super-admin-id for reset mode.");
   if (result.rollbackDb && !result.rollbackFingerprint) throw new Error("Rollback mode requires --rollback-fingerprint from the reset output.");
   return result;
 }
@@ -174,7 +171,7 @@ async function selectedAdmin(id: string) {
 
 function curatedSubjects(createdById: string) {
   const now = new Date();
-  return [...coreSubjects, ...electiveSubjects].map(([code, description]) => ({ id: randomUUID(), code, description, gradeLevel: "11", trackStrand: null, semester: null, createdById, createdAt: now, updatedAt: now, deletedAt: null }));
+  return coreSubjects.map(([code, description]) => ({ id: randomUUID(), code, description, gradeLevel: "11", trackStrand: null, semester: null, createdById, createdAt: now, updatedAt: now, deletedAt: null }));
 }
 function curatedClusters(createdById: string) {
   const now = new Date();
@@ -187,7 +184,7 @@ function expectedCounts() {
 
 async function assertCandidate(database: string, source: Snapshot, admin: Record<string, unknown>, jhsCount: number) {
   const candidate = await snapshot(database); const expected = expectedCounts();
-  expected.User = 1; expected.Subject = jhsCount + coreSubjects.length + electiveSubjects.length; expected.ShsCurriculumCluster = clusters.length;
+  expected.User = 1; expected.Subject = jhsCount + coreSubjects.length; expected.ShsCurriculumCluster = clusters.length;
   if (candidate.migrations.count !== source.migrations.count || candidate.migrations.hash !== source.migrations.hash) throw new Error("Candidate migration identity differs from source.");
   if (candidate.schemaHash !== source.schemaHash || candidate.databaseAclHash !== source.databaseAclHash) {
     throw new Error(`Candidate schema or database ACL fingerprint differs from source (schema ${source.schemaHash}/${candidate.schemaHash}; ACL ${source.databaseAclHash}/${candidate.databaseAclHash}).`);
@@ -217,7 +214,32 @@ async function buildCandidate(candidate: string, source: Snapshot, admin: Record
 }
 
 function printPlan(source: Snapshot, candidate: string, admin: Record<string, unknown>, rollback?: string) {
-  console.log(JSON.stringify({ mode: "dry-run", sourceDatabase: SOURCE_DATABASE, candidateDatabase: candidate, rollbackDatabase: rollback, selectedSuperAdmin: { id: admin.id, username: admin.username, email: admin.email }, sourceCounts: Object.fromEntries(tables.map(([table]) => [table, source.tables[table].count])), expected: { users: 1, jhsSubjects: JHS_SUBJECT_COUNT, grade11CoreSubjects: coreSubjects.length, grade11Electives: electiveSubjects.length, subjects: 53, clusters: clusters.map(([code]) => code), zeroTables: tables.map(([table]) => table).filter((table) => !["User", "Subject", "ShsCurriculumCluster"].includes(table)) }, migrations: source.migrations, schemaHash: source.schemaHash, databaseAclHash: source.databaseAclHash, safety: { triggersOrFksDisabled: false, truncateCascadeUsed: false, dropSchemaUsed: false, migrationHistoryEdited: false, sourceRowsDeletedInPlace: false } }, null, 2));
+  console.log(JSON.stringify({ mode: "dry-run", sourceDatabase: SOURCE_DATABASE, candidateDatabase: candidate, rollbackDatabase: rollback, selectedSuperAdmin: { id: admin.id, username: admin.username, email: admin.email }, sourceCounts: Object.fromEntries(tables.map(([table]) => [table, source.tables[table].count])), expected: { users: 1, jhsSubjects: JHS_SUBJECT_COUNT, grade11CoreSubjects: coreSubjects.length, grade11Electives: 0, subjects: JHS_SUBJECT_COUNT + coreSubjects.length, clusters: clusters.map(([code]) => code), zeroTables: tables.map(([table]) => table).filter((table) => !["User", "Subject", "ShsCurriculumCluster"].includes(table)) }, migrations: source.migrations, schemaHash: source.schemaHash, databaseAclHash: source.databaseAclHash, safety: { triggersOrFksDisabled: false, truncateCascadeUsed: false, dropSchemaUsed: false, migrationHistoryEdited: false, sourceRowsDeletedInPlace: false } }, null, 2));
+}
+
+async function removeCuratedElectives(argumentsValue: Arguments) {
+  const candidates = await fetchRows(SOURCE_DATABASE, 'SELECT "id", "code" FROM "Subject" WHERE "code" = ANY($1::text[]) ORDER BY "code"', [curatedElectiveCodes]);
+  if (candidates.length !== curatedElectiveCodes.length || hash(candidates.map((candidate) => candidate.code)) !== hash([...curatedElectiveCodes].sort())) throw new Error("The current database does not contain exactly the curated Phase 22C elective Subjects.");
+  const references = await fetchRows(SOURCE_DATABASE, "SELECT conrelid::regclass::text AS table_name, attname AS column_name FROM pg_constraint JOIN pg_attribute ON attrelid = conrelid AND attnum = ANY(conkey) WHERE contype = 'f' AND confrelid = '\"Subject\"'::regclass ORDER BY 1, 2");
+  const dependencies: Array<{ table: string; column: string; count: number }> = [];
+  for (const reference of references) {
+    const count = await fetchRows(SOURCE_DATABASE, `SELECT count(*)::int AS count FROM ${String(reference.table_name)} WHERE ${quote(String(reference.column_name))} = ANY($1::text[])`, [candidates.map((candidate) => candidate.id)]);
+    if (Number(count[0].count) > 0) dependencies.push({ table: String(reference.table_name), column: String(reference.column_name), count: Number(count[0].count) });
+  }
+  console.log(JSON.stringify({ mode: "curated-elective-removal-dry-run", candidates, dependencies }, null, 2));
+  if (dependencies.length) throw new Error("Refusing curated elective deletion because dependent references exist.");
+  if (!argumentsValue.apply) return;
+  await withClient(SOURCE_DATABASE, async (client) => {
+    await client.query("BEGIN");
+    try {
+      const deleted = await client.query('DELETE FROM "Subject" WHERE "id" = ANY($1::text[]) AND "code" = ANY($2::text[])', [candidates.map((candidate) => candidate.id), curatedElectiveCodes]);
+      if (deleted.rowCount !== curatedElectiveCodes.length) throw new Error(`Deleted ${deleted.rowCount} curated elective Subjects; expected ${curatedElectiveCodes.length}.`);
+      await client.query("COMMIT");
+    } catch (error) { await client.query("ROLLBACK"); throw error; }
+  });
+  const remaining = await fetchRows(SOURCE_DATABASE, 'SELECT count(*)::int AS count FROM "Subject" WHERE "code" = ANY($1::text[])', [curatedElectiveCodes]);
+  if (Number(remaining[0].count) !== 0) throw new Error("Curated elective deletion verification failed.");
+  console.log(JSON.stringify({ mode: "curated-elective-removal-applied", deletedSubjects: curatedElectiveCodes.length }, null, 2));
 }
 
 async function reset(argumentsValue: Arguments) {
@@ -248,5 +270,5 @@ async function rollback(argumentsValue: Arguments) {
   console.log(JSON.stringify({ mode: "rolled-back", database: SOURCE_DATABASE, displacedBaselineDatabase: displaced }, null, 2));
 }
 
-async function main() { const argumentsValue = parseArguments(); assertSafety(argumentsValue); await assertDocker(); if (argumentsValue.rollbackDb) await rollback(argumentsValue); else await reset(argumentsValue); }
+async function main() { const argumentsValue = parseArguments(); assertSafety(argumentsValue); await assertDocker(); if (argumentsValue.removeCuratedElectives) await removeCuratedElectives(argumentsValue); else if (argumentsValue.rollbackDb) await rollback(argumentsValue); else await reset(argumentsValue); }
 main().catch((error: unknown) => { console.error(error instanceof Error ? error.message : error); process.exitCode = 1; });

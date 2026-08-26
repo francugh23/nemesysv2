@@ -43,8 +43,11 @@ test("Phase 22C baseline has only approved reusable definitions and no operation
   for (const code of ["ACA-ASSH", "ACA-BE", "ACA-ICT", "ACA-STEM", "TP-ASET", "TP-CBT", "TP-CADT", "TP-HT"]) assert.match(tool, new RegExp(`"${code}"`));
   for (const title of ["Effective Communication", "Life and Career Skills", "General Mathematics", "General Science", "Philippine History and Society"]) assert.match(tool, new RegExp(title));
   assert.match(tool, /const JHS_SUBJECT_COUNT = 32/);
-  assert.match(tool, /coreSubjects\.length \+ electiveSubjects\.length/);
-  assert.match(tool, /expected\.Subject = jhsCount \+ coreSubjects\.length \+ electiveSubjects\.length/);
+  assert.match(tool, /return coreSubjects\.map/);
+  assert.doesNotMatch(tool, /const electiveSubjects/);
+  assert.match(tool, /expected\.Subject = jhsCount \+ coreSubjects\.length/);
+  assert.match(tool, /grade11Electives: 0/);
+  assert.match(tool, /subjects: JHS_SUBJECT_COUNT \+ coreSubjects\.length/);
   assert.match(tool, /expected\.ShsCurriculumCluster = clusters\.length/);
   assert.match(tool, /"ShsCurriculumReference"/);
   assert.match(tool, /trackStrand: null, semester: null/);
@@ -52,4 +55,16 @@ test("Phase 22C baseline has only approved reusable definitions and no operation
   assert.doesNotMatch(tool, /DISABLE TRIGGER/);
   assert.doesNotMatch(tool, /DROP SCHEMA/);
   assert.doesNotMatch(tool, /migrate reset/);
+});
+
+test("Phase 22C removes only unreferenced curated electives from the current baseline", () => {
+  const tool = source("scripts/reset-development-baseline.ts");
+
+  assert.match(tool, /--remove-curated-electives/);
+  assert.match(tool, /curatedElectiveCodes/);
+  assert.match(tool, /confrelid = '\\"Subject\\"'::regclass/);
+  assert.match(tool, /Refusing curated elective deletion because dependent references exist/);
+  assert.match(tool, /DELETE FROM "Subject" WHERE "id" = ANY/);
+  assert.match(tool, /Deleted \$\{deleted\.rowCount\} curated elective Subjects/);
+  assert.match(tool, /Curated elective deletion verification failed/);
 });

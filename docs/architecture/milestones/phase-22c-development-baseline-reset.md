@@ -22,7 +22,7 @@ The tool rejects unknown arguments, unsafe hosts, database names, missing confir
 
 1. Snapshot source migration, canonical schema, database ACL, table-data, and selected administrator fingerprints.
 2. Create a unique candidate from `template0`, restore the source schema and database grants, and copy `_prisma_migrations` unchanged.
-3. Copy the selected Super Admin and active Grade 7-10 Subjects, then create only the curated Phase 22C cluster and Grade 11 Subject foundation.
+3. Copy the selected Super Admin and active Grade 7-10 Subjects, then create only the curated Phase 22C clusters and five Grade 11 Core Subject definitions.
 4. Validate all candidate counts, schema/ACL and migration identity, and administrator hash before source rename.
 5. Re-snapshot the source and abort if it changed during candidate construction.
 6. Rename the original source to `nemesysv2_phase22c_rollback_<timestamp>` and rename the candidate to `nemesysv2`.
@@ -34,7 +34,8 @@ The successful rollback database is retained. Rollback requires the separate `RO
 
 - One selected active Super Admin, preserving ID, username, email, password hash, session state, and first-login state.
 - 32 active reusable Grade 7-10 Subjects, asserted at preflight.
-- Five Grade 11 Core Subjects and sixteen Grade 11 curated elective definitions.
+- Five reusable Grade 11 Core Subjects: Effective Communication, Life and Career Skills, General Mathematics, General Science, and Philippine History and Society.
+- No Grade 11 elective Subject definitions. Academic and TechPro clusters remain reusable configuration choices for future Academic Year-owned Curriculum Offerings.
 - Eight school-facing clusters: `ACA-ASSH`, `ACA-BE`, `ACA-ICT`, `ACA-STEM`, `TP-ASET`, `TP-CBT`, `TP-CADT`, and `TP-HT`.
 - No Academic Years, Terms, Offerings, Offering Terms, SHS contexts, policies, school approvals, operational records, history/evidence, or audit logs.
 
@@ -42,4 +43,4 @@ Subject definitions contain no permanent Term assignment. Term placement remains
 
 ## Verification
 
-The applied reset produced 1 User, 53 Subjects, 8 clusters, and zero rows in every reset operational, configuration, policy, participation, result, correction, reference, and audit table. The source migration ledger contains 56 applied migrations and matches the candidate checksum identity. Prisma status and schema diff report no drift.
+The applied reset correction removed the exact sixteen unreferenced `SSHS-G11-ACA-*` and `SSHS-G11-TP-*` elective Subject rows only after checking every foreign-key dependency into `Subject`. The final baseline has 1 User, 37 Subjects (32 active Grade 7-10 and five Grade 11 Core), zero Grade 11 elective Subjects, 8 clusters, and zero rows in every reset operational, configuration, policy, participation, result, correction, reference, and audit table. The source migration ledger contains 56 applied migrations and matches the candidate checksum identity. Prisma status and schema diff report no drift.
