@@ -77,10 +77,6 @@ export function EnrollmentViewDialog({
             value={enrollment.sectionGradeLevel}
           />
           <EnrollmentInfoItem
-            label="Section Track / Strand"
-            value={enrollment.sectionTrackStrand}
-          />
-          <EnrollmentInfoItem
             label="SHS Track"
             value={
               enrollment.shsTrack === "TECHPRO"

@@ -75,15 +75,6 @@ export function SectionForm({ form }: SectionFormProps) {
       </Field>
 
       <Field>
-        <FieldLabel>Track / Strand</FieldLabel>
-        <Input
-          placeholder="Leave blank for JHS or shared SHS sections"
-          {...form.register("trackStrand")}
-        />
-        <FieldError>{form.formState.errors.trackStrand?.message}</FieldError>
-      </Field>
-
-      <Field>
         <FieldLabel>Section Name</FieldLabel>
         <Input {...form.register("sectionName")} />
         <FieldError>{form.formState.errors.sectionName?.message}</FieldError>

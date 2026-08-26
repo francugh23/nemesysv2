@@ -48,8 +48,6 @@ function getSubjectOrderBy(
       return [{ code: direction }, { id: "asc" }];
     case "description":
       return [{ description: direction }, { id: "asc" }];
-    case "trackStrand":
-      return [{ trackStrand: direction }, { id: "asc" }];
     default:
       return [{ id: "asc" }];
   }
@@ -64,7 +62,6 @@ export async function getSubjects(
     search: query.q,
     schoolLevel: query.schoolLevel,
     grade: query.grade,
-    trackStrand: query.trackStrand,
   };
   const totalCount = await countNonArchivedSubjects(filters);
   const pageCount = Math.ceil(totalCount / query.pageSize);
@@ -101,16 +98,12 @@ export async function getSubjects(
 export async function getSubjectFilterOptions(): Promise<SubjectFilterOptions> {
   await requirePermission(Permissions.SUBJECTS);
 
-  const [gradeLevels, trackStrands] =
-    await findSubjectFilterOptionValues();
+  const gradeLevels = await findSubjectFilterOptionValues();
 
   return {
     gradeLevels: gradeLevels
       .map((value) => value.gradeLevel)
       .sort((first, second) => Number(first) - Number(second)),
-    trackStrands: trackStrands.flatMap((value) =>
-      value.trackStrand ? [value.trackStrand] : [],
-    ),
   };
 }
 
@@ -121,11 +114,10 @@ async function ensureSubjectIdentityAvailable(
   const existingSubject = await findSubjectByIdentity(
     identity.code,
     identity.gradeLevel,
-    identity.trackStrand,
   );
 
   if (existingSubject && existingSubject.id !== subjectId) {
-    throw new Error("Subject already exists for this grade level and track/strand.");
+    throw new Error("Subject already exists for this grade level.");
   }
 }
 
@@ -134,7 +126,7 @@ function rethrowSubjectIdentityConflict(error: unknown): never {
     error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === "P2002"
   ) {
-    throw new Error("Subject already exists for this grade level and track/strand.");
+    throw new Error("Subject already exists for this grade level.");
   }
 
   throw error;

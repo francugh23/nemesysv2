@@ -99,15 +99,15 @@ async function createPlacementFixture(
   const [source, destination, crossGrade, student] = await Promise.all([
     transaction.section.create({
       data: { gradeLevel, sectionName: `21F-A Source ${suffix}`, createdById: actor.id },
-      select: { id: true, gradeLevel: true, trackStrand: true, sectionName: true },
+      select: { id: true, gradeLevel: true, sectionName: true },
     }),
     transaction.section.create({
       data: { gradeLevel, sectionName: `21F-A Destination ${suffix}`, createdById: actor.id },
-      select: { id: true, gradeLevel: true, trackStrand: true, sectionName: true },
+      select: { id: true, gradeLevel: true, sectionName: true },
     }),
     transaction.section.create({
       data: { gradeLevel: gradeLevel === "7" ? "8" : "12", sectionName: `21F-A Cross ${suffix}`, createdById: actor.id },
-      select: { id: true, gradeLevel: true, trackStrand: true, sectionName: true },
+      select: { id: true, gradeLevel: true, sectionName: true },
     }),
     transaction.student.create({
       data: {
@@ -162,7 +162,6 @@ test("same-grade JHS correction records immutable history and preserves all part
         academicYearId: fixture.academicYear.id,
         academicYearLabel: fixture.academicYear.label,
         gradeLevel: fixture.source.gradeLevel,
-        trackStrand: fixture.source.trackStrand,
         studentLrn: fixture.student.lrn,
         actorId: fixture.actor.id,
       }, transaction);
@@ -347,7 +346,6 @@ test("evidence and Section mutations cannot precede a correction in the same tra
         academicYearId: fixture.academicYear.id,
         academicYearLabel: fixture.academicYear.label,
         gradeLevel: fixture.source.gradeLevel,
-        trackStrand: fixture.source.trackStrand,
         studentLrn: fixture.student.lrn,
         actorId: fixture.actor.id,
       }, transaction),
@@ -484,8 +482,8 @@ test("service rejects invalid confirmation, Sections, Enrollment, year, or Stude
 test("database rejects source mismatch, unscoped placement updates, and forged contexts", async () => {
   await withRollback(async (transaction) => {
     const fixture = await createPlacementFixture(transaction);
-    const sourceSnapshot = { sectionId: fixture.source.id, gradeLevel: fixture.source.gradeLevel, trackStrand: null, sectionName: fixture.source.sectionName };
-    const destinationSnapshot = { sectionId: fixture.destination.id, gradeLevel: fixture.destination.gradeLevel, trackStrand: null, sectionName: fixture.destination.sectionName };
+    const sourceSnapshot = { sectionId: fixture.source.id, gradeLevel: fixture.source.gradeLevel, sectionName: fixture.source.sectionName };
+    const destinationSnapshot = { sectionId: fixture.destination.id, gradeLevel: fixture.destination.gradeLevel, sectionName: fixture.destination.sectionName };
 
     const sourceError = await rollbackToSavepoint(transaction, () => transaction.studentEnrollmentCorrection.create({
       data: {

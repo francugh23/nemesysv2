@@ -56,13 +56,6 @@ export function subjectAssignmentColumns({
       ),
     },
     {
-      accessorKey: "sectionTrackStrand",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Track / Strand" />
-      ),
-      cell: ({ row }) => displayValue(row.original.sectionTrackStrand),
-    },
-    {
       accessorKey: "sectionName",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Section Name" />

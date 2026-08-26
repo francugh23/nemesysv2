@@ -2,14 +2,11 @@
 
 ## Active Subject Identity
 
-An active Subject is uniquely identified by normalized `code`, `gradeLevel`, and `trackStrand`.
+An active Subject is uniquely identified by normalized `code` and `gradeLevel`.
 
 - Codes are trimmed and stored uppercase.
 - Grade levels are stored as `7` through `12`.
-- Track/strand values are trimmed and stored uppercase.
-- Blank and null track/strand values are equivalent.
-- Grades 7 through 10 cannot have a track/strand.
-- Grades 11 and 12 may omit a track/strand for shared/core Subjects or provide one for strand-specific Subjects.
+- SHS classification and clusters belong to year-specific Subject Offering context, not reusable Subject identity.
 
 The migration-managed PostgreSQL expression index applies only to active Subjects. Soft-archived records remain historical and do not block a canonical active Subject.
 
@@ -29,12 +26,11 @@ SELECT
     WHEN 'GRADE 12' THEN '12'
     ELSE BTRIM("gradeLevel")
   END AS normalized_grade_level,
-  COALESCE(NULLIF(UPPER(BTRIM("trackStrand")), ''), '') AS normalized_track_strand,
   ARRAY_AGG("id" ORDER BY "createdAt") AS subject_ids,
   COUNT(*) AS subject_count
 FROM "Subject"
 WHERE "deletedAt" IS NULL
-GROUP BY 1, 2, 3
+GROUP BY 1, 2
 HAVING COUNT(*) > 1;
 ```
 
@@ -51,6 +47,6 @@ HAVING COUNT(*) > 1;
 
 Prisma cannot express this PostgreSQL expression index in `schema.prisma`. The index is maintained by the SQL migration, and Subject identity lookups must use `findFirst` with normalized values rather than `findUnique`.
 
-## Future Subject Assignment
+## Subject Assignment
 
-Subject Assignment remains out of scope. Its future validation must require matching Section grade level and, for strand-specific Subjects, matching track/strand. Shared Subjects without a track/strand remain eligible for applicable SHS Sections.
+Subject Assignment validates Subject and Section grade-level compatibility. SHS classification is governed by Curriculum Offering context and clusters, not assignment or Section identity.

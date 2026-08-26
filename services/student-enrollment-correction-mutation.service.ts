@@ -24,7 +24,6 @@ export class StudentEnrollmentCorrectionError extends Error {}
 type SectionPlacementSnapshot = {
   sectionId: string;
   gradeLevel: string;
-  trackStrand: string | null;
   sectionName: string;
 };
 
@@ -40,7 +39,7 @@ type PlacementSnapshot = SectionPlacementSnapshot & {
 };
 
 export function placementSectionLabel(snapshot: SectionPlacementSnapshot) {
-  return `Grade ${snapshot.gradeLevel}${snapshot.trackStrand ? ` - ${snapshot.trackStrand}` : ""} - ${snapshot.sectionName}`;
+  return `Grade ${snapshot.gradeLevel} - ${snapshot.sectionName}`;
 }
 
 function personName(person: { firstName: string; middleName: string | null; lastName: string }) {
@@ -122,14 +121,12 @@ export async function correctStudentEnrollmentPlacementInTransaction(
     createdById: lockedDetail.createdById,
     sectionId: source.id,
     gradeLevel: source.gradeLevel,
-    trackStrand: source.trackStrand,
     sectionName: source.sectionName,
   };
   const destinationSnapshot: PlacementSnapshot = {
     ...sourceSnapshot,
     sectionId: destination.id,
     gradeLevel: destination.gradeLevel,
-    trackStrand: destination.trackStrand,
     sectionName: destination.sectionName,
   };
   const correctedAt = clock();

@@ -79,7 +79,6 @@ export async function getStudentEnrollmentGradeCorrectionPreviewService(
     subjectCodeCurrent: offering.subject.code,
     subjectDescriptionCurrent: offering.subject.description,
     subjectGradeLevel: offering.subject.gradeLevel,
-    subjectTrackStrand: offering.subject.trackStrand,
     subjectDeletedAt: offering.subject.deletedAt,
     termIds: offering.terms.map(({ academicTermId }) => academicTermId),
     termAcademicYearIds: offering.terms.map(({ academicTerm }) => academicTerm.academicYearId),

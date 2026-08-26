@@ -53,13 +53,6 @@ test("Subject template emits definition-backed instructions", () => {
     "Text",
     "Subject code.",
   ]);
-  assert.deepEqual(instructions[4], [
-    "Track/Strand",
-    "No",
-    "Text",
-    "Text",
-    "Only applicable to Grades 11 and 12.",
-  ]);
   assert.equal(
     subjectImportTemplateDefinition.importWorksheet.fields.some(
       (field) => field.key === "semester",
@@ -119,7 +112,6 @@ test("Definitions preserve existing Student and Subject header aliases", () => {
   assert.equal(normalizeStudentImportHeader("Learner Reference Number"), "lrn");
   assert.equal(normalizeStudentImportHeader("ZIP_code"), "zipCode");
   assert.equal(normalizeSubjectImportHeader("Subject Description"), "description");
-  assert.equal(normalizeSubjectImportHeader("strand"), "trackStrand");
   assert.equal(normalizeSubjectImportHeader("Semester"), undefined);
 });
 

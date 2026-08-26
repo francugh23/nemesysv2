@@ -36,7 +36,6 @@ import {
 
 const sectionSortFields = [
   "grade",
-  "trackStrand",
   "sectionName",
   "adviser",
   "room",
@@ -57,17 +56,12 @@ function SectionsPageContent() {
     sortableColumns: sectionSortFields,
   });
   const grade = SectionGradeLevelSchema.safeParse(tableState.filters.grade);
-  const trackStrand = tableState.filters.trackStrand.trim();
   const shift = SectionShiftSchema.safeParse(tableState.filters.shift);
   const adviserId = tableState.filters.adviserId.trim();
   const search = tableState.query.q?.trim().slice(0, 100);
   const normalizeUrl = useEffectEvent(() => {
     if (tableState.filters.grade && !grade.success) {
       tableState.setFilter("grade", "");
-    }
-
-    if (tableState.filters.trackStrand !== trackStrand) {
-      tableState.setFilter("trackStrand", trackStrand);
     }
 
     if (tableState.filters.shift && !shift.success) {
@@ -85,7 +79,6 @@ function SectionsPageContent() {
   const query: SectionTableQueryInput = {
     q: search || undefined,
     grade: grade.success ? grade.data : undefined,
-    trackStrand: trackStrand || undefined,
     shift: shift.success ? shift.data : undefined,
     adviserId: adviserId || undefined,
     sort: tableState.query.sort as SectionTableQueryInput["sort"],
@@ -152,9 +145,7 @@ function SectionsPageContent() {
     tableState.filters.adviserId,
     tableState.filters.grade,
     tableState.filters.shift,
-    tableState.filters.trackStrand,
     tableState.query.q,
-    trackStrand,
   ]);
 
   useEffect(() => {

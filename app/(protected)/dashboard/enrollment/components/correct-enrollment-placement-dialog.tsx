@@ -180,8 +180,8 @@ function ReadyCorrectEnrollmentPlacementDialog({
 
   const options = context.destinations.map((section) => ({
     value: section.id,
-    label: `Grade ${section.gradeLevel}${section.trackStrand ? ` - ${section.trackStrand}` : ""} - ${section.sectionName}`,
-    searchValue: `${section.gradeLevel} ${section.trackStrand ?? ""} ${section.sectionName}`,
+    label: `Grade ${section.gradeLevel} - ${section.sectionName}`,
+    searchValue: `${section.gradeLevel} ${section.sectionName}`,
   }));
 
   const title = isDifferentGrade
@@ -256,7 +256,7 @@ function ReadyCorrectEnrollmentPlacementDialog({
                 sourceGrade={context.gradeLevel}
                 sourceSection={context.currentSection}
                 destinationGrade={destination.gradeLevel}
-                destinationSection={`${destination.trackStrand ? `${destination.trackStrand} - ` : ""}${destination.sectionName}`}
+                destinationSection={destination.sectionName}
               />
             ) : null}
 

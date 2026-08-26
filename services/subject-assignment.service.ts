@@ -54,7 +54,6 @@ export async function getSubjectAssignments(): Promise<
     subjectCode: assignment.subject.code,
     subjectDescription: assignment.subject.description,
     sectionGradeLevel: assignment.section.gradeLevel,
-    sectionTrackStrand: assignment.section.trackStrand,
     sectionName: assignment.section.sectionName,
     academicYearLabel: assignment.academicYear.label,
     academicYearStatus: assignment.academicYear.status,
@@ -130,13 +129,6 @@ export async function createSubjectAssignmentService(
 
       if (subject.gradeLevel !== section.gradeLevel) {
         throw new Error("Subject and section grade levels must match.");
-      }
-
-      if (
-        subject.trackStrand !== null &&
-        subject.trackStrand !== section.trackStrand
-      ) {
-        throw new Error("Subject and section track/strand must match.");
       }
 
       const duplicate = await findActiveSubjectAssignment(values, transaction);
@@ -220,13 +212,6 @@ export async function updateSubjectAssignmentService(
         throw new Error("Subject and section grade levels must match.");
       }
 
-      if (
-        subject.trackStrand !== null &&
-        subject.trackStrand !== section.trackStrand
-      ) {
-        throw new Error("Subject and section track/strand must match.");
-      }
-
       const duplicate = await findActiveSubjectAssignmentExcludingId(
         values,
         assignment.id,
@@ -299,7 +284,7 @@ export async function archiveSubjectAssignmentService(id: string) {
     const teacherIdentity = assignment.teacher.user.employeeNumber
       ? `${assignment.teacher.user.employeeNumber} - ${teacherName}`
       : teacherName;
-    const sectionIdentity = `Grade ${assignment.section.gradeLevel}${assignment.section.trackStrand ? ` - ${assignment.section.trackStrand}` : ""} - ${assignment.section.sectionName}`;
+    const sectionIdentity = `Grade ${assignment.section.gradeLevel} - ${assignment.section.sectionName}`;
 
     await createAuditLogs(
       [

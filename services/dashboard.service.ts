@@ -53,7 +53,7 @@ export async function getOperationalDashboard(): Promise<DashboardReadModel> {
       return [{
         id: section.id,
         gradeLevel: section.gradeLevel,
-        label: [section.gradeLevel, section.trackStrand, section.sectionName].filter(Boolean).join(" - "),
+        label: [section.gradeLevel, section.sectionName].join(" - "),
         count: _count._all,
       }];
     }).sort((left, right) => right.count - left.count || left.label.localeCompare(right.label));

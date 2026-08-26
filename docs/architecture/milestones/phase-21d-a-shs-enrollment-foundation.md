@@ -7,7 +7,7 @@ Phase 21D-A keeps one Enrollment per Student and Academic Year while adding Enro
 ## Data Integrity
 
 - `Enrollment.entryAcademicTermId` is a nullable legacy-safe relation to Academic Term. A composite foreign key with `Enrollment.academicYearId` guarantees that the Term belongs to the same Academic Year.
-- `Enrollment.shsTrack` uses the dedicated nullable `EnrollmentShsTrack` enum. It is not inferred from Section `trackStrand`, curriculum clusters, Subjects, catalog data, Semester, or timestamps.
+- `Enrollment.shsTrack` uses the dedicated nullable `EnrollmentShsTrack` enum. It is not inferred from Section, curriculum clusters, reusable Subjects, catalog data, Semester, or timestamps.
 - PostgreSQL requires entry Term and Track together for new Grade 11/12 rows and rejects either field for Grades 7-10.
 - Section grade changes are database-blocked when they would bypass those populated Enrollment facts.
 - Populated entry Term and Track are write-once facts. Existing null legacy rows remain valid and were not backfilled.

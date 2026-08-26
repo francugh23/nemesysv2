@@ -13,7 +13,6 @@ import { formatFullName } from "@/lib/format";
 
 export const sectionFilterKeys = [
   "grade",
-  "trackStrand",
   "shift",
   "adviserId",
 ] as const;
@@ -60,11 +59,6 @@ export function SectionToolbar({
       label: `Grade ${grade}`,
       value: grade,
     })) ?? [];
-  const trackStrandOptions: DataTableFilterOption[] =
-    options?.trackStrands.map((trackStrand) => ({
-      label: trackStrand,
-      value: trackStrand,
-    })) ?? [];
   const shiftOptions: DataTableFilterOption[] =
     options?.shifts.map((shift) => ({
       label: shiftLabels[shift] ?? shift,
@@ -86,7 +80,7 @@ export function SectionToolbar({
     <DataTableToolbar
       search={search}
       onSearchChange={onSearchChange}
-      searchPlaceholder="Search section, track, room or adviser..."
+      searchPlaceholder="Search section, room or adviser..."
       searchResetKey={searchResetKey}
       canReset={canReset && hasSearchOrFilters}
       onReset={onReset}
@@ -99,14 +93,6 @@ export function SectionToolbar({
         value={filters.grade}
         options={gradeOptions}
         onValueChange={(value) => onFilterChange("grade", value)}
-        disabled={isLoading || isError}
-      />
-      <DataTableFacetedFilter
-        label="Track / Strand"
-        allLabel="All Tracks / Strands"
-        value={filters.trackStrand}
-        options={trackStrandOptions}
-        onValueChange={(value) => onFilterChange("trackStrand", value)}
         disabled={isLoading || isError}
       />
       <DataTableFacetedFilter

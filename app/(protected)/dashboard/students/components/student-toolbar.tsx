@@ -78,7 +78,7 @@ export function StudentToolbar({
     })) ?? [];
   const sectionOptions: DataTableFilterOption[] =
     options?.sections.map((section) => ({
-      label: `Grade ${section.gradeLevel}${section.trackStrand ? ` - ${section.trackStrand}` : ""} - ${section.sectionName}`,
+      label: `Grade ${section.gradeLevel} - ${section.sectionName}`,
       value: section.id,
     })) ?? [];
   const hasSearchOrFilters =

@@ -12,7 +12,6 @@ class RollbackFixture extends Error {}
 async function createFixture(
   transaction: Prisma.TransactionClient,
   gradeLevel: string,
-  trackStrand: string | null = null,
 ) {
   const [actor, academicYear] = await Promise.all([
     transaction.user.findFirstOrThrow({
@@ -31,11 +30,10 @@ async function createFixture(
   const section = await transaction.section.create({
     data: {
       gradeLevel,
-      trackStrand,
       sectionName: `Phase 19B ${suffix}`,
       createdById: actor.id,
     },
-    select: { id: true, gradeLevel: true, trackStrand: true },
+    select: { id: true, gradeLevel: true },
   });
   const student = await transaction.student.create({
     data: {
@@ -83,7 +81,6 @@ async function createEnrollmentAndDerive(
       academicYearId: fixture.academicYear.id,
       academicYearLabel: "2026-2027",
       gradeLevel: fixture.section.gradeLevel,
-      trackStrand: fixture.section.trackStrand,
       studentLrn: fixture.student.lrn,
       actorId: fixture.actor.id,
     },
@@ -184,11 +181,11 @@ test("regular JHS Grades 7 through 10 derive the approved Offering matrix and al
   }
 });
 
-test("specialized and unsupported Sections create Enrollment records without subject derivation", async () => {
+test("unsupported grade Sections create Enrollment records without subject derivation", async () => {
   try {
     await prisma.$transaction(async (transaction) => {
-      for (const [gradeLevel, trackStrand] of [["7", "STE"], ["11", null]] as const) {
-        const fixture = await createFixture(transaction, gradeLevel, trackStrand);
+      for (const gradeLevel of ["11", "12"]) {
+        const fixture = await createFixture(transaction, gradeLevel);
         const enrollment = await createEnrollmentAndDerive(fixture, transaction);
         const studentSubjectEnrollmentCount = await transaction.studentSubjectEnrollment.count({
           where: { enrollmentId: enrollment.id },

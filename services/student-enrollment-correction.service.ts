@@ -32,7 +32,6 @@ type PlacementSnapshot = {
   createdById: string;
   sectionId: string;
   gradeLevel: string;
-  trackStrand: string | null;
   sectionName: string;
 };
 
@@ -56,8 +55,7 @@ function parseSnapshot(value: Prisma.JsonValue): PlacementSnapshot {
     (snapshot.semester !== null && typeof snapshot.semester !== "string") ||
     typeof snapshot.createdById !== "string" ||
     typeof snapshot.gradeLevel !== "string" ||
-    typeof snapshot.sectionName !== "string" ||
-    (snapshot.trackStrand !== null && typeof snapshot.trackStrand !== "string")
+    typeof snapshot.sectionName !== "string"
   ) {
     throw new StudentEnrollmentCorrectionError("Stored placement correction snapshot is invalid.");
   }
@@ -95,8 +93,7 @@ async function getStudentEnrollmentCorrectionContextInTransaction(
       findStudentEnrollmentCorrectionHistory(enrollmentId, transaction),
     ]);
     if (!enrollment) throw new StudentEnrollmentCorrectionError("Enrollment not found.");
-    const isRegularJhs = enrollment.section.trackStrand === null &&
-      ["7", "8", "9", "10"].includes(enrollment.section.gradeLevel);
+    const isRegularJhs = ["7", "8", "9", "10"].includes(enrollment.section.gradeLevel);
     const [sameGradeDestinations, differentGradeDestinations] = await Promise.all([
       findSameGradePlacementDestinations(
         enrollment.section.gradeLevel,
@@ -115,7 +112,6 @@ async function getStudentEnrollmentCorrectionContextInTransaction(
       [...sameGradeDestinations, ...differentGradeDestinations].map((section) => [section.id, section]),
     ).values()].sort((left, right) =>
       Number(left.gradeLevel) - Number(right.gradeLevel) ||
-      (left.trackStrand ?? "").localeCompare(right.trackStrand ?? "") ||
       left.sectionName.localeCompare(right.sectionName) ||
       left.id.localeCompare(right.id));
     return {

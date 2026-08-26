@@ -221,13 +221,7 @@ export async function getStudentFilterOptions(): Promise<StudentFilterOptions> {
       return gradeDifference;
     }
 
-    const trackDifference = (first.trackStrand ?? "").localeCompare(
-      second.trackStrand ?? "",
-    );
-
-    return trackDifference !== 0
-      ? trackDifference
-      : first.sectionName.localeCompare(second.sectionName);
+    return first.sectionName.localeCompare(second.sectionName);
   });
 
   return {

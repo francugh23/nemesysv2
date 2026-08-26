@@ -106,10 +106,6 @@ export function StudentViewDialog({
               label="Section"
               value={currentSection?.sectionName}
             />
-            <StudentInfoItem
-              label="Track / Strand"
-              value={currentSection?.trackStrand}
-            />
             <StudentInfoItem label="Shift" value={shift} />
             <StudentInfoItem label="Room" value={currentSection?.room} />
             <StudentInfoItem label="Adviser" value={adviser} />

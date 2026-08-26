@@ -13,7 +13,7 @@ Phase 20C adds controlled school approval and explicit Enrollment-scoped SSHS se
 ## Student Selection Boundary
 
 - `Permissions.ENROLLMENT` permits Super Admin and Registrar to select active `SCHOOL_APPROVED` Grade 11/12 Offerings for an active Enrollment.
-- Eligibility is strictly the Enrollment Academic Year, Section grade, non-archived Offering, and school-approved SSHS context. `trackStrand` is not read for curriculum inference.
+- Eligibility is strictly the Enrollment Academic Year, Section grade, non-archived Offering, and school-approved SSHS context. Section organizational identity is not read for curriculum inference.
 - The submitted desired selection is transactional: retained active rows remain active, deselected SSHS rows become `REPLACED`, and new rows snapshot Offering identity, SSHS context, and exact Offering Terms. Every replacement and creation is audited.
 - Provisional Offerings remain database-blocked from Student Subject Enrollment materialization. Grade 12 source candidates remain within the Phase 20B pilot boundary until explicitly approved; approval does not claim NVGCHS pilot participation.
 

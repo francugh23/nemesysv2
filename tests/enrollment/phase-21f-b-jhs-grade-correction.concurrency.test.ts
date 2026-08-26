@@ -67,7 +67,6 @@ async function createCommittedFixture() {
       academicYearId: academicYear.id,
       academicYearLabel: academicYear.label,
       gradeLevel: source.gradeLevel,
-      trackStrand: null,
       studentLrn: student.lrn,
       actorId: actor.id,
     }, transaction);

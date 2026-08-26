@@ -127,7 +127,7 @@ export async function getOperationalDashboardAggregates(
   const sections = sectionGroups.length
     ? await transaction.section.findMany({
         where: { id: { in: sectionGroups.map(({ sectionId }) => sectionId) }, deletedAt: null },
-        select: { id: true, gradeLevel: true, trackStrand: true, sectionName: true },
+        select: { id: true, gradeLevel: true, sectionName: true },
       })
     : [];
 
@@ -166,7 +166,7 @@ export async function findDashboardSectionPage(
   const sections = groups.length
     ? await transaction.section.findMany({
         where: { id: { in: groups.map(({ sectionId }) => sectionId) }, deletedAt: null },
-        select: { id: true, gradeLevel: true, trackStrand: true, sectionName: true },
+        select: { id: true, gradeLevel: true, sectionName: true },
       })
     : [];
   const sectionById = new Map(sections.map((section) => [section.id, section]));
@@ -179,7 +179,7 @@ export async function findDashboardSectionPage(
       return section ? [{
         id: section.id,
         gradeLevel: section.gradeLevel,
-        label: [section.gradeLevel, section.trackStrand, section.sectionName].filter(Boolean).join(" - "),
+        label: [section.gradeLevel, section.sectionName].join(" - "),
         count: _count._all,
       }] : [];
     }),

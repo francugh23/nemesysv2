@@ -44,17 +44,10 @@ export function SectionViewDialog({
             Grade {section.gradeLevel}
           </p>
           <h2 className="text-xl font-bold">{section.sectionName}</h2>
-          {section.trackStrand && (
-            <p className="text-muted-foreground">{section.trackStrand}</p>
-          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <SectionInfoItem label="Grade Level" value={section.gradeLevel} />
-          <SectionInfoItem
-            label="Track / Strand"
-            value={section.trackStrand}
-          />
           <SectionInfoItem label="Adviser" value={adviser} />
           <SectionInfoItem label="Room" value={section.room} />
           <SectionInfoItem label="Shift" value={shift} />

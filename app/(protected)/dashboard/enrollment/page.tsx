@@ -39,7 +39,6 @@ const enrollmentSortFields = [
   "studentLrn",
   "studentName",
   "sectionGradeLevel",
-  "sectionTrackStrand",
   "sectionName",
   "academicYear",
   "status",
@@ -65,7 +64,6 @@ function EnrollmentPageContent() {
   });
   const status = EnrollmentStatusSchema.safeParse(tableState.filters.status);
   const gradeLevel = tableState.filters.gradeLevel.trim();
-  const trackStrand = tableState.filters.trackStrand.trim();
   const academicYearId = tableState.filters.academicYearId.trim();
   const sectionId = tableState.filters.sectionId.trim();
   const search = tableState.query.q?.trim().slice(0, 100);
@@ -76,10 +74,6 @@ function EnrollmentPageContent() {
 
     if (tableState.filters.gradeLevel !== gradeLevel) {
       tableState.setFilter("gradeLevel", gradeLevel);
-    }
-
-    if (tableState.filters.trackStrand !== trackStrand) {
-      tableState.setFilter("trackStrand", trackStrand);
     }
 
     if (tableState.filters.academicYearId !== academicYearId) {
@@ -98,7 +92,6 @@ function EnrollmentPageContent() {
     q: search || undefined,
     status: status.success ? status.data : undefined,
     gradeLevel: gradeLevel || undefined,
-    trackStrand: trackStrand || undefined,
     academicYearId: academicYearId || undefined,
     sectionId: sectionId || undefined,
     sort: tableState.query.sort as EnrollmentTableQueryInput["sort"],
@@ -155,7 +148,6 @@ function EnrollmentPageContent() {
     status.success,
     academicYearId,
     gradeLevel,
-    trackStrand,
     search,
     sectionId,
     tableState.filters.status,

@@ -4,7 +4,6 @@ import prisma from "@/lib/prisma";
 export interface SectionListFilters {
   search?: string;
   grade?: string;
-  trackStrand?: string;
   shift?: "MORNING" | "AFTERNOON";
   adviserId?: string;
 }
@@ -12,7 +11,6 @@ export interface SectionListFilters {
 const sectionListSelect = {
   id: true,
   gradeLevel: true,
-  trackStrand: true,
   sectionName: true,
   adviserId: true,
   room: true,
@@ -38,13 +36,11 @@ function getSectionListWhere(
   return {
     deletedAt: null,
     gradeLevel: filters.grade,
-    trackStrand: filters.trackStrand,
     shift: filters.shift,
     adviserId: filters.adviserId,
     AND: searchTerms.map((term) => ({
       OR: [
         { sectionName: { contains: term, mode: "insensitive" } },
-        { trackStrand: { contains: term, mode: "insensitive" } },
         { room: { contains: term, mode: "insensitive" } },
         {
           adviser: {
@@ -89,12 +85,6 @@ function getSectionGradeSortConditions(filters: SectionListFilters) {
     conditions.push(Prisma.sql`"section"."gradeLevel" = ${filters.grade}`);
   }
 
-  if (filters.trackStrand) {
-    conditions.push(
-      Prisma.sql`"section"."trackStrand" = ${filters.trackStrand}`,
-    );
-  }
-
   if (filters.shift) {
     conditions.push(
       Prisma.sql`"section"."shift" = ${filters.shift}::"Shift"`,
@@ -109,7 +99,6 @@ function getSectionGradeSortConditions(filters: SectionListFilters) {
     const pattern = `%${term}%`;
     conditions.push(Prisma.sql`(
       "section"."sectionName" ILIKE ${pattern}
-      OR "section"."trackStrand" ILIKE ${pattern}
       OR "section"."room" ILIKE ${pattern}
       OR "user"."firstName" ILIKE ${pattern}
       OR "user"."middleName" ILIKE ${pattern}
@@ -129,7 +118,7 @@ export async function findActiveSectionsByGrade(
   const gradeDirection =
     direction === "desc" ? Prisma.sql`DESC` : Prisma.sql`ASC`;
   const tieBreakers = includeDefaultTieBreakers
-    ? Prisma.sql`, "section"."trackStrand" ASC NULLS LAST, "section"."sectionName" ASC, "section"."id" ASC`
+    ? Prisma.sql`, "section"."sectionName" ASC, "section"."id" ASC`
     : Prisma.sql`, "section"."id" ASC`;
   const ids = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
     SELECT "section"."id"
@@ -174,12 +163,6 @@ export async function findSectionFilterOptionValues() {
       select: { gradeLevel: true },
     }),
     prisma.section.findMany({
-      where: { deletedAt: null, trackStrand: { not: null } },
-      distinct: ["trackStrand"],
-      select: { trackStrand: true },
-      orderBy: { trackStrand: "asc" },
-    }),
-    prisma.section.findMany({
       where: { deletedAt: null, shift: { not: null } },
       distinct: ["shift"],
       select: { shift: true },
@@ -208,7 +191,6 @@ export async function findSectionFilterOptionValues() {
 
 export async function findActiveSectionByIdentity(
   gradeLevel: string,
-  trackStrand: string | null,
   sectionName: string,
   excludeId?: string,
   transaction?: Prisma.TransactionClient,
@@ -216,7 +198,6 @@ export async function findActiveSectionByIdentity(
   return (transaction ?? prisma).section.findFirst({
     where: {
       gradeLevel,
-      trackStrand,
       sectionName: {
         equals: sectionName,
         mode: "insensitive",
@@ -246,7 +227,6 @@ export async function findActiveSectionById(
     select: {
       id: true,
       gradeLevel: true,
-      trackStrand: true,
       sectionName: true,
       adviserId: true,
       room: true,
@@ -338,7 +318,6 @@ export async function findActiveSectionForAssignment(
     select: {
       id: true,
       gradeLevel: true,
-      trackStrand: true,
       sectionName: true,
     },
   });
@@ -352,15 +331,11 @@ export async function findActiveSectionsForAssignment() {
     select: {
       id: true,
       gradeLevel: true,
-      trackStrand: true,
       sectionName: true,
     },
     orderBy: [
       {
         gradeLevel: "asc",
-      },
-      {
-        trackStrand: "asc",
       },
       {
         sectionName: "asc",

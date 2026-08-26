@@ -66,7 +66,6 @@ type OfferingCoverage = {
   subjectCodeCurrent: string;
   subjectDescriptionCurrent: string;
   subjectGradeLevel: string;
-  subjectTrackStrand: string | null;
   subjectDeletedAt: Date | null;
   termIds: string[];
   termAcademicYearIds: string[];
@@ -108,8 +107,8 @@ export function validateRegularJhsGradeCorrection(input: {
   };
   student: { status: string; currentSectionId: string | null; deletedAt: Date | null };
   academicYear: LockedGradeCorrectionAcademicYear;
-  sourceSection: { id: string; gradeLevel: string; trackStrand: string | null; deletedAt: Date | null };
-  destinationSection: { id: string; gradeLevel: string; trackStrand: string | null; deletedAt: Date | null };
+  sourceSection: { id: string; gradeLevel: string; deletedAt: Date | null };
+  destinationSection: { id: string; gradeLevel: string; deletedAt: Date | null };
   sourceSubjects: SubjectCoverage[];
   destinationOfferings: OfferingCoverage[];
 }) {
@@ -123,10 +122,10 @@ export function validateRegularJhsGradeCorrection(input: {
   if (input.student.deletedAt || input.student.status !== "ENROLLED" || input.student.currentSectionId !== input.sourceSection.id) {
     blockers.push("The active Student placement summary does not match the source Enrollment.");
   }
-  if (input.sourceSection.deletedAt || input.sourceSection.trackStrand !== null || !sourceCodes.length) {
+  if (input.sourceSection.deletedAt || !sourceCodes.length) {
     blockers.push("The source must be an active regular JHS Grade 7-10 Section.");
   }
-  if (input.destinationSection.deletedAt || input.destinationSection.trackStrand !== null || !destinationCodes.length) {
+  if (input.destinationSection.deletedAt || !destinationCodes.length) {
     blockers.push("The destination must be an active regular JHS Grade 7-10 Section.");
   }
   if (input.sourceSection.id === input.destinationSection.id || input.sourceSection.gradeLevel === input.destinationSection.gradeLevel) {
@@ -179,7 +178,6 @@ export function validateRegularJhsGradeCorrection(input: {
     offering.academicYearId !== input.academicYear.id ||
     offering.gradeLevel !== input.destinationSection.gradeLevel ||
     offering.subjectGradeLevel !== input.destinationSection.gradeLevel ||
-    offering.subjectTrackStrand !== null ||
     offering.subjectDeletedAt !== null ||
     offering.deletedAt !== null ||
     offering.shsContextId !== null ||
@@ -304,14 +302,12 @@ export async function correctStudentEnrollmentGradePlacementInTransaction(
     createdById: enrollment.createdById,
     sectionId: sourceSection.id,
     gradeLevel: sourceSection.gradeLevel,
-    trackStrand: sourceSection.trackStrand,
     sectionName: sourceSection.sectionName,
   };
   const destinationPlacementSnapshot = {
     ...sourcePlacementSnapshot,
     sectionId: destinationSection.id,
     gradeLevel: destinationSection.gradeLevel,
-    trackStrand: destinationSection.trackStrand,
     sectionName: destinationSection.sectionName,
   };
 

@@ -34,7 +34,6 @@ const subjectSortFields = [
   "code",
   "description",
   "gradeLevel",
-  "trackStrand",
 ] as const;
 
 export default function SubjectsPage() {
@@ -54,7 +53,6 @@ function SubjectsPageContent() {
   const schoolLevel = ["JHS", "SHS"].includes(tableState.filters.schoolLevel)
     ? (tableState.filters.schoolLevel as "JHS" | "SHS")
     : undefined;
-  const trackStrand = tableState.filters.trackStrand.trim().slice(0, 100);
   const search = tableState.query.q?.trim().slice(0, 100);
   const normalizeUrl = useEffectEvent(() => {
     if (tableState.filters.grade && !grade.success) {
@@ -73,10 +71,6 @@ function SubjectsPageContent() {
       tableState.setFilter("grade", "");
     }
 
-    if (tableState.filters.trackStrand !== trackStrand) {
-      tableState.setFilter("trackStrand", trackStrand);
-    }
-
     if (tableState.query.q !== search) {
       tableState.setSearch(search ?? "");
     }
@@ -85,7 +79,6 @@ function SubjectsPageContent() {
     q: search || undefined,
     schoolLevel,
     grade: grade.success ? grade.data : undefined,
-    trackStrand: trackStrand || undefined,
     sort: tableState.query.sort as SubjectTableQueryInput["sort"],
     direction: tableState.query.direction as SubjectTableQueryInput["direction"],
     page: tableState.query.page,
@@ -136,9 +129,7 @@ function SubjectsPageContent() {
     search,
     tableState.filters.grade,
     tableState.filters.schoolLevel,
-    tableState.filters.trackStrand,
     tableState.query.q,
-    trackStrand,
   ]);
 
   useEffect(() => {

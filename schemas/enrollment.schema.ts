@@ -78,7 +78,6 @@ export interface StudentEnrollmentCorrectionContext {
   destinations: Array<{
     id: string;
     gradeLevel: string;
-    trackStrand: string | null;
     sectionName: string;
   }>;
   history: StudentEnrollmentCorrectionHistoryItem[];
@@ -122,7 +121,6 @@ export const EnrollmentSortFieldSchema = z.enum([
   "studentLrn",
   "studentName",
   "sectionGradeLevel",
-  "sectionTrackStrand",
   "sectionName",
   "academicYear",
   "status",
@@ -132,7 +130,6 @@ export const EnrollmentTableQuerySchema = z.object({
   q: z.string().trim().max(100).optional(),
   status: EnrollmentStatusSchema.optional(),
   gradeLevel: z.string().trim().min(1).optional(),
-  trackStrand: z.string().trim().min(1).optional(),
   academicYearId: z.string().trim().min(1).optional(),
   sectionId: z.string().trim().min(1).optional(),
   sort: EnrollmentSortFieldSchema.optional(),
@@ -160,7 +157,6 @@ export const EnrollmentListItemSchema = z.object({
   studentMiddleName: z.string().nullable(),
   studentLastName: z.string(),
   sectionGradeLevel: z.string(),
-  sectionTrackStrand: z.string().nullable(),
   sectionName: z.string(),
   academicYear: z.string(),
   academicYearStatus: z.enum(["DRAFT", "ACTIVE", "LOCKED", "ARCHIVED"]),
@@ -185,11 +181,9 @@ export interface EnrollmentFilterOptions {
     label: string;
   }>;
   gradeLevels: string[];
-  trackStrands: string[];
   sections: Array<{
     id: string;
     gradeLevel: string;
-    trackStrand: string | null;
     sectionName: string;
   }>;
 }

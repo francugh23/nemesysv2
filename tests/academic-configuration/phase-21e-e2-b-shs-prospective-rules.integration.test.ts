@@ -84,7 +84,7 @@ async function createEnrollmentWithParticipation(
   transaction: Prisma.TransactionClient,
 ) {
   const section = await transaction.section.create({
-    data: { gradeLevel: "11", trackStrand: "Academic", sectionName: `E2B-${randomUUID()}`, createdById: source.createdById },
+    data: { gradeLevel: "11", sectionName: `E2B-${randomUUID()}`, createdById: source.createdById },
   });
   const student = await transaction.student.create({
     data: {

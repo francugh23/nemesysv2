@@ -4,7 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Badge } from "@/components/ui/badge";
-import { displayValue, formatFullName } from "@/lib/format";
+import { formatFullName } from "@/lib/format";
 import type { EnrollmentListItem } from "@/schemas";
 
 import { EnrollmentActions } from "./enrollment-actions";
@@ -51,13 +51,6 @@ export function enrollmentColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Grade" />
       ),
-    },
-    {
-      accessorKey: "sectionTrackStrand",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Track / Strand" />
-      ),
-      cell: ({ row }) => displayValue(row.original.sectionTrackStrand),
     },
     {
       accessorKey: "sectionName",

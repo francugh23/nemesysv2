@@ -15,7 +15,6 @@ export interface EnrollmentListFilters {
   search?: string;
   status?: "ACTIVE" | "COMPLETED" | "DROPPED" | "TRANSFERRED";
   gradeLevel?: string;
-  trackStrand?: string;
   academicYearId?: string;
   sectionId?: string;
 }
@@ -30,10 +29,9 @@ function getEnrollmentListWhere(
     status: filters.status,
     academicYearId: filters.academicYearId,
     sectionId: filters.sectionId,
-    section: filters.gradeLevel || filters.trackStrand
+    section: filters.gradeLevel
       ? {
           gradeLevel: filters.gradeLevel,
-          trackStrand: filters.trackStrand,
         }
       : undefined,
     AND: searchTerms.map((term) => ({
@@ -105,7 +103,6 @@ export async function findNonArchivedEnrollments(
       section: {
         select: {
           gradeLevel: true,
-          trackStrand: true,
           sectionName: true,
         },
       },
@@ -157,12 +154,6 @@ function getEnrollmentGradeSortConditions(filters: EnrollmentListFilters) {
     );
   }
 
-  if (filters.trackStrand) {
-    conditions.push(
-      Prisma.sql`"section"."trackStrand" = ${filters.trackStrand}`,
-    );
-  }
-
   for (const term of filters.search?.split(/\s+/).filter(Boolean) ?? []) {
     const pattern = `%${term}%`;
     conditions.push(Prisma.sql`(
@@ -205,7 +196,6 @@ export async function findNonArchivedEnrollmentsByGrade(
       studentMiddleName: string | null;
       studentLastName: string;
       sectionGradeLevel: string;
-      sectionTrackStrand: string | null;
       sectionName: string;
     }>
   >(Prisma.sql`
@@ -228,7 +218,6 @@ export async function findNonArchivedEnrollmentsByGrade(
       "student"."middleName" AS "studentMiddleName",
       "student"."lastName" AS "studentLastName",
       "section"."gradeLevel" AS "sectionGradeLevel",
-      "section"."trackStrand" AS "sectionTrackStrand",
       "section"."sectionName" AS "sectionName"
     FROM "Enrollment" AS "enrollment"
     INNER JOIN "Student" AS "student"
@@ -271,7 +260,6 @@ export async function findNonArchivedEnrollmentsByGrade(
     },
     section: {
       gradeLevel: enrollment.sectionGradeLevel,
-      trackStrand: enrollment.sectionTrackStrand,
       sectionName: enrollment.sectionName,
     },
     academicYear: {
@@ -314,12 +302,10 @@ export async function findEnrollmentFilterOptionValues() {
       select: {
         id: true,
         gradeLevel: true,
-        trackStrand: true,
         sectionName: true,
       },
       orderBy: [
         { gradeLevel: "asc" },
-        { trackStrand: "asc" },
         { sectionName: "asc" },
       ],
     }),
@@ -380,7 +366,6 @@ export async function findActiveEnrollmentById(
           currentSection: {
             select: {
               gradeLevel: true,
-              trackStrand: true,
               sectionName: true,
             },
           },
@@ -389,7 +374,6 @@ export async function findActiveEnrollmentById(
       section: {
         select: {
           gradeLevel: true,
-          trackStrand: true,
           sectionName: true,
         },
       },
@@ -496,7 +480,6 @@ export async function findLatestActiveEnrollmentByStudent(
       section: {
         select: {
           gradeLevel: true,
-          trackStrand: true,
           sectionName: true,
         },
       },

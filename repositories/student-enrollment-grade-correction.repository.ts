@@ -18,7 +18,6 @@ export type LockedGradeCorrectionEnrollment = {
 export type LockedGradeCorrectionSection = {
   id: string;
   gradeLevel: string;
-  trackStrand: string | null;
   sectionName: string;
   deletedAt: Date | null;
 };
@@ -82,7 +81,6 @@ export type LockedGradeCorrectionOffering = {
   subjectCodeCurrent: string;
   subjectDescriptionCurrent: string;
   subjectGradeLevel: string;
-  subjectTrackStrand: string | null;
   subjectDeletedAt: Date | null;
   terms: Array<{
     academicTermId: string;
@@ -111,7 +109,7 @@ export function findGradeCorrectionPreviewContext(enrollmentId: string) {
       shsTrack: true,
       entryAcademicTermId: true,
       student: { select: { status: true, currentSectionId: true, deletedAt: true } },
-      section: { select: { gradeLevel: true, trackStrand: true, sectionName: true, deletedAt: true } },
+      section: { select: { gradeLevel: true, sectionName: true, deletedAt: true } },
       academicYear: {
         select: {
           status: true,
@@ -171,10 +169,9 @@ export function findRegularJhsGradeCorrectionDestinations(
     where: {
       id: { not: sourceSectionId },
       gradeLevel: { in: ["7", "8", "9", "10"], not: sourceGradeLevel },
-      trackStrand: null,
       deletedAt: null,
     },
-    select: { id: true, gradeLevel: true, trackStrand: true, sectionName: true },
+    select: { id: true, gradeLevel: true, sectionName: true },
     orderBy: [{ gradeLevel: "asc" }, { sectionName: "asc" }, { id: "asc" }],
   });
 }
@@ -182,7 +179,7 @@ export function findRegularJhsGradeCorrectionDestinations(
 export function findGradeCorrectionDestinationSection(sectionId: string) {
   return prisma.section.findFirst({
     where: { id: sectionId },
-    select: { id: true, gradeLevel: true, trackStrand: true, sectionName: true, deletedAt: true },
+    select: { id: true, gradeLevel: true, sectionName: true, deletedAt: true },
   });
 }
 
@@ -201,7 +198,7 @@ export function findGradeCorrectionDestinationOfferings(academicYearId: string, 
       replacementSubjectOffering: { select: { id: true } },
       shsContext: { select: { subjectOfferingId: true } },
       subject: {
-        select: { code: true, description: true, gradeLevel: true, trackStrand: true, deletedAt: true },
+        select: { code: true, description: true, gradeLevel: true, deletedAt: true },
       },
       terms: {
         select: {
@@ -245,7 +242,7 @@ export async function lockGradeCorrectionAcademicYear(academicYearId: string, tr
 
 export function lockGradeCorrectionSections(sectionIds: string[], transaction: Prisma.TransactionClient) {
   return transaction.$queryRaw<LockedGradeCorrectionSection[]>(Prisma.sql`
-    SELECT "id", "gradeLevel", "trackStrand", "sectionName", "deletedAt"
+    SELECT "id", "gradeLevel", "sectionName", "deletedAt"
     FROM "Section"
     WHERE "id" IN (${Prisma.join([...new Set(sectionIds)].sort())})
     ORDER BY "id"
@@ -358,7 +355,7 @@ export async function lockGradeCorrectionDestinationOfferings(
            replacement."id" AS "replacementSubjectOfferingId",
            shs."subjectOfferingId" AS "shsContextId",
            subject."code" AS "subjectCodeCurrent", subject."description" AS "subjectDescriptionCurrent",
-           subject."gradeLevel" AS "subjectGradeLevel", subject."trackStrand" AS "subjectTrackStrand",
+            subject."gradeLevel" AS "subjectGradeLevel",
            subject."deletedAt" AS "subjectDeletedAt"
     FROM "SubjectOffering" offering
     JOIN "Subject" subject ON subject."id" = offering."subjectId"

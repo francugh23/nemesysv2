@@ -48,7 +48,6 @@ export class EnrollmentServiceError extends Error {}
 type AuditChanges = Record<string, { from: string; to: string }>;
 type SectionSummary = {
   gradeLevel: string;
-  trackStrand: string | null;
   sectionName: string;
 };
 
@@ -69,8 +68,6 @@ function getEnrollmentOrderBy(
       ];
     case "sectionGradeLevel":
       return [{ section: { gradeLevel: direction } }, { id: "asc" }];
-    case "sectionTrackStrand":
-      return [{ section: { trackStrand: direction } }, { id: "asc" }];
     case "sectionName":
       return [{ section: { sectionName: direction } }, { id: "asc" }];
     case "academicYear":
@@ -102,7 +99,6 @@ export async function getEnrollments(
     search: query.q,
     status: query.status,
     gradeLevel: query.gradeLevel,
-    trackStrand: query.trackStrand,
     academicYearId: query.academicYearId,
     sectionId: query.sectionId,
   };
@@ -141,7 +137,6 @@ export async function getEnrollments(
       studentMiddleName: enrollment.student.middleName,
       studentLastName: enrollment.student.lastName,
       sectionGradeLevel: enrollment.section.gradeLevel,
-      sectionTrackStrand: enrollment.section.trackStrand,
       sectionName: enrollment.section.sectionName,
       academicYear: enrollment.academicYear.label,
       academicYearStatus: enrollment.academicYear.status,
@@ -166,13 +161,6 @@ export async function getEnrollmentFilterOptions(): Promise<EnrollmentFilterOpti
     gradeLevels: [...new Set(sections.map((section) => section.gradeLevel))].sort(
       (first, second) => Number(first) - Number(second),
     ),
-    trackStrands: [
-      ...new Set(
-        sections.flatMap((section) =>
-          section.trackStrand ? [section.trackStrand] : [],
-        ),
-      ),
-    ].sort((first, second) => first.localeCompare(second)),
     sections: sections.sort((first, second) => {
       const gradeDifference = Number(first.gradeLevel) - Number(second.gradeLevel);
 
@@ -180,13 +168,7 @@ export async function getEnrollmentFilterOptions(): Promise<EnrollmentFilterOpti
         return gradeDifference;
       }
 
-      const trackDifference = (first.trackStrand ?? "").localeCompare(
-        second.trackStrand ?? "",
-      );
-
-      return trackDifference !== 0
-        ? trackDifference
-        : first.sectionName.localeCompare(second.sectionName);
+      return first.sectionName.localeCompare(second.sectionName);
     }),
   };
 }
@@ -235,7 +217,7 @@ function getSectionName(section: SectionSummary | null) {
     return "NONE";
   }
 
-  return `Grade ${section.gradeLevel}${section.trackStrand ? ` - ${section.trackStrand}` : ""} - ${section.sectionName}`;
+  return `Grade ${section.gradeLevel} - ${section.sectionName}`;
 }
 
 function addStudentSynchronizationChanges(
@@ -354,7 +336,6 @@ async function createEnrollmentInTransaction(
       academicYearId: academicYear.id,
       academicYearLabel: academicYear.label,
       gradeLevel: section.gradeLevel,
-      trackStrand: section.trackStrand,
       studentLrn: student.lrn,
       actorId,
     },

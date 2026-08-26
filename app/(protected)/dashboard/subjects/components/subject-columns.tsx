@@ -68,13 +68,6 @@ export function subjectColumns({
       );
     },
   },
-  {
-    accessorKey: "trackStrand",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Track / Strand" />
-    ),
-    cell: ({ row }) => row.original.trackStrand ?? "-",
-  },
     {
       id: "actions",
       enableSorting: false,

@@ -21,7 +21,6 @@ export function CreateSectionForm({ onSuccess }: CreateSectionFormProps) {
     resolver: zodResolver(CreateSectionSchema),
     defaultValues: {
       gradeLevel: undefined,
-      trackStrand: "",
       sectionName: "",
       adviserId: "",
       room: "",

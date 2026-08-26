@@ -6,7 +6,7 @@ Phase 14 migrated Section Management to the reusable URL-driven server-table arc
 
 ## Server Table Contract
 
-- URL parameters are `q`, `grade`, `trackStrand`, `shift`, `adviserId`, `sort`, `direction`, `page`, and `pageSize`.
+- URL parameters are `q`, `grade`, `shift`, `adviserId`, `sort`, `direction`, `page`, and `pageSize`.
 - Search tokenizes Section name, track/strand, room, and adviser name fields.
 - Grade, track/strand, shift, and adviser filters combine with logical AND and use represented non-null values from active Sections.
 - Grade URL values use the same Grades 7-12 domain enum as Section create and update operations.

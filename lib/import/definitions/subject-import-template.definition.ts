@@ -36,16 +36,6 @@ export const subjectImportTemplateDefinition = {
         format: "Grade 7-12 or 7-12",
         notes: "Use the grade level where the subject is offered.",
       },
-      {
-        key: "trackStrand",
-        canonicalHeader: "Track/Strand",
-        displayLabel: "Track/Strand",
-        required: false,
-        aliases: ["Track", "Strand"],
-        acceptedValues: "Text",
-        format: "Text",
-        notes: "Only applicable to Grades 11 and 12.",
-      },
     ],
   },
 } satisfies ImportTemplateDefinition;

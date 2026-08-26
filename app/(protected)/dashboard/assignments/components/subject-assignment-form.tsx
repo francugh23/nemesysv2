@@ -50,13 +50,13 @@ export function SubjectAssignmentForm({ form }: SubjectAssignmentFormProps) {
     options?.subjects.map((subject) => ({
       value: subject.id,
       label: `${subject.code} - ${subject.description}`,
-      searchValue: `${subject.gradeLevel} ${subject.trackStrand ?? ""}`,
+      searchValue: subject.gradeLevel,
     })) ?? [];
   const sectionOptions: SearchableSelectOption[] =
     options?.sections.map((section) => ({
       value: section.id,
-      label: `Grade ${section.gradeLevel}${section.trackStrand ? ` - ${section.trackStrand}` : ""} - ${section.sectionName}`,
-      searchValue: `${section.gradeLevel} ${section.trackStrand ?? ""} ${section.sectionName}`,
+      label: `Grade ${section.gradeLevel} - ${section.sectionName}`,
+      searchValue: `${section.gradeLevel} ${section.sectionName}`,
     })) ?? [];
   const academicYearOptions: SearchableSelectOption[] =
     options?.academicYears.map((academicYear) => ({

@@ -36,13 +36,11 @@ export function normalizeSubjectImportRow(row: Record<string, unknown>) {
   const identity = normalizeSubjectIdentity({
     code: normalizeString(mappedRow.code) ?? "",
     gradeLevel: normalizeGradeLevel(mappedRow.gradeLevel) ?? "",
-    trackStrand: normalizeString(mappedRow.trackStrand),
   });
 
   return {
     code: identity.code || undefined,
     description: normalizeString(mappedRow.description),
     gradeLevel: identity.gradeLevel || undefined,
-    trackStrand: identity.trackStrand ?? undefined,
   };
 }

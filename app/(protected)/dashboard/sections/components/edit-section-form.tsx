@@ -24,7 +24,6 @@ export function EditSectionForm({ section, onSuccess }: EditSectionFormProps) {
     resolver: zodResolver(UpdateSectionSchema),
     defaultValues: {
       gradeLevel: section.gradeLevel as UpdateSectionValues["gradeLevel"],
-      trackStrand: section.trackStrand ?? "",
       sectionName: section.sectionName,
       adviserId: section.adviserId ?? "",
       room: section.room ?? "",

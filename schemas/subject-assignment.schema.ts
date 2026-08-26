@@ -23,7 +23,6 @@ export const SubjectAssignmentListItemSchema = z.object({
   subjectCode: z.string(),
   subjectDescription: z.string(),
   sectionGradeLevel: z.string(),
-  sectionTrackStrand: z.string().nullable(),
   sectionName: z.string(),
   academicYearLabel: z.string(),
   academicYearStatus: z.enum(["DRAFT", "ACTIVE", "LOCKED", "ARCHIVED"]),

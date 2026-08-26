@@ -5,7 +5,6 @@ export interface SubjectListFilters {
   search?: string;
   schoolLevel?: "JHS" | "SHS";
   grade?: string;
-  trackStrand?: string;
 }
 
 const subjectListSelect = {
@@ -13,7 +12,6 @@ const subjectListSelect = {
   code: true,
   description: true,
   gradeLevel: true,
-  trackStrand: true,
 } satisfies Prisma.SubjectSelect;
 
 const subjectListWithUsageSelect = {
@@ -34,7 +32,6 @@ export async function findSubjects() {
     orderBy: [
       { gradeLevel: "asc" },
       { code: "asc" },
-      { trackStrand: "asc" },
     ],
   });
 }
@@ -53,7 +50,6 @@ function getSubjectListWhere(
   return {
     deletedAt: null,
     gradeLevel: schoolLevelGrades ? { in: schoolLevelGrades } : filters.grade,
-    trackStrand: filters.trackStrand,
     AND: [
       ...(filters.grade && schoolLevelGrades
         ? [{ gradeLevel: filters.grade }]
@@ -62,7 +58,6 @@ function getSubjectListWhere(
         OR: [
           { code: { contains: term, mode: "insensitive" as const } },
           { description: { contains: term, mode: "insensitive" as const } },
-          { trackStrand: { contains: term, mode: "insensitive" as const } },
         ],
       })),
     ],
@@ -102,16 +97,11 @@ function getSubjectGradeSortConditions(filters: SubjectListFilters) {
     conditions.push(Prisma.sql`"gradeLevel" IN ('11', '12')`);
   }
 
-  if (filters.trackStrand) {
-    conditions.push(Prisma.sql`"trackStrand" = ${filters.trackStrand}`);
-  }
-
   for (const term of filters.search?.split(/\s+/).filter(Boolean) ?? []) {
     const pattern = `%${term}%`;
     conditions.push(Prisma.sql`(
       "code" ILIKE ${pattern}
       OR "description" ILIKE ${pattern}
-      OR "trackStrand" ILIKE ${pattern}
     )`);
   }
 
@@ -135,7 +125,6 @@ export async function findNonArchivedSubjectsByGrade(
       ELSE NULL
     END ${gradeDirection} NULLS LAST,
     "code" ASC,
-    "trackStrand" ASC NULLS LAST,
     "id" ASC
     OFFSET ${pagination.skip}
     LIMIT ${pagination.take}
@@ -163,31 +152,21 @@ export async function findNonArchivedSubjectsByGrade(
 }
 
 export async function findSubjectFilterOptionValues() {
-  return Promise.all([
-    prisma.subject.findMany({
-      where: { deletedAt: null },
-      distinct: ["gradeLevel"],
-      select: { gradeLevel: true },
-    }),
-    prisma.subject.findMany({
-      where: { deletedAt: null, trackStrand: { not: null } },
-      distinct: ["trackStrand"],
-      select: { trackStrand: true },
-      orderBy: { trackStrand: "asc" },
-    }),
-  ]);
+  return prisma.subject.findMany({
+    where: { deletedAt: null },
+    distinct: ["gradeLevel"],
+    select: { gradeLevel: true },
+  });
 }
 
 export async function findSubjectByIdentity(
   code: string,
   gradeLevel: string,
-  trackStrand: string | null,
 ) {
   return prisma.subject.findFirst({
     where: {
       code,
       gradeLevel,
-      trackStrand,
       deletedAt: null,
     },
   });
@@ -206,7 +185,6 @@ export async function findActiveSubjectsByIdentities(
   identities: {
     code: string;
     gradeLevel: string;
-    trackStrand: string | null;
   }[],
 ) {
   if (identities.length === 0) {
@@ -221,7 +199,6 @@ export async function findActiveSubjectsByIdentities(
     select: {
       code: true,
       gradeLevel: true,
-      trackStrand: true,
     },
   });
 }
@@ -265,7 +242,6 @@ export async function findActiveSubjectById(
       code: true,
       description: true,
       gradeLevel: true,
-      trackStrand: true,
     },
   });
 }

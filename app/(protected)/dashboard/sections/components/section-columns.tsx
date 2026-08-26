@@ -26,13 +26,6 @@ export function sectionColumns({
       ),
     },
     {
-      accessorKey: "trackStrand",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Track / Strand" />
-      ),
-      cell: ({ row }) => displayValue(row.original.trackStrand),
-    },
-    {
       accessorKey: "sectionName",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Section Name" />

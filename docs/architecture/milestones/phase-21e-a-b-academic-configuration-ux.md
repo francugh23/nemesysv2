@@ -17,7 +17,7 @@ Phase 21E-A/B clarifies the administrative configuration hierarchy without chang
 - The Subjects page and form state that Subject creation does not add the definition to an Academic Year, place it in Curriculum, or enroll students.
 - Read-only JHS/SHS grouping uses existing Grade 7-10 and Grade 11-12 identities. The server query supports a validated JHS/SHS filter and rejects contradictory school-level and grade combinations.
 - SHS definitions show existing relational facts only: whether a DepEd reference exists and how many active Curriculum entries use the Subject.
-- Core, Academic Elective, and TechPro Elective classification remains Offering context. `Subject.trackStrand` is unchanged and is not repurposed.
+- Core, Academic Elective, and TechPro Elective classification remains Offering context; reusable Subject identity is not repurposed.
 
 ## Curriculum
 

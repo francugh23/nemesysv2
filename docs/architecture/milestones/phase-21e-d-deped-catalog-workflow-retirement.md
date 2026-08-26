@@ -15,7 +15,7 @@ This decision supersedes earlier deferred wording that proposed moving the catal
 - Curriculum explicitly retains Academic Year, Grade, reusable Subject, SHS classification, school-facing elective cluster, exact Terms, source/provenance text, and controlled school approval.
 - The form uses **Source / Provenance Reference** rather than catalog-specific wording.
 - The persisted `PROVISIONAL_DEPED -> SCHOOL_APPROVED` lifecycle remains unchanged, but the operational UI presents it as **Pending School Approval -> School Approved**.
-- JHS remains full-year; SHS Terms remain explicit; no Grade 12 TechPro placement or `Subject.trackStrand` classification is inferred.
+- JHS remains full-year; SHS Terms remain explicit; no Grade 12 TechPro placement or reusable Subject classification is inferred.
 
 ## Retained Catalog Infrastructure
 

@@ -39,7 +39,6 @@ export function SubjectViewDialog({
             value={["7", "8", "9", "10"].includes(subject.gradeLevel) ? "JHS" : "SHS"}
           />
           <SubjectInfoItem label="Grade Level" value={subject.gradeLevel} />
-          <SubjectInfoItem label="Track / Strand" value={subject.trackStrand} />
         </div>
 
         {["11", "12"].includes(subject.gradeLevel) && (

@@ -15,7 +15,6 @@ const studentListInclude = {
     select: {
       id: true,
       gradeLevel: true,
-      trackStrand: true,
       sectionName: true,
       room: true,
       shift: true,
@@ -268,7 +267,6 @@ export async function findStudentFilterOptionValues() {
       select: {
         id: true,
         gradeLevel: true,
-        trackStrand: true,
         sectionName: true,
       },
     }),
@@ -321,7 +319,6 @@ export async function findActiveStudentForEnrollment(
       currentSection: {
         select: {
           gradeLevel: true,
-          trackStrand: true,
           sectionName: true,
         },
       },

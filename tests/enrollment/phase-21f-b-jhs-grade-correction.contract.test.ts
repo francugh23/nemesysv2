@@ -478,6 +478,6 @@ test("JHS grade correction does not use CurriculumCorrection, SHS workflows, or 
   );
   assert.doesNotMatch(migration, /"CurriculumCorrection"|"TermEnrollment"/);
   assert.match(application, /gradeLevel: \{ in: \["7", "8", "9", "10"\]/);
-  assert.match(application, /trackStrand: null/);
+  assert.doesNotMatch(application, /trackStrand/);
   assert.match(application, /entryAcademicTermId !== null|entryAcademicTermId: string \| null/);
 });

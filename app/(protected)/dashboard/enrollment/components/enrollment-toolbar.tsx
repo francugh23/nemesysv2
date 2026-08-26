@@ -12,7 +12,6 @@ import type { ReactNode } from "react";
 export const enrollmentFilterKeys = [
   "status",
   "gradeLevel",
-  "trackStrand",
   "academicYearId",
   "sectionId",
 ] as const;
@@ -66,14 +65,9 @@ export function EnrollmentToolbar({
       label: academicYear.label,
       value: academicYear.id,
     })) ?? [];
-  const trackStrandOptions =
-    options?.trackStrands.map((trackStrand) => ({
-      label: trackStrand,
-      value: trackStrand,
-    })) ?? [];
   const sectionOptions =
     options?.sections.map((section) => ({
-      label: `Grade ${section.gradeLevel}${section.trackStrand ? ` - ${section.trackStrand}` : ""} - ${section.sectionName}`,
+      label: `Grade ${section.gradeLevel} - ${section.sectionName}`,
       value: section.id,
     })) ?? [];
   const hasSearchOrFilters =
@@ -104,15 +98,6 @@ export function EnrollmentToolbar({
         options={gradeOptions}
         onValueChange={(value) => onFilterChange("gradeLevel", value)}
         disabled={isLoading || isError}
-      />
-      <DataTableFacetedFilter
-        label="Track / Strand"
-        allLabel="All Tracks / Strands"
-        value={filters.trackStrand}
-        options={trackStrandOptions}
-        onValueChange={(value) => onFilterChange("trackStrand", value)}
-        disabled={isLoading || isError}
-        className="sm:max-w-52"
       />
       <DataTableFacetedFilter
         label="Section"

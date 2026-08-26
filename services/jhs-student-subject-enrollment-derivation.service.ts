@@ -14,11 +14,10 @@ function getApprovedRegularJhsSubjectCodes(gradeLevel: string) {
 
 export function getApprovedRegularJhsEligibilityContext(
   gradeLevel: string,
-  trackStrand: string | null,
 ) {
   return {
     gradeLevel,
-    isApprovedRegularJhs: trackStrand === null && getApprovedRegularJhsSubjectCodes(gradeLevel).length > 0,
+    isApprovedRegularJhs: getApprovedRegularJhsSubjectCodes(gradeLevel).length > 0,
   };
 }
 
@@ -28,7 +27,6 @@ export async function deriveApprovedRegularJhsStudentSubjectEnrollments(
     academicYearId: string;
     academicYearLabel: string;
     gradeLevel: string;
-    trackStrand: string | null;
     studentLrn: string;
     actorId: string;
   },
@@ -36,7 +34,6 @@ export async function deriveApprovedRegularJhsStudentSubjectEnrollments(
 ) {
   const subjectCodes = getApprovedRegularJhsEligibilityContext(
     input.gradeLevel,
-    input.trackStrand,
   ).isApprovedRegularJhs
     ? getApprovedRegularJhsSubjectCodes(input.gradeLevel)
     : [];

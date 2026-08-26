@@ -26,7 +26,6 @@ export function EditSubjectForm({ subject, onSuccess }: EditSubjectFormProps) {
       code: subject.code,
       description: subject.description,
       gradeLevel: subject.gradeLevel as SubjectGradeLevel,
-      trackStrand: subject.trackStrand ?? "",
     },
   });
 

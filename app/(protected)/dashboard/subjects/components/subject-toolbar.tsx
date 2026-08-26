@@ -5,14 +5,12 @@ import {
   DataTableToolbar,
   type DataTableFilterOption,
 } from "@/components/data-table";
-import { Button } from "@/components/ui/button";
 import { useSubjectFilterOptions } from "@/hooks/subject.hook";
 import type { ReactNode } from "react";
 
 export const subjectFilterKeys = [
   "schoolLevel",
   "grade",
-  "trackStrand",
 ] as const;
 
 export type SubjectFilterKey = (typeof subjectFilterKeys)[number];
@@ -44,18 +42,11 @@ export function SubjectToolbar({
     data: options,
     isLoading,
     isError,
-    isFetching: isFetchingOptions,
-    refetch,
   } = useSubjectFilterOptions();
   const gradeOptions: DataTableFilterOption[] =
     options?.gradeLevels.map((grade) => ({
       label: `Grade ${grade}`,
       value: grade,
-    })) ?? [];
-  const trackStrandOptions: DataTableFilterOption[] =
-    options?.trackStrands.map((trackStrand) => ({
-      label: trackStrand,
-      value: trackStrand,
     })) ?? [];
   const hasSearchOrFilters =
     Boolean(search) || Object.values(filters).some(Boolean);
@@ -64,7 +55,7 @@ export function SubjectToolbar({
     <DataTableToolbar
       search={search}
       onSearchChange={onSearchChange}
-      searchPlaceholder="Search code, description or track/strand..."
+      searchPlaceholder="Search code or description..."
       searchResetKey={searchResetKey}
       canReset={canReset && hasSearchOrFilters}
       onReset={onReset}
@@ -103,25 +94,6 @@ export function SubjectToolbar({
         onValueChange={(value) => onFilterChange("grade", value)}
         disabled={isLoading || isError}
       />
-      <DataTableFacetedFilter
-        label="Track / Strand"
-        allLabel="All Tracks / Strands"
-        value={filters.trackStrand}
-        options={trackStrandOptions}
-        onValueChange={(value) => onFilterChange("trackStrand", value)}
-        disabled={isLoading || isError}
-        className="sm:max-w-52"
-      />
-      {isError && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => void refetch()}
-          disabled={isFetchingOptions}
-        >
-          {isFetchingOptions ? "Retrying filters..." : "Retry filters"}
-        </Button>
-      )}
     </DataTableToolbar>
   );
 }

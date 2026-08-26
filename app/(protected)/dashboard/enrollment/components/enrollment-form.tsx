@@ -77,8 +77,8 @@ export function EnrollmentForm({ form }: EnrollmentFormProps) {
   const sectionOptions: SearchableSelectOption[] =
     options?.sections.map((section) => ({
       value: section.id,
-      label: `Grade ${section.gradeLevel}${section.trackStrand ? ` - ${section.trackStrand}` : ""} - ${section.sectionName}`,
-      searchValue: `${section.gradeLevel} ${section.trackStrand ?? ""} ${section.sectionName}`,
+      label: `Grade ${section.gradeLevel} - ${section.sectionName}`,
+      searchValue: `${section.gradeLevel} ${section.sectionName}`,
     })) ?? [];
   const academicYearOptions: SearchableSelectOption[] =
     options?.academicYears.map((academicYear) => ({

@@ -25,7 +25,7 @@ export function SubjectAssignmentViewDialog({
     assignment.teacherMiddleName,
     assignment.teacherLastName,
   );
-  const section = `Grade ${assignment.sectionGradeLevel}${assignment.sectionTrackStrand ? ` - ${assignment.sectionTrackStrand}` : ""} - ${assignment.sectionName}`;
+  const section = `Grade ${assignment.sectionGradeLevel} - ${assignment.sectionName}`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

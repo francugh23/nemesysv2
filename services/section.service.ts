@@ -35,8 +35,6 @@ function getSectionOrderBy(
   const direction = query.direction ?? "asc";
 
   switch (query.sort) {
-    case "trackStrand":
-      return [{ trackStrand: direction }, { id: "asc" }];
     case "sectionName":
       return [{ sectionName: direction }, { id: "asc" }];
     case "adviser":
@@ -61,7 +59,6 @@ function toSectionListItem(
   return {
     id: section.id,
     gradeLevel: section.gradeLevel,
-    trackStrand: section.trackStrand,
     sectionName: section.sectionName,
     adviserId: section.adviserId,
     adviserFirstName: section.adviser?.user.firstName ?? null,
@@ -80,7 +77,6 @@ export async function getSections(
   const filters = {
     search: query.q,
     grade: query.grade,
-    trackStrand: query.trackStrand,
     shift: query.shift,
     adviserId: query.adviserId,
   };
@@ -113,16 +109,13 @@ export async function getSections(
 export async function getSectionFilterOptions(): Promise<SectionFilterOptions> {
   await requirePermission(Permissions.SECTIONS);
 
-  const [grades, trackStrands, shifts, advisers] =
+  const [grades, shifts, advisers] =
     await findSectionFilterOptionValues();
 
   return {
     gradeLevels: grades
       .map((value) => value.gradeLevel)
       .sort((first, second) => Number(first) - Number(second)),
-    trackStrands: trackStrands.flatMap((value) =>
-      value.trackStrand ? [value.trackStrand] : [],
-    ),
     shifts: shifts.flatMap((value) => (value.shift ? [value.shift] : [])),
     advisers: advisers
       .flatMap((value) =>
@@ -152,7 +145,6 @@ function normalizeSectionValues(
   return {
     identity: {
       gradeLevel: values.gradeLevel,
-      trackStrand: values.trackStrand?.trim().toUpperCase() || null,
       sectionName: values.sectionName.trim(),
     },
     adviserId: values.adviserId || null,
@@ -163,10 +155,9 @@ function normalizeSectionValues(
 
 function getSectionIdentity(section: {
   gradeLevel: string;
-  trackStrand: string | null;
   sectionName: string;
 }) {
-  return `Grade ${section.gradeLevel}${section.trackStrand ? ` - ${section.trackStrand}` : ""} - ${section.sectionName}`;
+  return `Grade ${section.gradeLevel} - ${section.sectionName}`;
 }
 
 export async function getSectionFormOptions() {
@@ -191,7 +182,7 @@ function rethrowSectionIdentityConflict(error: unknown): never {
     error.code === "P2002"
   ) {
     throw new Error(
-      "An active section already exists for this grade level, track/strand, and section name.",
+      "An active section already exists for this grade level and section name.",
     );
   }
 
@@ -216,7 +207,6 @@ export async function createSectionService(
 
       const duplicate = await findActiveSectionByIdentity(
         identity.gradeLevel,
-        identity.trackStrand,
         identity.sectionName,
         undefined,
         transaction,
@@ -224,7 +214,7 @@ export async function createSectionService(
 
       if (duplicate) {
         throw new Error(
-          "An active section already exists for this grade level, track/strand, and section name.",
+          "An active section already exists for this grade level and section name.",
         );
       }
 
@@ -287,7 +277,6 @@ export async function updateSectionService(
 
       const duplicate = await findActiveSectionByIdentity(
         identity.gradeLevel,
-        identity.trackStrand,
         identity.sectionName,
         section.id,
         transaction,
@@ -295,7 +284,7 @@ export async function updateSectionService(
 
       if (duplicate) {
         throw new Error(
-          "An active section already exists for this grade level, track/strand, and section name.",
+          "An active section already exists for this grade level and section name.",
         );
       }
 

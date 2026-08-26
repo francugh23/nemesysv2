@@ -105,7 +105,6 @@ export async function findActiveSubjectAssignmentById(
       section: {
         select: {
           gradeLevel: true,
-          trackStrand: true,
           sectionName: true,
         },
       },
@@ -206,7 +205,6 @@ export async function findAllSubjectAssignments() {
       section: {
         select: {
           gradeLevel: true,
-          trackStrand: true,
           sectionName: true,
         },
       },

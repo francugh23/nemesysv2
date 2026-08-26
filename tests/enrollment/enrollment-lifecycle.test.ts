@@ -34,7 +34,7 @@ async function createFixture(transaction: Prisma.TransactionClient) {
         sectionName: `Phase 21 ${suffix}`,
         createdById: actor.id,
       },
-      select: { id: true, gradeLevel: true, trackStrand: true },
+      select: { id: true, gradeLevel: true },
     }),
     transaction.student.create({
       data: {
@@ -69,7 +69,6 @@ async function createFixture(transaction: Prisma.TransactionClient) {
       academicYearId: academicYear.id,
       academicYearLabel: academicYear.label,
       gradeLevel: section.gradeLevel,
-      trackStrand: section.trackStrand,
       studentLrn: student.lrn,
       actorId: actor.id,
     },

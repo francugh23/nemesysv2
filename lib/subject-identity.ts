@@ -5,13 +5,11 @@ export type SubjectGradeLevel = (typeof SUBJECT_GRADE_LEVELS)[number];
 export interface SubjectIdentity {
   code: string;
   gradeLevel: string;
-  trackStrand: string | null;
 }
 
 interface SubjectIdentityInput {
   code: string;
   gradeLevel: string;
-  trackStrand?: string | null;
 }
 
 export function isJhsGradeLevel(gradeLevel: string) {
@@ -21,19 +19,13 @@ export function isJhsGradeLevel(gradeLevel: string) {
 export function normalizeSubjectIdentity({
   code,
   gradeLevel,
-  trackStrand,
 }: SubjectIdentityInput) {
-  const normalizedTrackStrand = trackStrand?.trim().toUpperCase();
-
   return {
     code: code.trim().toUpperCase(),
     gradeLevel: gradeLevel.trim(),
-    trackStrand: normalizedTrackStrand || null,
   };
 }
 
 export function getSubjectIdentityKey(identity: SubjectIdentity) {
-  return [identity.code, identity.gradeLevel, identity.trackStrand ?? ""].join(
-    "\u0000",
-  );
+  return [identity.code, identity.gradeLevel].join("\u0000");
 }

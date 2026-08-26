@@ -6,7 +6,7 @@ Creating a regular Grade 7 through 10 Enrollment now materializes Student Subjec
 
 ## Derivation And Audit
 
-- Only Sections with no `trackStrand` and Grades 7 through 10 are eligible.
+- Only Grades 7 through 10 are eligible.
 - Resolution includes only active Offering codes in the documented regular baseline matrix: Filipino, English, Mathematics, Science, Araling Panlipunan, MAPEH, TLE, and GMRC / Values Education for the Enrollment grade.
 - Enrollment creation, Student Subject Enrollment creation, Term copying, Enrollment audit, and one audit record per derived Student Subject Enrollment commit or roll back together.
 - No records are fabricated when an eligible Enrollment has no matching active baseline Offering.

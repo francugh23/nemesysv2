@@ -139,7 +139,6 @@ test("creates JHS without entry Term or Track and derives all three Terms", asyn
         academicYearId: fixture.academicYear.id,
         academicYearLabel: fixture.academicYear.label,
         gradeLevel: "7",
-        trackStrand: null,
         studentLrn: `P21DA-${enrollment.id}`,
         actorId: fixture.actor.id,
       },

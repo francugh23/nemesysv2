@@ -6,7 +6,7 @@ Phase 13 migrated Subject Management to the reusable URL-driven server-table arc
 
 ## Server Table Contract
 
-- URL parameters are `q`, `grade`, `trackStrand`, `semester`, `sort`, `direction`, `page`, and `pageSize`.
+- URL parameters are `q`, `grade`, `semester`, `sort`, `direction`, `page`, and `pageSize`.
 - Search tokenizes Subject code, description, and track/strand. Grade, track/strand, and semester filters combine with logical AND.
 - Filter options contain represented non-null values from active Subjects. No nullable string sentinel was introduced.
 - The action and service independently enforce `Permissions.SUBJECTS`; the action validates the feature query schema.

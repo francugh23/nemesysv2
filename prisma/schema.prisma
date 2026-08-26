@@ -264,7 +264,6 @@ model Section {
   id String @id @default(cuid())
 
   gradeLevel  String
-  trackStrand String?
   sectionName String
 
   adviserId String?
@@ -296,7 +295,6 @@ model Subject {
   description String
 
   gradeLevel  String
-  trackStrand String?
 
   semester Semester?
 

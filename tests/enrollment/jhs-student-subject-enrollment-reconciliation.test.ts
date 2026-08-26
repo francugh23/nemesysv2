@@ -25,11 +25,10 @@ async function createSection(
   transaction: Prisma.TransactionClient,
   actorId: string,
   gradeLevel: string,
-  trackStrand: string | null = null,
 ) {
   return transaction.section.create({
-    data: { gradeLevel, trackStrand, sectionName: `Phase 19C ${randomUUID().slice(0, 8)}`, createdById: actorId },
-    select: { id: true, gradeLevel: true, trackStrand: true },
+    data: { gradeLevel, sectionName: `Phase 19C ${randomUUID().slice(0, 8)}`, createdById: actorId },
+    select: { id: true, gradeLevel: true },
   });
 }
 
@@ -60,7 +59,6 @@ async function seedExistingParticipation(
 async function createFixture(
   transaction: Prisma.TransactionClient,
   gradeLevel = "7",
-  trackStrand: string | null = null,
   status: "ACTIVE" | "COMPLETED" = "ACTIVE",
 ) {
   const actor = await transaction.user.findFirstOrThrow({ where: { deletedAt: null }, select: { id: true } });
@@ -68,7 +66,7 @@ async function createFixture(
     where: { label: "2026-2027", status: "ACTIVE" },
     select: { id: true, label: true },
   });
-  const section = await createSection(transaction, actor.id, gradeLevel, trackStrand);
+  const section = await createSection(transaction, actor.id, gradeLevel);
   const student = await transaction.student.create({
     data: {
       lrn: `P19C${randomUUID().replaceAll("-", "").slice(0, 12)}`,
@@ -95,7 +93,6 @@ async function createFixture(
       academicYearId: academicYear.id,
       academicYearLabel: academicYear.label,
       gradeLevel: section.gradeLevel,
-      trackStrand: section.trackStrand,
       studentLrn: student.lrn,
       actorId: actor.id,
     }, transaction).then(() => undefined),
@@ -160,28 +157,9 @@ test("grade correction is rejected and JHS participation remains unchanged", asy
   });
 });
 
-test("same-grade regular and specialized Section corrections never infer or replace participation", async () => {
-  await withRollback(async (transaction) => {
-    const regular = await createFixture(transaction, "7");
-    const regularRows = await transaction.studentSubjectEnrollment.findMany({
-      where: { enrollmentId: regular.enrollment.id }, include: { terms: true }, orderBy: { id: "asc" },
-    });
-    const specializedDestination = await createSection(transaction, regular.actor.id, "7", "STE");
-    await correctSection(regular, specializedDestination.id, transaction);
-    assert.deepEqual(await transaction.studentSubjectEnrollment.findMany({
-      where: { enrollmentId: regular.enrollment.id }, include: { terms: true }, orderBy: { id: "asc" },
-    }), regularRows);
-
-    const specialized = await createFixture(transaction, "7", "STE");
-    const regularDestination = await createSection(transaction, specialized.actor.id, "7");
-    await correctSection(specialized, regularDestination.id, transaction);
-    assert.equal(await transaction.studentSubjectEnrollment.count({ where: { enrollmentId: specialized.enrollment.id } }), 0);
-  });
-});
-
 test("terminal Enrollment placement correction is rejected without participation changes", async () => {
   await withRollback(async (transaction) => {
-    const fixture = await createFixture(transaction, "7", null, "COMPLETED");
+    const fixture = await createFixture(transaction, "7", "COMPLETED");
     const destination = await createSection(transaction, fixture.actor.id, "7");
     const before = await transaction.studentSubjectEnrollment.findMany({
       where: { enrollmentId: fixture.enrollment.id }, include: { terms: true }, orderBy: { id: "asc" },

@@ -19,7 +19,7 @@ test("2026-2027 JHS baseline has one full-year Offering per approved grade and c
   const [subjects, offerings, auditCount] = await Promise.all([
     prisma.subject.findMany({
       where: { deletedAt: null, gradeLevel: { in: ["7", "8", "9", "10"] } },
-      select: { code: true, description: true, gradeLevel: true, trackStrand: true },
+      select: { code: true, description: true, gradeLevel: true },
     }),
     prisma.subjectOffering.findMany({
       where: {
@@ -56,7 +56,7 @@ test("2026-2027 JHS baseline has one full-year Offering per approved grade and c
   for (const item of expected) {
     assert.deepEqual(
       subjects.find((subject) => subject.code === item.code),
-      { code: item.code, description: item.description, gradeLevel: item.grade, trackStrand: null },
+      { code: item.code, description: item.description, gradeLevel: item.grade },
     );
     const offering = offerings.find((value) => value.subjectCode === item.code);
     assert.equal(offering?.subjectDescription, item.description);

@@ -21,7 +21,7 @@ export function ArchiveSectionDialog({
   const [confirmation, setConfirmation] = useState("");
   const archiveSection = useArchiveSection();
   const isConfirmed = confirmation === section.sectionName;
-  const sectionIdentity = `Grade ${section.gradeLevel}${section.trackStrand ? ` - ${section.trackStrand}` : ""} - ${section.sectionName}`;
+  const sectionIdentity = `Grade ${section.gradeLevel} - ${section.sectionName}`;
 
   async function handleArchive() {
     if (!isConfirmed) return;

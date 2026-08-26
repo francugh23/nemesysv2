@@ -65,7 +65,6 @@ test("Phase 20C retirement leaves regular JHS full-three-Term derivation unchang
       academicYearId: academicYear.id,
       academicYearLabel: academicYear.label,
       gradeLevel: "10",
-      trackStrand: null,
       studentLrn: student.lrn,
       actorId: actor.id,
     }, tx);

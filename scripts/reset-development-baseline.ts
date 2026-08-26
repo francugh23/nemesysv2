@@ -171,7 +171,7 @@ async function selectedAdmin(id: string) {
 
 function curatedSubjects(createdById: string) {
   const now = new Date();
-  return coreSubjects.map(([code, description]) => ({ id: randomUUID(), code, description, gradeLevel: "11", trackStrand: null, semester: null, createdById, createdAt: now, updatedAt: now, deletedAt: null }));
+  return coreSubjects.map(([code, description]) => ({ id: randomUUID(), code, description, gradeLevel: "11", semester: null, createdById, createdAt: now, updatedAt: now, deletedAt: null }));
 }
 function curatedClusters(createdById: string) {
   const now = new Date();

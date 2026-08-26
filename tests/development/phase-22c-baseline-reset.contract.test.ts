@@ -50,7 +50,7 @@ test("Phase 22C baseline has only approved reusable definitions and no operation
   assert.match(tool, /subjects: JHS_SUBJECT_COUNT \+ coreSubjects\.length/);
   assert.match(tool, /expected\.ShsCurriculumCluster = clusters\.length/);
   assert.match(tool, /"ShsCurriculumReference"/);
-  assert.match(tool, /trackStrand: null, semester: null/);
+  assert.match(tool, /gradeLevel: "11", semester: null/);
   assert.doesNotMatch(tool, /TRUNCATE CASCADE/);
   assert.doesNotMatch(tool, /DISABLE TRIGGER/);
   assert.doesNotMatch(tool, /DROP SCHEMA/);

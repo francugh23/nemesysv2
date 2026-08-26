@@ -20,7 +20,7 @@ export function findStudentEnrollmentCorrectionContext(
     select: {
       id: true,
       sectionId: true,
-      section: { select: { gradeLevel: true, trackStrand: true, sectionName: true } },
+      section: { select: { gradeLevel: true, sectionName: true } },
       _count: { select: { studentSubjectEnrollments: true } },
     },
   });
@@ -78,8 +78,8 @@ export function findSameGradePlacementDestinations(
 ) {
   return transaction.section.findMany({
     where: { gradeLevel, id: { not: sourceSectionId }, deletedAt: null },
-    select: { id: true, gradeLevel: true, trackStrand: true, sectionName: true },
-    orderBy: [{ trackStrand: "asc" }, { sectionName: "asc" }, { id: "asc" }],
+    select: { id: true, gradeLevel: true, sectionName: true },
+    orderBy: [{ sectionName: "asc" }, { id: "asc" }],
   });
 }
 
@@ -92,10 +92,9 @@ export function findRegularJhsGradeCorrectionDestinations(
     where: {
       id: { not: sourceSectionId },
       gradeLevel: { in: ["7", "8", "9", "10"], not: sourceGradeLevel },
-      trackStrand: null,
       deletedAt: null,
     },
-    select: { id: true, gradeLevel: true, trackStrand: true, sectionName: true },
+    select: { id: true, gradeLevel: true, sectionName: true },
     orderBy: [{ gradeLevel: "asc" }, { sectionName: "asc" }, { id: "asc" }],
   });
 }
@@ -142,11 +141,10 @@ export async function lockSectionsForStudentCorrection(
   return transaction.$queryRaw<Array<{
     id: string;
     gradeLevel: string;
-    trackStrand: string | null;
     sectionName: string;
     deletedAt: Date | null;
   }>>(Prisma.sql`
-    SELECT "id", "gradeLevel", "trackStrand", "sectionName", "deletedAt"
+    SELECT "id", "gradeLevel", "sectionName", "deletedAt"
     FROM "Section"
     WHERE "id" IN (${Prisma.join([...new Set(sectionIds)].sort())})
     ORDER BY "id"

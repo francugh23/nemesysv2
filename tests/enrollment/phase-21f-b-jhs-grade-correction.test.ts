@@ -99,17 +99,15 @@ async function createSection(
   transaction: Prisma.TransactionClient,
   actorId: string,
   gradeLevel: string,
-  trackStrand: string | null = null,
 ) {
   const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
   return transaction.section.create({
     data: {
       gradeLevel,
-      trackStrand,
       sectionName: `21F-B ${gradeLevel} ${suffix}`,
       createdById: actorId,
     },
-    select: { id: true, gradeLevel: true, trackStrand: true, sectionName: true },
+    select: { id: true, gradeLevel: true, sectionName: true },
   });
 }
 
@@ -118,8 +116,6 @@ async function createFixture(
   options: {
     sourceGrade?: string;
     destinationGrade?: string;
-    sourceTrackStrand?: string | null;
-    destinationTrackStrand?: string | null;
     enrollmentStatus?: "ACTIVE" | "COMPLETED";
     deriveSource?: boolean;
   } = {},
@@ -142,8 +138,8 @@ async function createFixture(
     },
   });
   const [source, destination] = await Promise.all([
-    createSection(transaction, actor.id, sourceGrade, options.sourceTrackStrand ?? null),
-    createSection(transaction, actor.id, destinationGrade, options.destinationTrackStrand ?? null),
+    createSection(transaction, actor.id, sourceGrade),
+    createSection(transaction, actor.id, destinationGrade),
   ]);
   const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
   const student = await transaction.student.create({
@@ -196,7 +192,6 @@ async function createFixture(
         academicYearId: academicYear.id,
         academicYearLabel: academicYear.label,
         gradeLevel: source.gradeLevel,
-        trackStrand: source.trackStrand,
         studentLrn: student.lrn,
         actorId: actor.id,
       }, transaction).then(() => undefined),
@@ -742,9 +737,8 @@ test("zero-source correction rejects prior and in-progress destination Subject m
   });
 });
 
-test("specialized JHS, SHS, and same-grade placements are rejected by the grade command", async () => {
+test("SHS and same-grade placements are rejected by the grade command", async () => {
   const scenarios = [
-    { options: { sourceTrackStrand: "STE" }, message: /source must be an active regular JHS/ },
     { options: { sourceGrade: "11", destinationGrade: "8" }, message: /source must be an active regular JHS/ },
     { options: { sourceGrade: "7", destinationGrade: "7" }, message: /different destination grade and Section/ },
   ] as const;

@@ -10,5 +10,4 @@ export interface SubjectPage {
 
 export interface SubjectFilterOptions {
   gradeLevels: string[];
-  trackStrands: string[];
 }

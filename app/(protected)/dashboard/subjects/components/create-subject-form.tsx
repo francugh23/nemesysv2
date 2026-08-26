@@ -23,7 +23,6 @@ export function CreateSubjectForm({ onSuccess }: CreateSubjectFormProps) {
       code: "",
       description: "",
       gradeLevel: undefined,
-      trackStrand: "",
     },
   });
 
