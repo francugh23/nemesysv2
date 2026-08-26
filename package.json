@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx prisma/seed.ts",
-    "walkthrough:database": "tsx scripts/create-clean-walkthrough-database.ts"
+    "walkthrough:database": "tsx scripts/create-clean-walkthrough-database.ts",
+    "reset:development-baseline": "tsx scripts/reset-development-baseline.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",
