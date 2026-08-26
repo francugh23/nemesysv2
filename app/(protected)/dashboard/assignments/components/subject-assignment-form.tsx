@@ -1,150 +1,24 @@
 "use client";
 
 import { Controller, type UseFormReturn } from "react-hook-form";
+import { useState } from "react";
 import { z } from "zod";
-
-import {
-  Field,
-  FieldError,
-  FieldLabel,
-} from "@/components/ui/field";
-import {
-  SearchableSelect,
-  type SearchableSelectOption,
-} from "@/components/ui/searchable-select";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { SearchableSelect, type SearchableSelectOption } from "@/components/ui/searchable-select";
 import { useSubjectAssignmentOptions } from "@/hooks/subject-assignment.hook";
 import { CreateSubjectAssignmentSchema } from "@/schemas";
 
-type SubjectAssignmentFormValues = z.infer<
-  typeof CreateSubjectAssignmentSchema
->;
-
-interface SubjectAssignmentFormProps {
-  form: UseFormReturn<SubjectAssignmentFormValues>;
-}
-
-function getTeacherLabel(teacher: {
-  employeeNumber: string | null;
-  firstName: string;
-  middleName: string | null;
-  lastName: string;
-}) {
-  const fullName = [teacher.lastName, teacher.firstName, teacher.middleName]
-    .filter(Boolean)
-    .join(", ");
-
-  return teacher.employeeNumber
-    ? `${teacher.employeeNumber} - ${fullName}`
-    : fullName;
-}
-
-export function SubjectAssignmentForm({ form }: SubjectAssignmentFormProps) {
+type Values = z.infer<typeof CreateSubjectAssignmentSchema>;
+export function SubjectAssignmentForm({ form }: { form: UseFormReturn<Values> }) {
   const { data: options, isLoading } = useSubjectAssignmentOptions();
-  const teacherOptions: SearchableSelectOption[] =
-    options?.teachers.map((teacher) => ({
-      value: teacher.id,
-      label: getTeacherLabel(teacher),
-      searchValue: `${teacher.employeeNumber ?? ""} ${teacher.firstName} ${teacher.middleName ?? ""} ${teacher.lastName}`,
-    })) ?? [];
-  const subjectOptions: SearchableSelectOption[] =
-    options?.subjects.map((subject) => ({
-      value: subject.id,
-      label: `${subject.code} - ${subject.description}`,
-      searchValue: subject.gradeLevel,
-    })) ?? [];
-  const sectionOptions: SearchableSelectOption[] =
-    options?.sections.map((section) => ({
-      value: section.id,
-      label: `Grade ${section.gradeLevel} - ${section.sectionName}`,
-      searchValue: `${section.gradeLevel} ${section.sectionName}`,
-    })) ?? [];
-  const academicYearOptions: SearchableSelectOption[] =
-    options?.academicYears.map((academicYear) => ({
-      value: academicYear.id,
-      label: academicYear.label,
-    })) ?? [];
-
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 overflow-hidden">
-      <Field>
-        <FieldLabel>Teacher</FieldLabel>
-        <Controller
-          name="teacherId"
-          control={form.control}
-          render={({ field }) => (
-            <SearchableSelect
-              value={field.value}
-              onValueChange={field.onChange}
-              options={teacherOptions}
-              placeholder={
-                isLoading ? "Loading teachers..." : "Search teachers"
-              }
-              disabled={isLoading}
-            />
-          )}
-        />
-        <FieldError>{form.formState.errors.teacherId?.message}</FieldError>
-      </Field>
-
-      <Field>
-        <FieldLabel>Subject</FieldLabel>
-        <Controller
-          name="subjectId"
-          control={form.control}
-          render={({ field }) => (
-            <SearchableSelect
-              value={field.value}
-              onValueChange={field.onChange}
-              options={subjectOptions}
-              placeholder={
-                isLoading ? "Loading subjects..." : "Search subjects"
-              }
-              disabled={isLoading}
-            />
-          )}
-        />
-        <FieldError>{form.formState.errors.subjectId?.message}</FieldError>
-      </Field>
-
-      <Field>
-        <FieldLabel>Section</FieldLabel>
-        <Controller
-          name="sectionId"
-          control={form.control}
-          render={({ field }) => (
-            <SearchableSelect
-              value={field.value}
-              onValueChange={field.onChange}
-              options={sectionOptions}
-              placeholder={
-                isLoading ? "Loading sections..." : "Search sections"
-              }
-              disabled={isLoading}
-            />
-          )}
-        />
-        <FieldError>{form.formState.errors.sectionId?.message}</FieldError>
-      </Field>
-
-      <Field>
-        <FieldLabel>Academic Year</FieldLabel>
-        <Controller
-          name="academicYearId"
-          control={form.control}
-          render={({ field }) => (
-            <SearchableSelect
-              value={field.value}
-              onValueChange={field.onChange}
-              options={academicYearOptions}
-              placeholder={
-                isLoading ? "Loading academic years..." : "Search academic years"
-              }
-              disabled={isLoading}
-            />
-          )}
-        />
-        <FieldError>{form.formState.errors.academicYearId?.message}</FieldError>
-      </Field>
-    </div>
-  );
+  const [academicYearId, setAcademicYearId] = useState("");
+  const teachers: SearchableSelectOption[] = options?.teachers.map((teacher) => ({ value: teacher.id, label: `${teacher.employeeNumber ?? ""} - ${teacher.lastName}, ${teacher.firstName}`, searchValue: `${teacher.employeeNumber ?? ""} ${teacher.lastName} ${teacher.firstName}` })) ?? [];
+  const sections: SearchableSelectOption[] = options?.sections.map((section) => ({ value: section.id, label: `Grade ${section.gradeLevel} - ${section.sectionName}`, searchValue: `${section.gradeLevel} ${section.sectionName}` })) ?? [];
+  const scopes: SearchableSelectOption[] = options?.scopes.filter((scope) => !academicYearId || scope.academicYearId === academicYearId).map((scope) => ({ value: `${scope.subjectOfferingId}:${scope.academicTermId}`, label: `Grade ${scope.gradeLevel} | ${scope.subjectCode} - ${scope.subjectDescription} | ${scope.academicTermName}`, searchValue: `${scope.gradeLevel} ${scope.subjectCode} ${scope.subjectDescription} ${scope.academicTermName}` })) ?? [];
+  return <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <Field><FieldLabel>Academic Year</FieldLabel><SearchableSelect value={academicYearId} onValueChange={setAcademicYearId} options={options?.academicYears.map((year) => ({ value: year.id, label: year.label })) ?? []} placeholder="Select Academic Year" disabled={isLoading} /></Field>
+    <Field><FieldLabel>Section</FieldLabel><Controller name="sectionId" control={form.control} render={({ field }) => <SearchableSelect value={field.value} onValueChange={field.onChange} options={sections} placeholder="Select Section" disabled={isLoading} />} /><FieldError>{form.formState.errors.sectionId?.message}</FieldError></Field>
+    <Field><FieldLabel>Curriculum Offering Term</FieldLabel><Controller name="subjectOfferingId" control={form.control} render={({ field }) => <SearchableSelect value={field.value && form.getValues("academicTermId") ? `${field.value}:${form.getValues("academicTermId")}` : ""} onValueChange={(value) => { const [subjectOfferingId, academicTermId] = value.split(":"); field.onChange(subjectOfferingId); form.setValue("academicTermId", academicTermId, { shouldValidate: true }); }} options={scopes} placeholder="Select Curriculum Offering Term" disabled={isLoading || !academicYearId} />} /><FieldError>{form.formState.errors.subjectOfferingId?.message ?? form.formState.errors.academicTermId?.message}</FieldError></Field>
+    <Field><FieldLabel>Teacher</FieldLabel><Controller name="teacherId" control={form.control} render={({ field }) => <SearchableSelect value={field.value} onValueChange={field.onChange} options={teachers} placeholder="Search teachers" disabled={isLoading} />} /><FieldError>{form.formState.errors.teacherId?.message}</FieldError></Field>
+  </div>;
 }

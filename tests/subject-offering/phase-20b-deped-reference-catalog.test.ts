@@ -11,7 +11,7 @@ async function safetySnapshot() {
     prisma.subjectOffering.findMany({ where: { deletedAt: null, gradeLevel: { in: ["7", "8", "9", "10"] } }, select: { id: true, subjectId: true, academicYearId: true, gradeLevel: true, subjectCode: true, subjectDescription: true, updatedAt: true, terms: { select: { academicTermId: true }, orderBy: { academicTermId: "asc" } } }, orderBy: { subjectCode: "asc" } }),
     prisma.studentSubjectEnrollment.findMany({ select: { id: true, enrollmentId: true, subjectOfferingId: true, subjectCode: true, gradeLevel: true, status: true, updatedAt: true }, orderBy: { id: "asc" } }),
     prisma.enrollment.findMany({ where: { deletedAt: null }, select: { id: true, studentId: true, sectionId: true, academicYearId: true, status: true, updatedAt: true }, orderBy: { id: "asc" } }),
-    prisma.subjectAssignment.findMany({ where: { deletedAt: null }, select: { id: true, subjectId: true, teacherId: true, sectionId: true, academicYearId: true, updatedAt: true }, orderBy: { id: "asc" } }),
+    prisma.subjectAssignment.findMany({ where: { deletedAt: null }, select: { id: true, subjectOfferingId: true, academicTermId: true, teacherId: true, sectionId: true, updatedAt: true }, orderBy: { id: "asc" } }),
     prisma.grade.findMany({ where: { deletedAt: null }, select: { id: true, enrollmentId: true, subjectId: true, updatedAt: true }, orderBy: { id: "asc" } }),
   ]);
   return { jhsSubjects, jhsOfferings, studentSubjectEnrollments, enrollments, assignments, grades };

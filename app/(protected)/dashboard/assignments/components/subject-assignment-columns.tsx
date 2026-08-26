@@ -38,16 +38,20 @@ export function subjectAssignmentColumns({
         ),
     },
     {
-      accessorKey: "subjectCode",
+      accessorKey: "subjectOfferingCode",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Subject Code" />
       ),
     },
     {
-      accessorKey: "subjectDescription",
+      accessorKey: "subjectOfferingDescription",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Subject Description" />
       ),
+    },
+    {
+      accessorKey: "academicTermName",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Term" />,
     },
     {
       accessorKey: "sectionGradeLevel",

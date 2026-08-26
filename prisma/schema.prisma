@@ -305,7 +305,6 @@ model Subject {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  assignments             SubjectAssignment[]
   offerings               SubjectOffering[]
   grades                  Grade[]
   shsCurriculumReferences ShsCurriculumReference[]
@@ -314,8 +313,9 @@ model Subject {
 model SubjectAssignment {
   id String @id @default(cuid())
 
-  subjectId String
-  subject   Subject @relation(fields: [subjectId], references: [id])
+  subjectOfferingId   String
+  academicTermId      String
+  subjectOfferingTerm SubjectOfferingTerm @relation(fields: [subjectOfferingId, academicTermId], references: [subjectOfferingId, academicTermId], onDelete: Restrict)
 
   teacherId String
   teacher   Teacher @relation(fields: [teacherId], references: [id])
@@ -326,15 +326,14 @@ model SubjectAssignment {
   schedule       String?
   room           String?
   shift          Shift?
-  academicYearId String
-  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  @@unique([subjectId, teacherId, sectionId, academicYearId])
-  @@index([academicYearId])
+  @@index([subjectOfferingId, academicTermId])
+  @@index([teacherId])
+  @@index([sectionId])
 }
 
 model Enrollment {
@@ -518,7 +517,6 @@ model AcademicYear {
   updatedAt DateTime @updatedAt
 
   enrollments                       Enrollment[]
-  subjectAssignments                SubjectAssignment[]
   terms                             AcademicTerm[]
   subjectOfferings                  SubjectOffering[]
   shsElectiveEnrollmentPolicies     ShsElectiveEnrollmentPolicy[]
@@ -689,6 +687,7 @@ model SubjectOfferingTerm {
   subjectOffering   SubjectOffering @relation(fields: [subjectOfferingId], references: [id], onDelete: Restrict)
   academicTermId    String
   academicTerm      AcademicTerm    @relation(fields: [academicTermId], references: [id], onDelete: Restrict)
+  subjectAssignments SubjectAssignment[]
 
   @@id([subjectOfferingId, academicTermId])
   @@index([academicTermId])

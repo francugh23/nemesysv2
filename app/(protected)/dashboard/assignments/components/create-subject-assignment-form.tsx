@@ -26,9 +26,9 @@ export function CreateSubjectAssignmentForm({
     resolver: zodResolver(CreateSubjectAssignmentSchema),
     defaultValues: {
       teacherId: "",
-      subjectId: "",
+      subjectOfferingId: "",
+      academicTermId: "",
       sectionId: "",
-      academicYearId: "",
     },
   });
 

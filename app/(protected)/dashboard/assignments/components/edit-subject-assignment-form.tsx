@@ -32,9 +32,9 @@ export function EditSubjectAssignmentForm({
     resolver: zodResolver(UpdateSubjectAssignmentSchema),
     defaultValues: {
       teacherId: assignment.teacherId,
-      subjectId: assignment.subjectId,
+      subjectOfferingId: assignment.subjectOfferingId,
+      academicTermId: assignment.academicTermId,
       sectionId: assignment.sectionId,
-      academicYearId: assignment.academicYearId,
     },
   });
 

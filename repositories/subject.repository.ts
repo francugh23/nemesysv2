@@ -252,15 +252,9 @@ export async function hasActiveSubjectAssignments(
   transaction?: Prisma.TransactionClient,
 ) {
   const assignment = await (transaction ?? prisma).subjectAssignment.findFirst({
-    where: {
-      subjectId,
-      deletedAt: null,
-    },
-    select: {
-      id: true,
-    },
+    where: { subjectOfferingTerm: { subjectOffering: { subjectId } }, deletedAt: null },
+    select: { id: true },
   });
-
   return assignment !== null;
 }
 

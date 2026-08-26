@@ -36,10 +36,10 @@ export function SubjectAssignmentViewDialog({
 
         <div className="rounded-lg border bg-muted/30 p-5">
           <p className="text-sm font-medium text-muted-foreground">
-            {assignment.subjectCode}
+            {assignment.subjectOfferingCode} | {assignment.academicTermName}
           </p>
           <h2 className="text-xl font-bold">
-            {assignment.subjectDescription}
+            {assignment.subjectOfferingDescription}
           </h2>
         </div>
 

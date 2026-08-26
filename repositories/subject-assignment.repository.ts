@@ -1,247 +1,56 @@
 import prisma from "@/lib/prisma";
-import {
-  Prisma,
-  type AcademicYearStatus,
-} from "@/app/generated/prisma/client";
+import { Prisma, type AcademicYearStatus } from "@/app/generated/prisma/client";
 
-interface SubjectAssignmentIdentity {
-  teacherId: string;
-  subjectId: string;
+export interface SubjectAssignmentIdentity {
+  subjectOfferingId: string;
+  academicTermId: string;
   sectionId: string;
-  academicYearId: string;
 }
 
-export async function findActiveAcademicYearsForAssignment() {
-  return prisma.academicYear.findMany({
-    where: {
-      status: "ACTIVE",
-    },
-    select: {
-      id: true,
-      label: true,
-    },
-    orderBy: [{ startDate: "desc" }, { id: "asc" }],
+const client = (transaction?: Prisma.TransactionClient) => transaction ?? prisma;
+
+export function findActiveAcademicYearsForAssignment() {
+  return prisma.academicYear.findMany({ where: { status: "ACTIVE" }, select: { id: true, label: true }, orderBy: [{ startDate: "desc" }, { id: "asc" }] });
+}
+
+export function findAssignmentScope(subjectOfferingId: string, academicTermId: string, transaction?: Prisma.TransactionClient) {
+  return client(transaction).subjectOfferingTerm.findUnique({
+    where: { subjectOfferingId_academicTermId: { subjectOfferingId, academicTermId } },
+    select: { academicTerm: { select: { id: true, name: true, position: true, startDate: true, endDate: true } }, subjectOffering: { select: { id: true, gradeLevel: true, subjectCode: true, subjectDescription: true, deletedAt: true, academicYear: { select: { id: true, label: true, status: true } }, shsContext: { select: { curriculumStatus: true } } } } },
   });
 }
 
-export async function findAcademicYearForAssignment(
-  id: string,
-  transaction?: Prisma.TransactionClient,
-) {
-  if (transaction) {
-    const academicYears = await transaction.$queryRaw<
-      Array<{ id: string; label: string; status: AcademicYearStatus }>
-    >(Prisma.sql`
-      SELECT "id", "label", "status"
-      FROM "AcademicYear"
-      WHERE "id" = ${id}
-      FOR SHARE
-    `);
-
-    return academicYears[0] ?? null;
-  }
-
-  return (transaction ?? prisma).academicYear.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      label: true,
-      status: true,
-    },
+export function findAssignmentScopes() {
+  return prisma.subjectOfferingTerm.findMany({
+    where: { subjectOffering: { deletedAt: null, academicYear: { status: "ACTIVE" } } },
+    select: { subjectOfferingId: true, academicTermId: true, academicTerm: { select: { name: true, position: true } }, subjectOffering: { select: { academicYearId: true, gradeLevel: true, subjectCode: true, subjectDescription: true, shsContext: { select: { curriculumStatus: true } } } } },
+    orderBy: [{ subjectOffering: { gradeLevel: "asc" } }, { subjectOffering: { subjectCode: "asc" } }, { academicTerm: { position: "asc" } }],
   });
 }
 
-export async function findActiveSubjectAssignment(
-  identity: SubjectAssignmentIdentity,
-  transaction?: Prisma.TransactionClient,
-) {
-  return (transaction ?? prisma).subjectAssignment.findFirst({
-    where: {
-      ...identity,
-      deletedAt: null,
-    },
-    select: {
-      id: true,
-    },
+export function findActiveSubjectAssignment(identity: SubjectAssignmentIdentity, transaction?: Prisma.TransactionClient) {
+  return client(transaction).subjectAssignment.findFirst({ where: { ...identity, deletedAt: null }, select: { id: true } });
+}
+
+export function findActiveSubjectAssignmentById(id: string, transaction?: Prisma.TransactionClient) {
+  return client(transaction).subjectAssignment.findFirst({
+    where: { id, deletedAt: null },
+    select: { id: true, teacherId: true, sectionId: true, subjectOfferingId: true, academicTermId: true, subjectOfferingTerm: { select: { academicTerm: { select: { name: true, position: true, startDate: true, endDate: true } }, subjectOffering: { select: { gradeLevel: true, subjectCode: true, subjectDescription: true, academicYear: { select: { label: true, status: true } } } } } }, teacher: { select: { user: { select: { employeeNumber: true, firstName: true, middleName: true, lastName: true } } } }, section: { select: { gradeLevel: true, sectionName: true } } },
   });
 }
 
-export async function findActiveSubjectAssignmentById(
-  id: string,
-  transaction?: Prisma.TransactionClient,
-) {
-  return (transaction ?? prisma).subjectAssignment.findFirst({
-    where: {
-      id,
-      deletedAt: null,
-    },
-    select: {
-      id: true,
-      academicYearId: true,
-      academicYear: {
-        select: {
-          label: true,
-          status: true,
-        },
-      },
-      teacher: {
-        select: {
-          user: {
-            select: {
-              employeeNumber: true,
-              firstName: true,
-              middleName: true,
-              lastName: true,
-            },
-          },
-        },
-      },
-      subject: {
-        select: {
-          code: true,
-          description: true,
-        },
-      },
-      section: {
-        select: {
-          gradeLevel: true,
-          sectionName: true,
-        },
-      },
-    },
-  });
-}
+export function createSubjectAssignment(data: Prisma.SubjectAssignmentUncheckedCreateInput, transaction?: Prisma.TransactionClient) { return client(transaction).subjectAssignment.create({ data }); }
+export function updateSubjectAssignment(id: string, data: Prisma.SubjectAssignmentUncheckedUpdateInput, transaction?: Prisma.TransactionClient) { return client(transaction).subjectAssignment.update({ where: { id }, data }); }
+export function archiveSubjectAssignment(id: string, transaction?: Prisma.TransactionClient) { return client(transaction).subjectAssignment.update({ where: { id }, data: { deletedAt: new Date() } }); }
 
-export async function findActiveSubjectAssignmentExcludingId(
-  identity: SubjectAssignmentIdentity,
-  excludeId: string,
-  transaction?: Prisma.TransactionClient,
-) {
-  return (transaction ?? prisma).subjectAssignment.findFirst({
-    where: {
-      ...identity,
-      id: {
-        not: excludeId,
-      },
-      deletedAt: null,
-    },
-    select: {
-      id: true,
-    },
-  });
-}
-
-export async function createSubjectAssignment(
-  data: Prisma.SubjectAssignmentUncheckedCreateInput,
-  transaction?: Prisma.TransactionClient,
-) {
-  return (transaction ?? prisma).subjectAssignment.create({
-    data,
-  });
-}
-
-export async function updateSubjectAssignment(
-  id: string,
-  data: Prisma.SubjectAssignmentUncheckedUpdateInput,
-  transaction?: Prisma.TransactionClient,
-) {
-  return (transaction ?? prisma).subjectAssignment.update({
-    where: {
-      id,
-    },
-    data,
-  });
-}
-
-export async function archiveSubjectAssignment(
-  id: string,
-  transaction?: Prisma.TransactionClient,
-) {
-  return (transaction ?? prisma).subjectAssignment.update({
-    where: {
-      id,
-    },
-    data: {
-      deletedAt: new Date(),
-    },
-  });
-}
-
-export async function findAllSubjectAssignments() {
+export function findAllSubjectAssignments() {
   return prisma.subjectAssignment.findMany({
-    where: {
-      deletedAt: null,
-    },
-    select: {
-      id: true,
-      teacherId: true,
-      subjectId: true,
-      sectionId: true,
-      academicYearId: true,
-      academicYear: {
-        select: {
-          label: true,
-          status: true,
-        },
-      },
-      teacher: {
-        select: {
-          user: {
-            select: {
-              employeeNumber: true,
-              firstName: true,
-              middleName: true,
-              lastName: true,
-            },
-          },
-        },
-      },
-      subject: {
-        select: {
-          code: true,
-          description: true,
-        },
-      },
-      section: {
-        select: {
-          gradeLevel: true,
-          sectionName: true,
-        },
-      },
-    },
-    orderBy: [
-      {
-        academicYear: {
-          startDate: "desc",
-        },
-      },
-      {
-        section: {
-          sectionName: "asc",
-        },
-      },
-      {
-        subject: {
-          code: "asc",
-        },
-      },
-      {
-        teacher: {
-          user: {
-            lastName: "asc",
-          },
-        },
-      },
-      {
-        teacher: {
-          user: {
-            firstName: "asc",
-          },
-        },
-      },
-      {
-        id: "asc",
-      },
-    ],
+    where: { deletedAt: null },
+    select: { id: true, teacherId: true, subjectOfferingId: true, academicTermId: true, sectionId: true, teacher: { select: { user: { select: { employeeNumber: true, firstName: true, middleName: true, lastName: true } } } }, section: { select: { gradeLevel: true, sectionName: true } }, subjectOfferingTerm: { select: { academicTerm: { select: { name: true, position: true } }, subjectOffering: { select: { subjectCode: true, subjectDescription: true, academicYear: { select: { id: true, label: true, status: true } } } } } } },
+    orderBy: [{ subjectOfferingTerm: { subjectOffering: { academicYear: { startDate: "desc" } } } }, { section: { sectionName: "asc" } }, { subjectOfferingTerm: { subjectOffering: { subjectCode: "asc" } } }, { subjectOfferingTerm: { academicTerm: { position: "asc" } } }, { id: "asc" }],
   });
+}
+
+export function findAcademicYearForAssignment(id: string, transaction?: Prisma.TransactionClient) {
+  return client(transaction).academicYear.findUnique({ where: { id }, select: { id: true, label: true, status: true } }) as Promise<{ id: string; label: string; status: AcademicYearStatus } | null>;
 }
