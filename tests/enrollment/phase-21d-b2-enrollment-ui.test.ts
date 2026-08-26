@@ -93,12 +93,16 @@ test("Academic Year Details exposes the bounded SHS elective policy manager", ()
   const view = source("app/(protected)/dashboard/academic-years/components/academic-year-view-dialog.tsx");
   const dialog = source("app/(protected)/dashboard/academic-years/components/shs-elective-enrollment-policy-dialog.tsx");
   const manager = source("app/(protected)/dashboard/academic-years/components/shs-elective-enrollment-policy-manager.tsx");
+  const selection = source("app/(protected)/dashboard/enrollment/components/shs-current-term-subject-selection.tsx");
   const action = source("actions/shs-elective-enrollment-policy.action.ts");
   assert.match(view, /Manage Elective Policies/);
   assert.match(dialog, /ShsElectiveEnrollmentPolicyManager/);
   assert.match(manager, /const GRADES = \["11", "12"\]/);
-  assert.match(manager, /const ELECTIVE_COUNTS = \[1, 2, 3\]/);
+  assert.match(manager, /const ELECTIVE_COUNTS = \[0, 1, 2, 3\]/);
   assert.match(manager, /Minimum electives cannot exceed maximum electives/);
+  assert.match(manager, /0 minimum and 0 maximum permits no elective/);
+  assert.match(selection, /This Term permits no elective selection/);
+  assert.match(selection, /Continue without electives/);
   assert.doesNotMatch(manager, /delete|seed|copy/i);
   assert.match(action, /requirePermission\(Permissions\.SHS_CURRICULUM_APPROVAL\)/);
 });

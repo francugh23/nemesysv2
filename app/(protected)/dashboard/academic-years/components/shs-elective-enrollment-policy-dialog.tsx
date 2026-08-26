@@ -33,7 +33,9 @@ export function ShsElectiveEnrollmentPolicyDialog({
           <DialogTitle>SHS Elective Policies</DialogTitle>
           <DialogDescription>
             {academicYear.label}: configure how many Academic and TechPro
-            electives students may select for each Term and SHS grade.
+            electives students may select for each Term and SHS grade. A minimum
+            of 0 makes selection optional; 0 minimum and 0 maximum permits no
+            elective selection for that Term.
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="min-h-0 flex-1">

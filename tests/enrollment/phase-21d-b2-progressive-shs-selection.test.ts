@@ -457,6 +457,59 @@ test("one Academic plus one TechPro elective satisfies a combined two-elective p
   });
 });
 
+test("a 0/0 policy permits Core progression without electives and rejects elective selection", async () => {
+  await withRollback(async (transaction) => {
+    const fixture = await createProgressionFixture(transaction, {
+      minimumElectives: 0,
+      maximumElectives: 0,
+    });
+    const emptyProgression = await progressShsCurrentTermInTransaction(
+      { enrollmentId: fixture.enrollment.id, subjectOfferingIds: [] },
+      fixture.actor.id,
+      transaction,
+      clockFor(fixture.entryTerm),
+    );
+
+    assert.equal(emptyProgression.currentElectiveCount, 0);
+    assert.equal(emptyProgression.createdElectives, 0);
+    assert.equal(emptyProgression.createdCore, fixture.cores.length);
+    await assert.rejects(
+      progressShsCurrentTermInTransaction(
+        { enrollmentId: fixture.enrollment.id, subjectOfferingIds: [fixture.academicByPosition.get(1)!.id] },
+        fixture.actor.id,
+        transaction,
+        clockFor(fixture.entryTerm),
+      ),
+      /between 0 and 0/,
+    );
+  });
+});
+
+test("a 0/1 policy permits progression with zero or one elective", async () => {
+  await withRollback(async (transaction) => {
+    const fixture = await createProgressionFixture(transaction, {
+      minimumElectives: 0,
+      maximumElectives: 1,
+    });
+    const emptyProgression = await progressShsCurrentTermInTransaction(
+      { enrollmentId: fixture.enrollment.id, subjectOfferingIds: [] },
+      fixture.actor.id,
+      transaction,
+      clockFor(fixture.entryTerm),
+    );
+    const selectedProgression = await progressShsCurrentTermInTransaction(
+      { enrollmentId: fixture.enrollment.id, subjectOfferingIds: [fixture.academicByPosition.get(1)!.id] },
+      fixture.actor.id,
+      transaction,
+      clockFor(fixture.entryTerm),
+    );
+
+    assert.equal(emptyProgression.currentElectiveCount, 0);
+    assert.equal(selectedProgression.currentElectiveCount, 1);
+    assert.equal(selectedProgression.createdElectives, 1);
+  });
+});
+
 test("progression rejects a missing current-Term policy without materializing subjects", async () => {
   await withRollback(async (transaction) => {
     const fixture = await createProgressionFixture(transaction, { createPolicy: false });

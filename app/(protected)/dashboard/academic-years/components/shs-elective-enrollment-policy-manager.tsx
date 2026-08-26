@@ -23,7 +23,7 @@ import {
 import type { AcademicTermListItem } from "@/schemas";
 
 const GRADES = ["11", "12"] as const;
-const ELECTIVE_COUNTS = [1, 2, 3] as const;
+const ELECTIVE_COUNTS = [0, 1, 2, 3] as const;
 
 export function ShsElectiveEnrollmentPolicyManager({
   academicYearId,
@@ -49,7 +49,9 @@ export function ShsElectiveEnrollmentPolicyManager({
         <p className="text-sm text-muted-foreground">
           Elective Policy controls how many Academic and TechPro electives a
           student may select for each Term and SHS grade. Curriculum separately
-          defines which subjects the school offers.
+          defines which subjects the school offers. Minimum 0 makes elective
+          selection optional; 0 minimum and 0 maximum permits no elective
+          selection for that Term.
         </p>
       </div>
 

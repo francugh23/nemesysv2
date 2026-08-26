@@ -9,8 +9,8 @@ const ShsElectiveEnrollmentPolicyFieldsSchema = z
     academicYearId: z.string().min(1),
     academicTermId: z.string().min(1),
     gradeLevel: z.enum(["11", "12"]),
-    minimumElectives: z.number().int().min(1).max(3),
-    maximumElectives: z.number().int().min(1).max(3),
+    minimumElectives: z.number().int().min(0).max(3),
+    maximumElectives: z.number().int().min(0).max(3),
   })
   .refine(
     ({ minimumElectives, maximumElectives }) =>

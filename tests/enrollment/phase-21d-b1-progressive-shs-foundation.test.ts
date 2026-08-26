@@ -133,20 +133,37 @@ test("B1 preserves readable legacy null selection identity", async () => {
 });
 
 test("B1 elective policy schema and database enforce scope and counts", async () => {
+  assert.equal(CreateShsElectiveEnrollmentPolicySchema.safeParse({ academicYearId: "year", academicTermId: "term", gradeLevel: "12", minimumElectives: 0, maximumElectives: 0 }).success, true);
+  assert.equal(CreateShsElectiveEnrollmentPolicySchema.safeParse({ academicYearId: "year", academicTermId: "term", gradeLevel: "12", minimumElectives: 0, maximumElectives: 1 }).success, true);
   assert.equal(CreateShsElectiveEnrollmentPolicySchema.safeParse({ academicYearId: "year", academicTermId: "term", gradeLevel: "11", minimumElectives: 1, maximumElectives: 3 }).success, true);
   assert.equal(CreateShsElectiveEnrollmentPolicySchema.safeParse({ academicYearId: "year", academicTermId: "term", gradeLevel: "10", minimumElectives: 1, maximumElectives: 3 }).success, false);
+  assert.equal(CreateShsElectiveEnrollmentPolicySchema.safeParse({ academicYearId: "year", academicTermId: "term", gradeLevel: "12", minimumElectives: -1, maximumElectives: 0 }).success, false);
+  assert.equal(CreateShsElectiveEnrollmentPolicySchema.safeParse({ academicYearId: "year", academicTermId: "term", gradeLevel: "12", minimumElectives: 0, maximumElectives: 4 }).success, false);
   assert.equal(CreateShsElectiveEnrollmentPolicySchema.safeParse({ academicYearId: "year", academicTermId: "term", gradeLevel: "12", minimumElectives: 3, maximumElectives: 2 }).success, false);
   await withRollback(async (tx) => {
     const actor = await tx.user.findFirstOrThrow({ where: { deletedAt: null } });
     const year = await tx.academicYear.findFirstOrThrow({ where: { status: "ACTIVE" }, include: { terms: true } });
     await makeLegacyActiveCurriculumConfigurable(year.id, tx);
-    const values = { academicYearId: year.id, academicTermId: year.terms[0]!.id, gradeLevel: "12" as const, minimumElectives: 1, maximumElectives: 3 };
+    const values = { academicYearId: year.id, academicTermId: year.terms[0]!.id, gradeLevel: "12" as const, minimumElectives: 0, maximumElectives: 0 };
     const beforeAudits = await tx.auditLog.count();
     const policy = await createShsElectiveEnrollmentPolicy({ ...values, createdById: actor.id }, tx);
     await createAuditLogs([{ userId: actor.id, action: "CREATE", module: "ShsElectiveEnrollmentPolicy", recordId: policy.id, description: "Created SHS elective enrollment policy." }], tx);
     assert.equal(await tx.auditLog.count(), beforeAudits + 1);
+    assert.deepEqual(
+      { minimumElectives: policy.minimumElectives, maximumElectives: policy.maximumElectives },
+      { minimumElectives: 0, maximumElectives: 0 },
+    );
+    const optionalPolicy = await tx.shsElectiveEnrollmentPolicy.create({
+      data: { ...values, academicTermId: year.terms[1]!.id, minimumElectives: 0, maximumElectives: 1, createdById: actor.id },
+    });
+    assert.deepEqual(
+      { minimumElectives: optionalPolicy.minimumElectives, maximumElectives: optionalPolicy.maximumElectives },
+      { minimumElectives: 0, maximumElectives: 1 },
+    );
     await assert.rejects(tx.shsElectiveEnrollmentPolicy.create({ data: { ...values, createdById: actor.id } }));
     await assert.rejects(tx.shsElectiveEnrollmentPolicy.create({ data: { ...values, gradeLevel: "10", academicTermId: year.terms[1]!.id, createdById: actor.id } }));
+    await assert.rejects(tx.shsElectiveEnrollmentPolicy.create({ data: { ...values, academicTermId: year.terms[2]!.id, minimumElectives: -1, maximumElectives: 0, createdById: actor.id } }));
+    await assert.rejects(tx.shsElectiveEnrollmentPolicy.create({ data: { ...values, academicTermId: year.terms[2]!.id, minimumElectives: 0, maximumElectives: 4, createdById: actor.id } }));
     await assert.rejects(tx.shsElectiveEnrollmentPolicy.create({ data: { ...values, gradeLevel: "12", academicTermId: year.terms[1]!.id, minimumElectives: 3, maximumElectives: 2, createdById: actor.id } }));
   });
 });

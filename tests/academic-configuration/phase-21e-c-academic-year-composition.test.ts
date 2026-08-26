@@ -182,7 +182,7 @@ test("Term activation blocker exactly follows the existing three chronological T
 test("Elective coverage reports exact configured and missing Term-grade scopes", () => {
   const policies = [
     { academicTermId: "term-1", gradeLevel: "11" },
-    { academicTermId: "term-1", gradeLevel: "12" },
+    { academicTermId: "term-1", gradeLevel: "12", minimumElectives: 0, maximumElectives: 0 },
   ] as BuilderInput["electivePolicies"];
   const summary = buildAcademicYearConfigurationSummary(
     buildInput({ electivePolicies: policies }),

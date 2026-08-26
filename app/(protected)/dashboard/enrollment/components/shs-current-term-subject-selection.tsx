@@ -57,6 +57,8 @@ export function ShsCurrentTermSubjectSelection({
     ? selectedCount >= details.policy.minimumElectives &&
       selectedCount <= details.policy.maximumElectives
     : false;
+  const noElectivesPermitted = details?.policy?.maximumElectives === 0;
+  const canSubmitEmptySelection = details?.policy?.minimumElectives === 0;
   const parentOperational =
     enrollmentStatus === "ACTIVE" && academicYearStatus === "ACTIVE";
 
@@ -163,8 +165,9 @@ export function ShsCurrentTermSubjectSelection({
               <div>
                 <h4 className="font-medium">Eligible Current-Term Electives</h4>
                 <p className="text-sm text-muted-foreground">
-                  Dropped choices cannot be selected again. Omitted active rows
-                  remain attached and are never removed by this action.
+                  {noElectivesPermitted
+                    ? "This Term permits no elective selection."
+                    : "Dropped choices cannot be selected again. Omitted active rows remain attached and are never removed by this action."}
                 </p>
               </div>
               {details.eligibleElectives.length ? (
@@ -178,7 +181,8 @@ export function ShsCurrentTermSubjectSelection({
                     (!checked &&
                       Boolean(
                         details.policy &&
-                          selectedCount >= details.policy.maximumElectives,
+                          (noElectivesPermitted ||
+                            selectedCount >= details.policy.maximumElectives),
                       )) ||
                     saveProgression.isPending;
 
@@ -243,7 +247,7 @@ export function ShsCurrentTermSubjectSelection({
                   size="sm"
                   disabled={
                     !context.ready ||
-                    validNewOfferingIds.length === 0 ||
+                    (validNewOfferingIds.length === 0 && !canSubmitEmptySelection) ||
                     !selectionWithinPolicy ||
                     saveProgression.isPending
                   }
@@ -251,7 +255,9 @@ export function ShsCurrentTermSubjectSelection({
                 >
                   {saveProgression.isPending
                     ? "Saving..."
-                    : `Add ${validNewOfferingIds.length} selected`}
+                    : validNewOfferingIds.length
+                      ? `Add ${validNewOfferingIds.length} selected`
+                      : "Continue without electives"}
                 </Button>
               )}
             </div>
