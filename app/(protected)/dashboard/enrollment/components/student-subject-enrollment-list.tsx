@@ -21,6 +21,10 @@ import {
 } from "@/hooks/student-subject-enrollment.hook";
 import { formatDateTime } from "@/lib/format";
 import { getPhilippineCalendarDate } from "@/lib/academic-term-current";
+import {
+  getShsCurriculumStatusLabel,
+  getShsSubjectClassificationLabel,
+} from "@/lib/shs-presentation";
 
 import { DropStudentSubjectEnrollmentDialog } from "./drop-student-subject-enrollment-dialog";
 import {
@@ -338,8 +342,8 @@ function StudentSubjectEnrollmentTable({
               <TableCell className="whitespace-normal">
                 {row.shsCurriculumStatus ? (
                   <div className="space-y-1">
-                    <Badge variant={row.shsCurriculumStatus === "SCHOOL_APPROVED" ? "default" : "secondary"}>{row.shsCurriculumStatus}</Badge>
-                    <p className="text-xs text-muted-foreground">{row.shsClassification}{row.shsClusterCode ? ` | ${row.shsClusterCode}` : ""}</p>
+                    <Badge variant={row.shsCurriculumStatus === "SCHOOL_APPROVED" ? "default" : "secondary"}>{getShsCurriculumStatusLabel(row.shsCurriculumStatus)}</Badge>
+                    <p className="text-xs text-muted-foreground">{row.shsClassification ? getShsSubjectClassificationLabel(row.shsClassification) : ""}{row.shsClusterCode ? ` | ${row.shsClusterCode}` : ""}</p>
                   </div>
                 ) : "-"}
               </TableCell>

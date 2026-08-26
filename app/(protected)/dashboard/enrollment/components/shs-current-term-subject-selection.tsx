@@ -13,6 +13,7 @@ import {
   useProgressShsCurrentTerm,
   useShsCurrentTermProgression,
 } from "@/hooks/student-subject-enrollment.hook";
+import { getShsSubjectClassificationLabel } from "@/lib/shs-presentation";
 
 type ProgressionDetails = Extract<
   ShsCurrentTermProgressionContext,
@@ -206,7 +207,11 @@ export function ShsCurrentTermSubjectSelection({
                             <Badge variant="destructive">Dropped</Badge>
                           )}
                           <Badge variant="outline">
-                            {offering.shsContext?.classification}
+                            {offering.shsContext
+                              ? getShsSubjectClassificationLabel(
+                                  offering.shsContext.classification,
+                                )
+                              : "SHS context unavailable"}
                           </Badge>
                         </div>
                         <p className="mt-1">{offering.subjectDescription}</p>

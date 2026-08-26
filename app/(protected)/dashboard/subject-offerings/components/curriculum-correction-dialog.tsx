@@ -18,6 +18,7 @@ import {
   useCurriculumCorrectionContext,
   useCurriculumCorrectionDetail,
 } from "@/hooks/subject-offering.hook";
+import { getShsSubjectClassificationLabel } from "@/lib/shs-presentation";
 
 import type { SubjectOfferingListItem } from "./subject-offering-types";
 
@@ -182,9 +183,9 @@ function CorrectionForm({
                   }}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="CORE">Core Subject</SelectItem>
-                      <SelectItem value="ACADEMIC_ELECTIVE">Academic Elective</SelectItem>
-                      <SelectItem value="TECHPRO_ELECTIVE">TechPro Elective</SelectItem>
+                      <SelectItem value="CORE">{getShsSubjectClassificationLabel("CORE")}</SelectItem>
+                      <SelectItem value="ACADEMIC_ELECTIVE">{getShsSubjectClassificationLabel("ACADEMIC_ELECTIVE")}</SelectItem>
+                      <SelectItem value="TECHPRO_ELECTIVE">{getShsSubjectClassificationLabel("TECHPRO_ELECTIVE")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </Field>
@@ -321,7 +322,7 @@ function LineageCard({ role, subject, terms, context }: { role: string; subject:
 }
 
 function formatClassification(classification: Classification, clusterName?: string) {
-  const label = classification === "CORE" ? "Core" : classification === "ACADEMIC_ELECTIVE" ? "Academic Elective" : "TechPro Elective";
+  const label = getShsSubjectClassificationLabel(classification);
   return clusterName ? `${label} - ${clusterName}` : label;
 }
 

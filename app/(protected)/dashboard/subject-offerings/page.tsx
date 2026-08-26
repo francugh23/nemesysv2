@@ -16,6 +16,7 @@ import {
 } from "@/lib/academic-configuration";
 import type { SubjectOfferingTableQueryInput } from "@/schemas";
 import { hasPermission, Permissions } from "@/lib/permissions";
+import { getShsCurriculumStatusLabel } from "@/lib/shs-presentation";
 
 import { subjectOfferingColumns } from "./components/subject-offering-columns";
 import {
@@ -166,7 +167,7 @@ function SubjectOfferingsPageContent() {
                     label="SHS Approval Status"
                     allLabel="All SHS Approval Statuses"
                     value={tableState.filters.curriculumStatus}
-                    options={[{ label: "Pending School Approval", value: "PROVISIONAL_DEPED" }, { label: "School Approved", value: "SCHOOL_APPROVED" }]}
+                    options={[{ label: getShsCurriculumStatusLabel("PROVISIONAL_DEPED"), value: "PROVISIONAL_DEPED" }, { label: getShsCurriculumStatusLabel("SCHOOL_APPROVED"), value: "SCHOOL_APPROVED" }]}
                     onValueChange={(value) => tableState.setFilter("curriculumStatus", value)}
                   />
                 )}

@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSubjectOfferingOptions } from "@/hooks/subject-offering.hook";
+import { getShsSubjectClassificationLabel } from "@/lib/shs-presentation";
 import { CreateSubjectOfferingSchema } from "@/schemas";
 
 type SubjectOfferingFormValues = z.infer<typeof CreateSubjectOfferingSchema>;
@@ -181,9 +182,9 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
                 }}>
                   <SelectTrigger><SelectValue placeholder="Select classification" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="CORE">Core Subject</SelectItem>
-                    <SelectItem value="ACADEMIC_ELECTIVE">Academic Elective</SelectItem>
-                    <SelectItem value="TECHPRO_ELECTIVE">TechPro Elective</SelectItem>
+                    <SelectItem value="CORE">{getShsSubjectClassificationLabel("CORE")}</SelectItem>
+                    <SelectItem value="ACADEMIC_ELECTIVE">{getShsSubjectClassificationLabel("ACADEMIC_ELECTIVE")}</SelectItem>
+                    <SelectItem value="TECHPRO_ELECTIVE">{getShsSubjectClassificationLabel("TECHPRO_ELECTIVE")}</SelectItem>
                   </SelectContent>
                 </Select>
               )}

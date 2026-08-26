@@ -8,6 +8,10 @@ import { AcademicTermBadge } from "@/components/common/badges";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  getShsCurriculumStatusLabel,
+  getShsSubjectClassificationLabel,
+} from "@/lib/shs-presentation";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -88,14 +92,10 @@ export function subjectOfferingColumns({
         return (
           <div className="flex flex-wrap gap-1">
             <Badge variant="outline">
-              {context.classification === "CORE"
-                ? "Core"
-                : context.classification === "ACADEMIC_ELECTIVE"
-                  ? "Academic Elective"
-                  : "TechPro Elective"}
+              {getShsSubjectClassificationLabel(context.classification)}
             </Badge>
             <Badge variant={context.curriculumStatus === "SCHOOL_APPROVED" ? "default" : "secondary"}>
-              {context.curriculumStatus === "SCHOOL_APPROVED" ? "School Approved" : "Pending School Approval"}
+              {getShsCurriculumStatusLabel(context.curriculumStatus)}
             </Badge>
             {context.cluster && <Badge variant="outline">{context.cluster.name}</Badge>}
           </div>

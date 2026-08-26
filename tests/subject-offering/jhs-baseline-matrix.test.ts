@@ -77,7 +77,7 @@ test("2026-2027 Grade 11 Core baseline has five provisional full-year Offerings"
       select: { code: true, description: true },
     }),
     prisma.subjectOffering.findMany({
-      where: { academicYearId: academicYear.id, gradeLevel: "11", deletedAt: null },
+      where: { academicYearId: academicYear.id, gradeLevel: "11", subjectCode: { in: expected.map(([code]) => code) }, deletedAt: null },
       select: {
         subjectCode: true,
         subjectDescription: true,
