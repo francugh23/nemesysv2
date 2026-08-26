@@ -59,7 +59,7 @@ test("2026-2027 JHS baseline has one full-year Offering per approved grade and c
   }
 });
 
-test("2026-2027 Grade 11 Core baseline has five provisional full-year Offerings", async () => {
+test("2026-2027 Grade 11 Core baseline has five approved full-year Offerings", async () => {
   const academicYear = await prisma.academicYear.findFirstOrThrow({
     where: { label: "2026-2027", status: "ACTIVE" },
     select: { id: true },
@@ -71,7 +71,7 @@ test("2026-2027 Grade 11 Core baseline has five provisional full-year Offerings"
     ["SSHS-G11-CORE-04", "General Science"],
     ["SSHS-G11-CORE-05", "Pag-aaral ng Kasaysayan at Lipunang Pilipino"],
   ] as const;
-  const [subjects, offerings, auditCount] = await Promise.all([
+  const [subjects, offerings, createAuditCount, approvalAuditCount] = await Promise.all([
     prisma.subject.findMany({
       where: { code: { in: expected.map(([code]) => code) }, gradeLevel: "11", deletedAt: null },
       select: { code: true, description: true },
@@ -88,26 +88,32 @@ test("2026-2027 Grade 11 Core baseline has five provisional full-year Offerings"
     prisma.auditLog.count({
       where: { module: "SubjectOffering", action: "CREATE", recordName: { in: expected.map(([code]) => `${code} - 2026-2027`) } },
     }),
+    prisma.auditLog.count({
+      where: {
+        module: "SubjectOffering",
+        action: "UPDATE",
+        recordName: { in: expected.map(([code]) => `${code} - 2026-2027`) },
+        description: "Approved SSHS subject offering for school use.",
+      },
+    }),
   ]);
 
   assert.equal(subjects.length, 5);
   assert.equal(offerings.length, 5);
-  assert.equal(auditCount, 5);
+  assert.equal(createAuditCount, 5);
+  assert.equal(approvalAuditCount, 5);
 
   for (const [code, description] of expected) {
     assert.deepEqual(subjects.find((subject) => subject.code === code), { code, description });
     const offering = offerings.find((value) => value.subjectCode === code);
     assert.equal(offering?.subjectDescription, description);
     assert.deepEqual(offering?.terms.map((term) => term.academicTerm.position), [1, 2, 3]);
-    assert.deepEqual(offering?.shsContext, {
-      classification: "CORE",
-      clusterId: null,
-      curriculumStatus: "PROVISIONAL_DEPED",
-      sourceReference: offering?.shsContext?.sourceReference,
-      approvalReference: null,
-      approvedById: null,
-      approvedAt: null,
-    });
+    assert.equal(offering?.shsContext?.classification, "CORE");
+    assert.equal(offering?.shsContext?.clusterId, null);
+    assert.equal(offering?.shsContext?.curriculumStatus, "SCHOOL_APPROVED");
+    assert.equal(offering?.shsContext?.approvalReference, `DEMO-BOT-AY2026-2027-${code}`);
+    assert.ok(offering?.shsContext?.approvedById);
+    assert.ok(offering?.shsContext?.approvedAt);
     const sourceReference = offering?.shsContext?.sourceReference;
     assert.equal(typeof sourceReference, "string");
     assert.ok(sourceReference?.includes("DM_s2026_012r.pdf"));
