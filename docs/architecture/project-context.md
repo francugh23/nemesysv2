@@ -9,7 +9,7 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-Phase 22C Development Baseline Reset is complete. The local `nemesysv2` development database is a validated clean curated baseline; its pre-reset state remains in a retained local rollback database. Authenticated browser verification remains pending before production.
+Phase 22D-A Academic Year, Term, and Section setup is complete. The local `nemesysv2` development database has ACTIVE Academic Year 2026-2027 with its approved three-Term calendar and six organizational Section definitions for Grades 7-12; its pre-reset state remains in a retained local rollback database. Authenticated browser verification remains pending before production.
 
 ### Current Objective
 
@@ -65,6 +65,7 @@ Phase 22D-0 removed the legacy `trackStrand` fields from Section and Subject thr
 - Security Hardening Phase S2 active-account revalidation
 - Security Hardening Phase S3 immediate production security
 - Phase 22C guarded local development baseline reset with retained rollback database
+- Phase 22D-A operational Academic Year 2026-2027 setup with Terms and Grade 7-12 Section definitions only
 
 ### Milestone Records
 
@@ -212,6 +213,7 @@ Phase 22D-0 removed the legacy `trackStrand` fields from Section and Subject thr
 - Phase 21F-D migrations are current with no schema drift. Focused 21F-D, 21D-C/D, and C1 regressions pass 31/31, with one expected result-revision concurrency skip because `C_RUN_CONCURRENCY` is not enabled for a disposable database. Prisma validation/generation, TypeScript, targeted ESLint, build, and diff checks pass. Protected counts remain Enrollment 4, Student 4, StudentSubjectEnrollment 28, StudentSubjectEnrollmentTerm 84, ShsTermResult 0, ShsTermResultRevision 0, Grade 0, and CurriculumCorrection 0.
 - Phase 22A created protected `nemesysv2_walkthrough_template` and verified `nemesysv2_walkthrough_phase22a`. Both retain 6 Users, 3 Teachers, 203 Subjects (32 JHS and 171 source-backed SHS), 16 SHS clusters, and 171 SHS references while all operational and audit tables are empty. The source database migration identity and data fingerprints were unchanged.
 - Phase 22C replaced local `nemesysv2` through a validated candidate build and atomic database-name swap, then applied a guarded baseline correction. The final baseline has 1 preserved active Super Admin, 37 Subjects (32 active Grade 7-10 and five Grade 11 Core), zero `SSHS-G11-ACA-*` or `SSHS-G11-TP-*` elective Subjects, exactly eight curated clusters, and zero rows in all operational, Offering/configuration, policy, reference, participation, result, correction, Grade, and audit tables. The correction discovered no foreign-key reference to any of the exact sixteen removed Subjects before deleting them. Migration identity remains 56 applied migrations with checksum hash `80ef594982cc5a6e44cc32c55cd8fee7b43f0d06e102ab28bca4c189a4dd9172`; Prisma status and schema diff report no drift. The original state is retained as `nemesysv2_phase22c_rollback_20260826032048` with fingerprint `e2157f0da38f5f32bc3488d686ad95a12815d9b2f3c4c5582332f89aef526615`.
+- Phase 22D-A created and activated the sole 2026-2027 Academic Year through the normal audited lifecycle, with Term 1 (2026-06-08 through 2026-09-15), Term 2 (2026-09-16 through 2026-12-18), and Term 3 (2027-01-04 through 2027-04-08). Six neutral Section definitions exist: A in Grades 7, 8, 9, 10, 11, and 12; adviser, room, and shift remain unset. No Grade 12 Subjects, Offerings, SSHS contexts, policies, or Curriculum configuration were created. All Teachers, Students, Enrollments, Offerings, Offering Terms, SSHS contexts, policies, finalizations, participation, results, Grades, and corrections remain zero. The operational dashboard Active Sections KPI remains zero because it is derived from active Enrollment usage, not Section definitions. Current-Term resolution returns Term 1 for Philippine date 2026-08-26.
 - C3 protected counts and hashes match the established baseline: Enrollment 4 / `a12eb1d395076fb1051ade3baa8191da`, Student 4 / `7d54b06c42e58ecc8e55c02116dd32a5`, StudentSubjectEnrollment 28 / `4ba2face0627f5b8d19dc4142761feb1`, StudentSubjectEnrollmentTerm 84 / `5427f5041243ea9cccf306f9aca67f3b`, SubjectOffering 139 / `a20d80538c18443bc87f9fdc6913222f`, and AcademicTerm 3 / `b684716570674856108ba49e7ec0c439`; ShsTermResult, Grade, and CurriculumCorrection remain zero. All 53 migrations are current with no Docker/Linux Prisma schema drift. Prisma validation/generation, TypeScript, targeted ESLint, build, and diff checks pass. Authenticated browser verification is pending.
 
 ## Active Constraints

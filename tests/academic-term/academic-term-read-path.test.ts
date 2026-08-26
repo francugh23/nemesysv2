@@ -3,9 +3,18 @@ import test from "node:test";
 import "dotenv/config";
 
 import { findAcademicTermsByAcademicYear } from "../../repositories/academic-term.repository";
+import { findAcademicYears } from "../../repositories/academic-year.repository";
 
 test("2026-2027 contains the approved inclusive Academic Term calendar", async () => {
-  const terms = await findAcademicTermsByAcademicYear("academic-year-2026-2027");
+  const [academicYear] = await findAcademicYears(
+    { search: "2026-2027" },
+    { skip: 0, take: 1 },
+    [{ label: "asc" }],
+  );
+
+  assert.ok(academicYear);
+
+  const terms = await findAcademicTermsByAcademicYear(academicYear.id);
 
   assert.deepEqual(
     terms.map((term) => ({
