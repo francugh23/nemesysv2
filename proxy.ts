@@ -29,7 +29,13 @@ const userRoles = new Set<UserRole>([
 const dashboardRoutePermissions: ReadonlyArray<{
   path: string;
   permission: Permission;
+  exact?: boolean;
 }> = [
+  {
+    path: "/dashboard",
+    permission: Permissions.OPERATIONAL_DASHBOARD,
+    exact: true,
+  },
   {
     path: "/dashboard/academic-years",
     permission: Permissions.ACADEMIC_YEARS,
@@ -50,8 +56,8 @@ function isUserRole(value: unknown): value is UserRole {
 
 function hasDashboardRoutePermission(role: UserRole, pathname: string) {
   return dashboardRoutePermissions.some(
-    ({ path, permission }) =>
-      (pathname === path || pathname.startsWith(`${path}/`)) &&
+    ({ path, permission, exact }) =>
+      (exact ? pathname === path : pathname === path || pathname.startsWith(`${path}/`)) &&
       hasPermission(role, permission),
   );
 }

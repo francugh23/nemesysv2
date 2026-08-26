@@ -16,7 +16,7 @@ import {
   updateSectionAction,
 } from "@/actions/section.action";
 import type { SectionTableQueryInput } from "@/schemas";
-import { invalidateSectionQueries } from "@/hooks/query-invalidation";
+import { invalidateOperationalDashboard, invalidateSectionQueries } from "@/hooks/query-invalidation";
 
 function useInvalidateSectionQueries() {
   const queryClient = useQueryClient();
@@ -62,6 +62,7 @@ export function useCreateSection() {
 }
 
 export function useUpdateSection() {
+  const queryClient = useQueryClient();
   const invalidateSectionQueries = useInvalidateSectionQueries();
 
   return useMutation({
@@ -75,12 +76,14 @@ export function useUpdateSection() {
     onSuccess: async (result) => {
       if (!result.error) {
         await invalidateSectionQueries();
+        await invalidateOperationalDashboard(queryClient);
       }
     },
   });
 }
 
 export function useArchiveSection() {
+  const queryClient = useQueryClient();
   const invalidateSectionQueries = useInvalidateSectionQueries();
 
   return useMutation({
@@ -88,6 +91,7 @@ export function useArchiveSection() {
     onSuccess: async (result) => {
       if (!result.error) {
         await invalidateSectionQueries();
+        await invalidateOperationalDashboard(queryClient);
       }
     },
   });

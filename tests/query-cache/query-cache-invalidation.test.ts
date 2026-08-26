@@ -14,6 +14,7 @@ import {
   invalidateTeacherQueries,
   invalidateAcademicYearQueries,
   invalidateAcademicTermQueries,
+  invalidateOperationalDashboard,
 } from "../../hooks/query-invalidation";
 
 function createInvalidationRecorder() {
@@ -125,5 +126,14 @@ test("Academic Term mutations refresh their parent management view and term quer
     ["academic-year-configuration", "academic-year-2026-2027"],
     ["academic-terms", "academic-year-2026-2027"],
     ["subject-offering-options"],
+    ["dashboard", "operational"],
   ]);
+});
+
+test("Operational dashboard invalidation uses one stable narrow key", async () => {
+  const { queryClient, queryKeys } = createInvalidationRecorder();
+
+  await invalidateOperationalDashboard(queryClient);
+
+  assert.deepEqual(queryKeys, [["dashboard", "operational"]]);
 });

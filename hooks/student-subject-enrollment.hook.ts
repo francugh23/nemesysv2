@@ -20,6 +20,7 @@ import type {
   SaveShsTermResultDraftInput,
   ShsCurrentTermProgressionInput,
 } from "@/schemas";
+import { invalidateOperationalDashboard } from "@/hooks/query-invalidation";
 
 export type ShsCurrentTermProgressionContext = Awaited<
   ReturnType<typeof getShsCurrentTermProgressionContextAction>
@@ -58,6 +59,7 @@ function useStudentSubjectEnrollmentInvalidation(enrollmentId: string) {
       queryClient.invalidateQueries({
         queryKey: ["shs-current-term-progression", enrollmentId],
       }),
+      invalidateOperationalDashboard(queryClient),
     ]);
 }
 
@@ -87,9 +89,12 @@ export function useDropShsStudentSubjectEnrollment(enrollmentId: string) {
 
 function useShsTermResultInvalidation(enrollmentId: string) {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({
-    queryKey: ["student-subject-enrollments", enrollmentId],
-  });
+  return () => Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: ["student-subject-enrollments", enrollmentId],
+    }),
+    invalidateOperationalDashboard(queryClient),
+  ]);
 }
 
 export function useSaveShsTermResultDraft(enrollmentId: string) {

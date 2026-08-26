@@ -15,7 +15,7 @@ import {
   updateTeacherAction,
 } from "@/actions/teacher.action";
 import type { TeacherTableQueryInput } from "@/schemas";
-import { invalidateTeacherQueries } from "@/hooks/query-invalidation";
+import { invalidateOperationalDashboard, invalidateTeacherQueries } from "@/hooks/query-invalidation";
 
 export function useTeachers(query: TeacherTableQueryInput) {
   return useQuery({
@@ -40,6 +40,7 @@ export function useCreateTeacher() {
     onSuccess: async (result) => {
       if (!result.error) {
         await invalidateTeacherQueries(queryClient);
+        await invalidateOperationalDashboard(queryClient);
       }
     },
   });
@@ -59,6 +60,7 @@ export function useUpdateTeacher() {
     onSuccess: async (result) => {
       if (!result.error) {
         await invalidateTeacherQueries(queryClient);
+        await invalidateOperationalDashboard(queryClient);
       }
     },
   });
@@ -72,6 +74,7 @@ export function useDeactivateTeacher() {
     onSuccess: async (result) => {
       if (!result.error) {
         await invalidateTeacherQueries(queryClient);
+        await invalidateOperationalDashboard(queryClient);
       }
     },
   });

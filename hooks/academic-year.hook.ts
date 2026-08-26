@@ -18,7 +18,7 @@ import {
   updateAcademicYearAction,
 } from "@/actions/academic-year.action";
 import { finalizeCurriculumAction } from "@/actions/curriculum-finalization.action";
-import { invalidateAcademicYearQueries } from "@/hooks/query-invalidation";
+import { invalidateAcademicYearQueries, invalidateOperationalDashboard } from "@/hooks/query-invalidation";
 import type { AcademicYearTableQueryInput } from "@/schemas";
 
 export function useAcademicYears(query: AcademicYearTableQueryInput) {
@@ -58,12 +58,14 @@ function useAcademicYearStatusMutation(
   mutationFn: (id: string) => Promise<Awaited<ReturnType<typeof lockAcademicYearAction>>>,
 ) {
   const invalidate = useAcademicYearInvalidation();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn,
     onSuccess: async (result) => {
       if (!result.error) {
         await invalidate();
+        await invalidateOperationalDashboard(queryClient);
       }
     },
   });
@@ -124,6 +126,7 @@ export function useFinalizeCurriculum() {
           queryClient.invalidateQueries({ queryKey: ["subject-offerings"] }),
           queryClient.invalidateQueries({ queryKey: ["shs-elective-enrollment-policies"] }),
           queryClient.invalidateQueries({ queryKey: ["curriculum-adoption-preview"] }),
+          invalidateOperationalDashboard(queryClient),
         ]);
       }
     },

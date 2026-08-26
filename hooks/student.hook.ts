@@ -15,7 +15,7 @@ import {
   updateStudentAction,
 } from "@/actions/student.action";
 import type { StudentTableQueryInput } from "@/schemas";
-import { invalidateStudentQueries } from "@/hooks/query-invalidation";
+import { invalidateOperationalDashboard, invalidateStudentQueries } from "@/hooks/query-invalidation";
 
 export function useStudents(query: StudentTableQueryInput) {
   return useQuery({
@@ -59,6 +59,7 @@ export function useUpdateStudent() {
     onSuccess: async (result) => {
       if (!result.error) {
         await invalidateStudentQueries(queryClient);
+        await invalidateOperationalDashboard(queryClient);
       }
     },
   });
@@ -72,6 +73,7 @@ export function useDeleteStudent() {
     onSuccess: async (result) => {
       if (!result.error) {
         await invalidateStudentQueries(queryClient);
+        await invalidateOperationalDashboard(queryClient);
       }
     },
   });

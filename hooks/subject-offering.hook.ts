@@ -2,7 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { invalidateAcademicYearConfigurationQueries } from "@/hooks/query-invalidation";
+import { invalidateAcademicYearConfigurationQueries, invalidateOperationalDashboard } from "@/hooks/query-invalidation";
 
 import {
   archiveShsCurriculumClusterAction,
@@ -39,7 +39,7 @@ export function useCurriculumCorrectionDetail(subjectOfferingId: string, enabled
     enabled: enabled && Boolean(subjectOfferingId),
   });
 }
-function useInvalidate(invalidateSubjects = false) {
+function useInvalidate(invalidateSubjects = false, invalidateDashboard = false) {
   const queryClient = useQueryClient();
   return () => Promise.all([
     queryClient.invalidateQueries({ queryKey: ["subject-offerings"] }),
@@ -54,14 +54,15 @@ function useInvalidate(invalidateSubjects = false) {
     queryClient.invalidateQueries({ queryKey: ["curriculum-correction-context"] }),
     queryClient.invalidateQueries({ queryKey: ["curriculum-correction-detail"] }),
     invalidateAcademicYearConfigurationQueries(queryClient),
+    ...(invalidateDashboard ? [invalidateOperationalDashboard(queryClient)] : []),
   ]);
 }
 
-export function useCreateSubjectOffering() { const invalidate = useInvalidate(true); return useMutation({ mutationFn: createSubjectOfferingAction, onSuccess: async (result) => { if (!result.error) await invalidate(); } }); }
-export function useUpdateSubjectOffering() { const invalidate = useInvalidate(true); return useMutation({ mutationFn: ({ id, values }: { id: string; values: unknown }) => updateSubjectOfferingAction(id, values), onSuccess: async (result) => { if (!result.error) await invalidate(); } }); }
-export function useArchiveSubjectOffering() { const invalidate = useInvalidate(true); return useMutation({ mutationFn: archiveSubjectOfferingAction, onSuccess: async (result) => { if (!result.error) await invalidate(); } }); }
-export function usePromoteShsSubjectOffering() { const invalidate = useInvalidate(); return useMutation({ mutationFn: promoteShsSubjectOfferingAction, onSuccess: async (result) => { if (!result.error) await invalidate(); } }); }
-export function useCorrectSubjectOffering() { const invalidate = useInvalidate(true); return useMutation({ mutationFn: correctSubjectOfferingAction, onSuccess: async (result) => { if (!("error" in result)) await invalidate(); } }); }
+export function useCreateSubjectOffering() { const invalidate = useInvalidate(true, true); return useMutation({ mutationFn: createSubjectOfferingAction, onSuccess: async (result) => { if (!result.error) await invalidate(); } }); }
+export function useUpdateSubjectOffering() { const invalidate = useInvalidate(true, true); return useMutation({ mutationFn: ({ id, values }: { id: string; values: unknown }) => updateSubjectOfferingAction(id, values), onSuccess: async (result) => { if (!result.error) await invalidate(); } }); }
+export function useArchiveSubjectOffering() { const invalidate = useInvalidate(true, true); return useMutation({ mutationFn: archiveSubjectOfferingAction, onSuccess: async (result) => { if (!result.error) await invalidate(); } }); }
+export function usePromoteShsSubjectOffering() { const invalidate = useInvalidate(false, true); return useMutation({ mutationFn: promoteShsSubjectOfferingAction, onSuccess: async (result) => { if (!result.error) await invalidate(); } }); }
+export function useCorrectSubjectOffering() { const invalidate = useInvalidate(true, true); return useMutation({ mutationFn: correctSubjectOfferingAction, onSuccess: async (result) => { if (!("error" in result)) await invalidate(); } }); }
 export function useCreateShsCurriculumCluster() { const invalidate = useInvalidate(); return useMutation({ mutationFn: createShsCurriculumClusterAction, onSuccess: async (result) => { if (!result.error) await invalidate(); } }); }
 export function useUpdateShsCurriculumCluster() { const invalidate = useInvalidate(); return useMutation({ mutationFn: ({ id, values }: { id: string; values: unknown }) => updateShsCurriculumClusterAction(id, values), onSuccess: async (result) => { if (!result.error) await invalidate(); } }); }
 export function useArchiveShsCurriculumCluster() { const invalidate = useInvalidate(); return useMutation({ mutationFn: archiveShsCurriculumClusterAction, onSuccess: async (result) => { if (!result.error) await invalidate(); } }); }

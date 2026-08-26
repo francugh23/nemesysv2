@@ -27,6 +27,7 @@ import {
   getShsStudentParticipationCorrectionPreviewAction,
 } from "@/actions/shs-student-participation-correction.action";
 import type { EnrollmentTableQueryInput } from "@/schemas";
+import { invalidateOperationalDashboard } from "@/hooks/query-invalidation";
 
 export function useEnrollments(query: EnrollmentTableQueryInput) {
   return useQuery({
@@ -66,9 +67,10 @@ export function useCreateEnrollment() {
         queryClient.invalidateQueries({
           queryKey: ["enrollment-filter-options"],
         }),
-        queryClient.invalidateQueries({
-          queryKey: ["enrollment-form-options"],
-        }),
+          queryClient.invalidateQueries({
+            queryKey: ["enrollment-form-options"],
+          }),
+          invalidateOperationalDashboard(queryClient),
       ]);
     },
   });
@@ -127,6 +129,7 @@ export function useCorrectShsStudentParticipation() {
         queryClient.invalidateQueries({ queryKey: ["shs-student-participation-correction-context", id] }),
         queryClient.invalidateQueries({ queryKey: ["shs-student-participation-correction-preview", id] }),
         queryClient.invalidateQueries({ queryKey: ["shs-student-participation-correction-history", id] }),
+        invalidateOperationalDashboard(queryClient),
       ]);
     },
   });
@@ -157,6 +160,7 @@ export function useCorrectStudentEnrollmentPlacement() {
         queryClient.invalidateQueries({
           queryKey: ["enrollment-filter-options"],
         }),
+        invalidateOperationalDashboard(queryClient),
       ]);
     },
   });
@@ -195,6 +199,7 @@ export function useCorrectStudentEnrollmentGradePlacement() {
         queryClient.invalidateQueries({
           queryKey: ["enrollment-filter-options"],
         }),
+        invalidateOperationalDashboard(queryClient),
       ]);
     },
   });
@@ -218,6 +223,7 @@ export function useTransitionEnrollment() {
         queryClient.invalidateQueries({ queryKey: ["enrollments"] }),
         queryClient.invalidateQueries({ queryKey: ["students"] }),
         queryClient.invalidateQueries({ queryKey: ["shs-current-term-progression", id] }),
+        invalidateOperationalDashboard(queryClient),
       ]);
     },
   });
