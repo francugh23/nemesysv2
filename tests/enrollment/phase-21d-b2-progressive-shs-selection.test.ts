@@ -63,6 +63,51 @@ async function createProgressionFixture(
   ]);
   assert.equal(academicYear.terms.length, 3, "B2 fixtures require the active three-Term year");
   await makeLegacyActiveCurriculumConfigurable(academicYear.id, transaction, true);
+  const fixtureSuffix = randomUUID().replaceAll("-", "").slice(0, 12);
+  const academicCluster = await transaction.shsCurriculumCluster.create({
+    data: { code: `B2A${fixtureSuffix}`, name: "B2 Academic fixture", track: "ACADEMIC", createdById: actor.id },
+    select: { id: true },
+  });
+  const techProCluster = await transaction.shsCurriculumCluster.create({
+    data: { code: `B2T${fixtureSuffix}`, name: "B2 TechPro fixture", track: "TECHPRO", createdById: actor.id },
+    select: { id: true },
+  });
+
+  for (const term of academicYear.terms) {
+    const subject = await transaction.subject.create({
+      data: { code: `B2A${term.position}${fixtureSuffix}`, description: `B2 Academic Term ${term.position}`, gradeLevel: "11", createdById: actor.id },
+      select: { id: true, code: true, description: true },
+    });
+    await transaction.subjectOffering.create({
+      data: {
+        subjectId: subject.id,
+        academicYearId: academicYear.id,
+        gradeLevel: "11",
+        subjectCode: subject.code,
+        subjectDescription: subject.description,
+        createdById: actor.id,
+        terms: { create: { academicTermId: term.id } },
+        shsContext: { create: { classification: "ACADEMIC_ELECTIVE", curriculumStatus: "PROVISIONAL_DEPED", clusterId: academicCluster.id, sourceReference: "Phase 21D-B2 rollback fixture", createdById: actor.id } },
+      },
+    });
+  }
+
+  const techProSubject = await transaction.subject.create({
+    data: { code: `B2T${fixtureSuffix}`, description: "B2 TechPro full-year fixture", gradeLevel: "11", createdById: actor.id },
+    select: { id: true, code: true, description: true },
+  });
+  await transaction.subjectOffering.create({
+    data: {
+      subjectId: techProSubject.id,
+      academicYearId: academicYear.id,
+      gradeLevel: "11",
+      subjectCode: techProSubject.code,
+      subjectDescription: techProSubject.description,
+      createdById: actor.id,
+      terms: { create: academicYear.terms.map((term) => ({ academicTermId: term.id })) },
+      shsContext: { create: { classification: "TECHPRO_ELECTIVE", curriculumStatus: "PROVISIONAL_DEPED", clusterId: techProCluster.id, sourceReference: "Phase 21D-B2 rollback fixture", createdById: actor.id } },
+    },
+  });
 
   const provisionalOfferings = await transaction.subjectOffering.findMany({
     where: {
