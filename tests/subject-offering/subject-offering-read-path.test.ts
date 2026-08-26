@@ -2,15 +2,24 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import "dotenv/config";
 import { findAcademicTermsByAcademicYear } from "../../repositories/academic-term.repository";
+import { findAcademicYears } from "../../repositories/academic-year.repository";
 import {
   findOfferingFilterOptions,
   findOfferings,
 } from "../../repositories/subject-offering.repository";
 
 test("Offering foundation preserves the approved Grade 7 JHS full-year term source", async () => {
+  const [academicYear] = await findAcademicYears(
+    { search: "2026-2027" },
+    { skip: 0, take: 1 },
+    [{ label: "asc" }],
+  );
+
+  assert.ok(academicYear);
+
   const [terms, offerings] = await Promise.all([
-    findAcademicTermsByAcademicYear("academic-year-2026-2027"),
-    findOfferings({ academicYearId: "academic-year-2026-2027", gradeLevel: "7" }, { skip: 0, take: 50 }),
+    findAcademicTermsByAcademicYear(academicYear.id),
+    findOfferings({ academicYearId: academicYear.id, gradeLevel: "7" }, { skip: 0, take: 50 }),
   ]);
   assert.equal(terms.length, 3);
   assert.equal(offerings.length, 8);
@@ -18,8 +27,16 @@ test("Offering foundation preserves the approved Grade 7 JHS full-year term sour
 });
 
 test("Offering list searches snapshots and exposes represented academic years", async () => {
+  const [academicYear] = await findAcademicYears(
+    { search: "2026-2027" },
+    { skip: 0, take: 1 },
+    [{ label: "asc" }],
+  );
+
+  assert.ok(academicYear);
+
   const offerings = await findOfferings(
-    { academicYearId: "academic-year-2026-2027", gradeLevel: "7" },
+    { academicYearId: academicYear.id, gradeLevel: "7" },
     { skip: 0, take: 1 },
   );
   const offering = offerings[0];
@@ -34,6 +51,6 @@ test("Offering list searches snapshots and exposes represented academic years", 
   assert.ok(byCode.some((item) => item.id === offering.id));
   assert.ok(byDescription.some((item) => item.id === offering.id));
   assert.ok(
-    academicYears.some((year) => year.id === "academic-year-2026-2027"),
+    academicYears.some((year) => year.id === academicYear.id),
   );
 });

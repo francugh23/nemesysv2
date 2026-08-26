@@ -90,9 +90,11 @@ export async function createStudentSubjectEnrollmentsFromOfferings(
   createdById: string,
   transaction: Prisma.TransactionClient,
 ) {
-  return Promise.all(
-    offerings.map((offering) =>
-      transaction.studentSubjectEnrollment.create({
+  const participations = [];
+
+  for (const offering of offerings) {
+    participations.push(
+      await transaction.studentSubjectEnrollment.create({
         data: {
           enrollmentId,
           subjectOfferingId: offering.id,
@@ -113,8 +115,10 @@ export async function createStudentSubjectEnrollmentsFromOfferings(
           terms: { select: { academicTermId: true } },
         },
       }),
-    ),
-  );
+    );
+  }
+
+  return participations;
 }
 
 export async function lockActiveShsEnrollmentForCurriculumSelection(id: string, transaction: Prisma.TransactionClient) {
