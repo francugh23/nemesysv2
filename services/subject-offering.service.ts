@@ -117,15 +117,23 @@ export async function getSubjectOfferingFilterOptions() {
 
 export async function createSubjectOfferingService(values: CreateSubjectOfferingInput) {
   const session = await requirePermission(Permissions.SUBJECTS);
-  return prisma.$transaction(async (tx) => {
-    const [lockedYear] = await lockAcademicYearsForCurriculumMutation([values.academicYearId], tx);
-    if (!lockedYear) throw new SubjectOfferingServiceError("Academic Year not found.");
-    assertCurriculumConfigurable(lockedYear);
-    const { subject, year } = await validate(values, tx, undefined, lockedYear);
-    const offering = await createOffering({ subjectId: subject.id, academicYearId: year.id, gradeLevel: values.gradeLevel, subjectCode: subject.code, subjectDescription: subject.description, createdById: session.user.id }, values.academicTermIds, values.shsContext, tx);
-    await createAuditLogs([{ userId: session.user.id, action: "CREATE", module: "SubjectOffering", recordId: offering.id, recordName: `${offering.subjectCode} - ${year.label}`, description: "Created subject offering." }], tx);
-    return offering;
-  });
+  return prisma.$transaction((tx) =>
+    createSubjectOfferingInTransaction(values, session.user.id, tx),
+  );
+}
+
+export async function createSubjectOfferingInTransaction(
+  values: CreateSubjectOfferingInput,
+  actorId: string,
+  tx: Prisma.TransactionClient,
+) {
+  const [lockedYear] = await lockAcademicYearsForCurriculumMutation([values.academicYearId], tx);
+  if (!lockedYear) throw new SubjectOfferingServiceError("Academic Year not found.");
+  assertCurriculumConfigurable(lockedYear);
+  const { subject, year } = await validate(values, tx, undefined, lockedYear);
+  const offering = await createOffering({ subjectId: subject.id, academicYearId: year.id, gradeLevel: values.gradeLevel, subjectCode: subject.code, subjectDescription: subject.description, createdById: actorId }, values.academicTermIds, values.shsContext, tx);
+  await createAuditLogs([{ userId: actorId, action: "CREATE", module: "SubjectOffering", recordId: offering.id, recordName: `${offering.subjectCode} - ${year.label}`, description: "Created subject offering." }], tx);
+  return offering;
 }
 
 export async function updateSubjectOfferingService(id: string, values: UpdateSubjectOfferingInput) {
@@ -151,25 +159,33 @@ export async function updateSubjectOfferingService(id: string, values: UpdateSub
 
 export async function promoteShsSubjectOfferingService(values: PromoteShsSubjectOfferingInput) {
   const session = await requirePermission(Permissions.SHS_CURRICULUM_APPROVAL);
-  return prisma.$transaction(async (tx) => {
-    const reference = await findOffering(values.subjectOfferingId, tx);
-    if (!reference) throw new SubjectOfferingServiceError("SHS Offering pending school approval not found.");
-    const [academicYear] = await lockAcademicYearsForCurriculumMutation([reference.academicYearId], tx);
-    if (!academicYear) throw new SubjectOfferingServiceError("Academic Year not found.");
-    assertCurriculumConfigurable(academicYear);
-    await lockOfferingForMutation(values.subjectOfferingId, tx);
-    const offering = await findOffering(values.subjectOfferingId, tx);
-    if (!offering || offering.deletedAt || !offering.shsContext) throw new SubjectOfferingServiceError("SHS Offering pending school approval not found.");
-    assertActive(offering.academicYear);
-    if (offering.gradeLevel !== "11" && offering.gradeLevel !== "12") throw new SubjectOfferingServiceError("Only Grade 11 or 12 SSHS offerings can be approved.");
-    if (offering.shsContext.curriculumStatus !== "PROVISIONAL_DEPED") throw new SubjectOfferingServiceError("Only SHS Offerings pending school approval can be approved.");
-    if (await hasOfferingStudentDependencies(offering.id, tx)) throw new SubjectOfferingServiceError("An Offering used by Student Participation cannot have its approval changed.");
-    const approvedAt = new Date();
-    const promoted = await promoteProvisionalShsOffering(offering.id, values.approvalReference, session.user.id, approvedAt, tx);
-    if (promoted.count !== 1) throw new SubjectOfferingServiceError("Offering approval could not be completed.");
-    await createAuditLogs([{ userId: session.user.id, action: "UPDATE", module: "SubjectOffering", recordId: offering.id, recordName: `${offering.subjectCode} - ${offering.academicYear.label}`, description: "Approved SSHS subject offering for school use.", metadata: { previousCurriculumStatus: "PROVISIONAL_DEPED", curriculumStatus: "SCHOOL_APPROVED", approvalReference: values.approvalReference, approvedAt: approvedAt.toISOString() } }], tx);
-    return offering.id;
-  });
+  return prisma.$transaction((tx) =>
+    promoteShsSubjectOfferingInTransaction(values, session.user.id, tx),
+  );
+}
+
+export async function promoteShsSubjectOfferingInTransaction(
+  values: PromoteShsSubjectOfferingInput,
+  actorId: string,
+  tx: Prisma.TransactionClient,
+) {
+  const reference = await findOffering(values.subjectOfferingId, tx);
+  if (!reference) throw new SubjectOfferingServiceError("SHS Offering pending school approval not found.");
+  const [academicYear] = await lockAcademicYearsForCurriculumMutation([reference.academicYearId], tx);
+  if (!academicYear) throw new SubjectOfferingServiceError("Academic Year not found.");
+  assertCurriculumConfigurable(academicYear);
+  await lockOfferingForMutation(values.subjectOfferingId, tx);
+  const offering = await findOffering(values.subjectOfferingId, tx);
+  if (!offering || offering.deletedAt || !offering.shsContext) throw new SubjectOfferingServiceError("SHS Offering pending school approval not found.");
+  assertActive(offering.academicYear);
+  if (offering.gradeLevel !== "11" && offering.gradeLevel !== "12") throw new SubjectOfferingServiceError("Only Grade 11 or 12 SSHS offerings can be approved.");
+  if (offering.shsContext.curriculumStatus !== "PROVISIONAL_DEPED") throw new SubjectOfferingServiceError("Only SHS Offerings pending school approval can be approved.");
+  if (await hasOfferingStudentDependencies(offering.id, tx)) throw new SubjectOfferingServiceError("An Offering used by Student Participation cannot have its approval changed.");
+  const approvedAt = new Date();
+  const promoted = await promoteProvisionalShsOffering(offering.id, values.approvalReference, actorId, approvedAt, tx);
+  if (promoted.count !== 1) throw new SubjectOfferingServiceError("Offering approval could not be completed.");
+  await createAuditLogs([{ userId: actorId, action: "UPDATE", module: "SubjectOffering", recordId: offering.id, recordName: `${offering.subjectCode} - ${offering.academicYear.label}`, description: "Approved SSHS subject offering for school use.", metadata: { previousCurriculumStatus: "PROVISIONAL_DEPED", curriculumStatus: "SCHOOL_APPROVED", approvalReference: values.approvalReference, approvedAt: approvedAt.toISOString() } }], tx);
+  return offering.id;
 }
 
 export async function archiveSubjectOfferingService(id: string) {

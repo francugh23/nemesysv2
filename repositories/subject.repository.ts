@@ -162,8 +162,9 @@ export async function findSubjectFilterOptionValues() {
 export async function findSubjectByIdentity(
   code: string,
   gradeLevel: string,
+  transaction?: Prisma.TransactionClient,
 ) {
-  return prisma.subject.findFirst({
+  return (transaction ?? prisma).subject.findFirst({
     where: {
       code,
       gradeLevel,

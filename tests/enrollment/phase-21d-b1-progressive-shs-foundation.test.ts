@@ -10,7 +10,6 @@ import { hasPermission, Permissions } from "../../lib/permissions";
 import prisma from "../../lib/prisma";
 import { createAuditLogs } from "../../repositories/audit.repository";
 import { createShsElectiveEnrollmentPolicy } from "../../repositories/shs-elective-enrollment-policy.repository";
-import { makeLegacyActiveCurriculumConfigurable } from "../helpers/phase-21e-e1-legacy-fixture";
 import {
   CreateShsElectiveEnrollmentPolicySchema,
 } from "../../schemas/shs-elective-enrollment-policy.schema";
@@ -26,6 +25,26 @@ async function withRollback(run: (tx: Prisma.TransactionClient) => Promise<void>
   } catch (error) {
     if (!(error instanceof RollbackFixture)) throw error;
   }
+}
+
+async function createPolicyFixture(
+  tx: Prisma.TransactionClient,
+  actorId: string,
+) {
+  const year = await tx.academicYear.create({
+    data: {
+      label: "2090-2091",
+      startDate: new Date("2090-06-01T00:00:00.000Z"),
+      endDate: new Date("2091-04-30T00:00:00.000Z"),
+      createdById: actorId,
+    },
+  });
+  const terms = await Promise.all([
+    tx.academicTerm.create({ data: { academicYearId: year.id, name: "Term 1", position: 1, startDate: new Date("2090-06-01T00:00:00.000Z"), endDate: new Date("2090-09-01T00:00:00.000Z"), createdById: actorId } }),
+    tx.academicTerm.create({ data: { academicYearId: year.id, name: "Term 2", position: 2, startDate: new Date("2090-09-02T00:00:00.000Z"), endDate: new Date("2090-12-01T00:00:00.000Z"), createdById: actorId } }),
+    tx.academicTerm.create({ data: { academicYearId: year.id, name: "Term 3", position: 3, startDate: new Date("2091-01-01T00:00:00.000Z"), endDate: new Date("2091-04-30T00:00:00.000Z"), createdById: actorId } }),
+  ]);
+  return { year, terms };
 }
 
 async function createFixture(tx: Prisma.TransactionClient) {
@@ -142,9 +161,8 @@ test("B1 elective policy schema and database enforce scope and counts", async ()
   assert.equal(CreateShsElectiveEnrollmentPolicySchema.safeParse({ academicYearId: "year", academicTermId: "term", gradeLevel: "12", minimumElectives: 3, maximumElectives: 2 }).success, false);
   await withRollback(async (tx) => {
     const actor = await tx.user.findFirstOrThrow({ where: { deletedAt: null } });
-    const year = await tx.academicYear.findFirstOrThrow({ where: { status: "ACTIVE" }, include: { terms: true } });
-    await makeLegacyActiveCurriculumConfigurable(year.id, tx);
-    const values = { academicYearId: year.id, academicTermId: year.terms[0]!.id, gradeLevel: "12" as const, minimumElectives: 0, maximumElectives: 0 };
+    const { year, terms } = await createPolicyFixture(tx, actor.id);
+    const values = { academicYearId: year.id, academicTermId: terms[0]!.id, gradeLevel: "12" as const, minimumElectives: 0, maximumElectives: 0 };
     const beforeAudits = await tx.auditLog.count();
     const policy = await createShsElectiveEnrollmentPolicy({ ...values, createdById: actor.id }, tx);
     await createAuditLogs([{ userId: actor.id, action: "CREATE", module: "ShsElectiveEnrollmentPolicy", recordId: policy.id, description: "Created SHS elective enrollment policy." }], tx);
@@ -154,17 +172,17 @@ test("B1 elective policy schema and database enforce scope and counts", async ()
       { minimumElectives: 0, maximumElectives: 0 },
     );
     const optionalPolicy = await tx.shsElectiveEnrollmentPolicy.create({
-      data: { ...values, academicTermId: year.terms[1]!.id, minimumElectives: 0, maximumElectives: 1, createdById: actor.id },
+      data: { ...values, academicTermId: terms[1]!.id, minimumElectives: 0, maximumElectives: 1, createdById: actor.id },
     });
     assert.deepEqual(
       { minimumElectives: optionalPolicy.minimumElectives, maximumElectives: optionalPolicy.maximumElectives },
       { minimumElectives: 0, maximumElectives: 1 },
     );
     await assert.rejects(tx.shsElectiveEnrollmentPolicy.create({ data: { ...values, createdById: actor.id } }));
-    await assert.rejects(tx.shsElectiveEnrollmentPolicy.create({ data: { ...values, gradeLevel: "10", academicTermId: year.terms[1]!.id, createdById: actor.id } }));
-    await assert.rejects(tx.shsElectiveEnrollmentPolicy.create({ data: { ...values, academicTermId: year.terms[2]!.id, minimumElectives: -1, maximumElectives: 0, createdById: actor.id } }));
-    await assert.rejects(tx.shsElectiveEnrollmentPolicy.create({ data: { ...values, academicTermId: year.terms[2]!.id, minimumElectives: 0, maximumElectives: 4, createdById: actor.id } }));
-    await assert.rejects(tx.shsElectiveEnrollmentPolicy.create({ data: { ...values, gradeLevel: "12", academicTermId: year.terms[1]!.id, minimumElectives: 3, maximumElectives: 2, createdById: actor.id } }));
+    await assert.rejects(tx.shsElectiveEnrollmentPolicy.create({ data: { ...values, gradeLevel: "10", academicTermId: terms[1]!.id, createdById: actor.id } }));
+    await assert.rejects(tx.shsElectiveEnrollmentPolicy.create({ data: { ...values, academicTermId: terms[2]!.id, minimumElectives: -1, maximumElectives: 0, createdById: actor.id } }));
+    await assert.rejects(tx.shsElectiveEnrollmentPolicy.create({ data: { ...values, academicTermId: terms[2]!.id, minimumElectives: 0, maximumElectives: 4, createdById: actor.id } }));
+    await assert.rejects(tx.shsElectiveEnrollmentPolicy.create({ data: { ...values, gradeLevel: "12", academicTermId: terms[1]!.id, minimumElectives: 3, maximumElectives: 2, createdById: actor.id } }));
   });
 });
 
@@ -175,17 +193,15 @@ test("B1 elective policy rejects a cross-year Term and rolls policy audit back a
   ]);
   await withRollback(async (tx) => {
     const actor = await tx.user.findFirstOrThrow({ where: { deletedAt: null } });
-    const year = await tx.academicYear.findFirstOrThrow({ where: { status: "ACTIVE" }, include: { terms: true } });
-    await makeLegacyActiveCurriculumConfigurable(year.id, tx);
+    const { year } = await createPolicyFixture(tx, actor.id);
     const otherYear = await tx.academicYear.create({ data: { label: "2097-2098", startDate: new Date("2097-06-01T00:00:00.000Z"), endDate: new Date("2098-04-01T00:00:00.000Z"), createdById: actor.id } });
     const otherTerm = await tx.academicTerm.create({ data: { academicYearId: otherYear.id, name: "Other Term", position: 1, startDate: new Date("2097-06-01T00:00:00.000Z"), endDate: new Date("2097-08-01T00:00:00.000Z"), createdById: actor.id } });
     await assert.rejects(tx.shsElectiveEnrollmentPolicy.create({ data: { academicYearId: year.id, academicTermId: otherTerm.id, gradeLevel: "11", minimumElectives: 1, maximumElectives: 3, createdById: actor.id } }));
   });
   await withRollback(async (tx) => {
     const actor = await tx.user.findFirstOrThrow({ where: { deletedAt: null } });
-    const year = await tx.academicYear.findFirstOrThrow({ where: { status: "ACTIVE" }, include: { terms: true } });
-    await makeLegacyActiveCurriculumConfigurable(year.id, tx);
-    const policy = await tx.shsElectiveEnrollmentPolicy.create({ data: { academicYearId: year.id, academicTermId: year.terms[2]!.id, gradeLevel: "12", minimumElectives: 1, maximumElectives: 2, createdById: actor.id } });
+    const { year, terms } = await createPolicyFixture(tx, actor.id);
+    const policy = await tx.shsElectiveEnrollmentPolicy.create({ data: { academicYearId: year.id, academicTermId: terms[2]!.id, gradeLevel: "12", minimumElectives: 1, maximumElectives: 2, createdById: actor.id } });
     await createAuditLogs([{ userId: actor.id, action: "CREATE", module: "ShsElectiveEnrollmentPolicy", recordId: policy.id, description: "Created SHS elective enrollment policy." }], tx);
   });
   assert.deepEqual(await Promise.all([

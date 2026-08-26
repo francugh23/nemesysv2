@@ -27,7 +27,7 @@ const expectedElectivesByTerm = new Map([
   [3, ["SSHS-G11-CADT-VGD", "SSHS-G11-HT-FBO"]],
 ]);
 
-test("2026-2027 Grade 11 C3-A approvals and elective policies are demo-ready without Grade 12 setup", async () => {
+test("2026-2027 Grade 11 and Grade 12 pilot approvals and elective policies are demo-ready", async () => {
   const academicYear = await prisma.academicYear.findFirstOrThrow({
     where: { label: "2026-2027", status: "ACTIVE" },
     select: {
@@ -92,13 +92,6 @@ test("2026-2027 Grade 11 C3-A approvals and elective policies are demo-ready wit
       },
     }),
     Promise.all([
-      prisma.subject.count({ where: { gradeLevel: "12", deletedAt: null } }),
-      prisma.subjectOffering.count({
-        where: { academicYearId: academicYear.id, gradeLevel: "12", deletedAt: null },
-      }),
-      prisma.shsElectiveEnrollmentPolicy.count({
-        where: { academicYearId: academicYear.id, gradeLevel: "12" },
-      }),
       prisma.teacher.count({ where: { deletedAt: null } }),
       prisma.student.count({ where: { deletedAt: null } }),
       prisma.enrollment.count(),
@@ -169,7 +162,7 @@ test("2026-2027 Grade 11 C3-A approvals and elective policies are demo-ready wit
       { position: 3, minimumElectives: 1, maximumElectives: 1 },
     ],
   );
-  assert.deepEqual(zeroState, Array(16).fill(0));
+  assert.deepEqual(zeroState, Array(13).fill(0));
 
   const readiness = await prisma.$transaction(async (transaction) => {
     const configuration = await findAcademicYearConfigurationById(
@@ -218,19 +211,12 @@ test("2026-2027 Grade 11 C3-A approvals and elective policies are demo-ready wit
     });
   });
 
-  assert.equal(readiness.curriculum.schoolApprovedShsOfferingCount, 11);
+  assert.equal(readiness.curriculum.schoolApprovedShsOfferingCount, 15);
   assert.equal(readiness.curriculum.pendingShsOfferingCount, 0);
   assert.deepEqual(readiness.electivePolicies, {
-    configuredScopeCount: 3,
+    configuredScopeCount: 6,
     totalScopeCount: 6,
-    missingScopes: [
-      { academicTermId: academicYear.terms[0]!.id, termName: "Term 1", termPosition: 1, gradeLevel: "12" },
-      { academicTermId: academicYear.terms[1]!.id, termName: "Term 2", termPosition: 2, gradeLevel: "12" },
-      { academicTermId: academicYear.terms[2]!.id, termName: "Term 3", termPosition: 3, gradeLevel: "12" },
-    ],
+    missingScopes: [],
   });
-  assert.match(
-    readiness.notices.find(({ code }) => code === "MISSING_ELECTIVE_POLICIES")?.message ?? "",
-    /Grade 12 Term 1, Grade 12 Term 2, Grade 12 Term 3/,
-  );
+  assert.equal(readiness.notices.some(({ code }) => code === "MISSING_ELECTIVE_POLICIES"), false);
 });

@@ -110,10 +110,12 @@ export async function getSubjectFilterOptions(): Promise<SubjectFilterOptions> {
 async function ensureSubjectIdentityAvailable(
   identity: ReturnType<typeof normalizeSubjectIdentity>,
   subjectId?: string,
+  transaction?: Prisma.TransactionClient,
 ) {
   const existingSubject = await findSubjectByIdentity(
     identity.code,
     identity.gradeLevel,
+    transaction,
   );
 
   if (existingSubject && existingSubject.id !== subjectId) {
@@ -132,42 +134,40 @@ function rethrowSubjectIdentityConflict(error: unknown): never {
   throw error;
 }
 
+export async function createSubjectInTransaction(
+  values: z.infer<typeof CreateSubjectSchema>,
+  actorId: string,
+  transaction: Prisma.TransactionClient,
+) {
+  const identity = normalizeSubjectIdentity(values);
+  await ensureSubjectIdentityAvailable(identity, undefined, transaction);
+  const subject = await createSubject(
+    { ...identity, description: values.description, createdById: actorId },
+    transaction,
+  );
+  await createAuditLogs(
+    [{
+      userId: actorId,
+      action: "CREATE",
+      module: "Subject",
+      recordId: subject.id,
+      recordName: subject.code,
+      description: "Created subject",
+    }],
+    transaction,
+  );
+  return subject;
+}
+
 export async function createSubjectService(
   values: z.infer<typeof CreateSubjectSchema>,
 ) {
   const session = await requirePermission(Permissions.SUBJECTS);
 
-  const identity = normalizeSubjectIdentity(values);
-
-  await ensureSubjectIdentityAvailable(identity);
-
   try {
-    return await prisma.$transaction(async (transaction) => {
-      const subject = await createSubject(
-        {
-          ...identity,
-          description: values.description,
-          createdById: session.user.id,
-        },
-        transaction,
-      );
-
-      await createAuditLogs(
-        [
-          {
-            userId: session.user.id,
-            action: "CREATE",
-            module: "Subject",
-            recordId: subject.id,
-            recordName: subject.code,
-            description: "Created subject",
-          },
-        ],
-        transaction,
-      );
-
-      return subject;
-    });
+    return await prisma.$transaction((transaction) =>
+      createSubjectInTransaction(values, session.user.id, transaction),
+    );
   } catch (error) {
     rethrowSubjectIdentityConflict(error);
   }

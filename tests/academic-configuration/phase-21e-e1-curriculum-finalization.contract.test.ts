@@ -62,10 +62,11 @@ test("adoption never copies finalization or SHS approval and keeps existing sour
 });
 
 test("UI distinguishes configurable, finalized, historical, participation-locked, and pending states", async () => {
-  const [details, dialog, columns] = await Promise.all([
+  const [details, dialog, columns, presentation] = await Promise.all([
     read("app/(protected)/dashboard/academic-years/components/academic-year-view-dialog.tsx"),
     read("app/(protected)/dashboard/academic-years/components/curriculum-finalization-dialog.tsx"),
     read("app/(protected)/dashboard/subject-offerings/components/subject-offering-columns.tsx"),
+    read("lib/shs-presentation.ts"),
   ]);
   assert.match(details, /Configurable/);
   assert.match(details, /Finalized/);
@@ -73,6 +74,7 @@ test("UI distinguishes configurable, finalized, historical, participation-locked
   assert.match(dialog, /does not close Enrollment, SHS progression, results, or the Academic Year/);
   assert.match(dialog, /Missing grade coverage or elective-policy scopes remain warnings/);
   assert.match(columns, /Locked by Student Participation/);
-  assert.match(columns, /Pending School Approval/);
+  assert.match(columns, /getShsCurriculumStatusLabel\(context\.curriculumStatus\)/);
+  assert.match(presentation, /PROVISIONAL_DEPED: "Pending School Approval"/);
   assert.match(columns, /!finalized/);
 });
