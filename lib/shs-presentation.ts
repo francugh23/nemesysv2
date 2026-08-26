@@ -1,4 +1,5 @@
 import type {
+  ShsCurriculumClusterTrack,
   ShsCurriculumStatus,
   ShsSubjectClassification,
 } from "@/app/generated/prisma/enums";
@@ -14,6 +15,11 @@ const curriculumStatusLabels: Record<ShsCurriculumStatus, string> = {
   SCHOOL_APPROVED: "School Approved",
 };
 
+const curriculumClusterTrackLabels: Record<ShsCurriculumClusterTrack, string> = {
+  ACADEMIC: "Academic",
+  TECHPRO: "TechPro",
+};
+
 export function getShsSubjectClassificationLabel(
   classification: ShsSubjectClassification,
 ) {
@@ -22,4 +28,10 @@ export function getShsSubjectClassificationLabel(
 
 export function getShsCurriculumStatusLabel(status: ShsCurriculumStatus) {
   return curriculumStatusLabels[status];
+}
+
+export function getShsCurriculumClusterTrackLabel(
+  track: ShsCurriculumClusterTrack,
+) {
+  return curriculumClusterTrackLabels[track];
 }

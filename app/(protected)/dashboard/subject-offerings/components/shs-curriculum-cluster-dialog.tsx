@@ -19,6 +19,7 @@ import {
   useShsCurriculumClusters,
   useUpdateShsCurriculumCluster,
 } from "@/hooks/subject-offering.hook";
+import { getShsCurriculumClusterTrackLabel } from "@/lib/shs-presentation";
 import { CreateShsCurriculumClusterSchema } from "@/schemas";
 
 type Cluster = NonNullable<ReturnType<typeof useShsCurriculumClusters>["data"]>[number];
@@ -61,7 +62,11 @@ function ClusterForm({ cluster, onSuccess }: { cluster?: Cluster; onSuccess: () 
         <FieldLabel>Track</FieldLabel>
         <Controller name="track" control={form.control} render={({ field }) => (
           <Select value={field.value} onValueChange={field.onChange} disabled={Boolean(cluster)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue>
+                {getShsCurriculumClusterTrackLabel(field.value)}
+              </SelectValue>
+            </SelectTrigger>
             <SelectContent><SelectItem value="ACADEMIC">Academic</SelectItem><SelectItem value="TECHPRO">TechPro</SelectItem></SelectContent>
           </Select>
         )} />

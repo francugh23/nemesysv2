@@ -180,7 +180,13 @@ export function SubjectOfferingForm({ form }: SubjectOfferingFormProps) {
                   field.onChange(value);
                   if (value === "CORE") form.setValue("shsContext.clusterId", undefined);
                 }}>
-                  <SelectTrigger><SelectValue placeholder="Select classification" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select classification">
+                      {field.value
+                        ? getShsSubjectClassificationLabel(field.value)
+                        : null}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="CORE">{getShsSubjectClassificationLabel("CORE")}</SelectItem>
                     <SelectItem value="ACADEMIC_ELECTIVE">{getShsSubjectClassificationLabel("ACADEMIC_ELECTIVE")}</SelectItem>

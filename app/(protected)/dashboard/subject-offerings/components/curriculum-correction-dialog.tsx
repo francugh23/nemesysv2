@@ -18,7 +18,10 @@ import {
   useCurriculumCorrectionContext,
   useCurriculumCorrectionDetail,
 } from "@/hooks/subject-offering.hook";
-import { getShsSubjectClassificationLabel } from "@/lib/shs-presentation";
+import {
+  getShsCurriculumStatusLabel,
+  getShsSubjectClassificationLabel,
+} from "@/lib/shs-presentation";
 
 import type { SubjectOfferingListItem } from "./subject-offering-types";
 
@@ -173,7 +176,7 @@ function CorrectionForm({
               <div className="grid gap-4 rounded-lg border p-4 md:grid-cols-2">
                 <div className="md:col-span-2">
                   <p className="font-medium">Atomic school approval</p>
-                  <p className="text-sm text-muted-foreground">The successor is created SCHOOL_APPROVED with new provenance and approval evidence.</p>
+                  <p className="text-sm text-muted-foreground">The successor is created {getShsCurriculumStatusLabel("SCHOOL_APPROVED")} with new provenance and approval evidence.</p>
                 </div>
                 <Field>
                   <FieldLabel>Classification</FieldLabel>
@@ -181,7 +184,11 @@ function CorrectionForm({
                     setClassification(value as Classification);
                     setClusterId("");
                   }}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue>
+                        {getShsSubjectClassificationLabel(classification)}
+                      </SelectValue>
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="CORE">{getShsSubjectClassificationLabel("CORE")}</SelectItem>
                       <SelectItem value="ACADEMIC_ELECTIVE">{getShsSubjectClassificationLabel("ACADEMIC_ELECTIVE")}</SelectItem>
