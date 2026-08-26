@@ -242,14 +242,6 @@ test("same-grade JHS correction records immutable history and preserves all part
 test("same-grade SHS correction preserves SSE, Term, and DRAFT result identities", async () => {
   await withRollback(async (transaction) => {
     const fixture = await createPlacementFixture(transaction, { gradeLevel: "11" });
-    const provisionalOffering = await transaction.subjectOffering.findFirstOrThrow({
-      where: { academicYearId: fixture.academicYear.id, gradeLevel: "11", deletedAt: null, shsContext: { classification: "CORE", curriculumStatus: "PROVISIONAL_DEPED" } },
-      select: { id: true },
-    });
-    await transaction.subjectOfferingShsContext.update({
-      where: { subjectOfferingId: provisionalOffering.id },
-      data: { curriculumStatus: "SCHOOL_APPROVED", approvalReference: "Phase 21F-A rollback fixture", approvedById: fixture.actor.id, approvedAt: new Date() },
-    });
     const offering = await transaction.subjectOffering.findFirstOrThrow({
       where: { academicYearId: fixture.academicYear.id, gradeLevel: "11", deletedAt: null, shsContext: { classification: "CORE", curriculumStatus: "SCHOOL_APPROVED" } },
       select: {

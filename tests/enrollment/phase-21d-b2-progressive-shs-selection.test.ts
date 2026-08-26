@@ -10,6 +10,7 @@ import prisma from "../../lib/prisma";
 import {
   createLegacyPolicyFixture,
   makeLegacyActiveCurriculumConfigurable,
+  removeLegacyPolicyFixture,
 } from "../helpers/phase-21e-e1-legacy-fixture";
 import {
   progressShsCurrentTermInTransaction,
@@ -213,13 +214,17 @@ async function createProgressionFixture(
     },
     select: { id: true },
   });
+  const policyScope = {
+    academicYearId: academicYear.id,
+    academicTermId: policyTerm.id,
+    gradeLevel: "11" as const,
+  };
+  await removeLegacyPolicyFixture(policyScope, transaction);
   const policy = options.createPolicy === false
     ? null
     : await createLegacyPolicyFixture(
         {
-          academicYearId: academicYear.id,
-          academicTermId: policyTerm.id,
-          gradeLevel: "11",
+          ...policyScope,
           minimumElectives: options.minimumElectives ?? 1,
           maximumElectives: options.maximumElectives ?? 3,
           createdById: actor.id,

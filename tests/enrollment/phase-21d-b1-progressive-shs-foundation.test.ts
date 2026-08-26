@@ -125,8 +125,11 @@ test("B1 Term-scoped identity allows distinct Terms and rejects duplicate active
 });
 
 test("B1 preserves readable legacy null selection identity", async () => {
-  const legacy = await prisma.studentSubjectEnrollment.findFirstOrThrow({ where: { selectionAcademicTermId: null } });
-  assert.equal(legacy.selectionAcademicTermId, null);
+  await withRollback(async (tx) => {
+    const fixture = await createFixture(tx);
+    const legacy = await fixture.createParticipation(null);
+    assert.equal(legacy.selectionAcademicTermId, null);
+  });
 });
 
 test("B1 elective policy schema and database enforce scope and counts", async () => {

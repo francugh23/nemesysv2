@@ -51,9 +51,38 @@ export async function createLegacyPolicyFixture(
   await transaction.$executeRawUnsafe(
     `ALTER TABLE "ShsElectiveEnrollmentPolicy" DISABLE TRIGGER "${POLICY_TRIGGER}"`,
   );
+  await transaction.shsElectiveEnrollmentPolicy.deleteMany({
+    where: {
+      academicYearId: data.academicYearId,
+      academicTermId: data.academicTermId,
+      gradeLevel: data.gradeLevel,
+    },
+  });
   const policy = await transaction.shsElectiveEnrollmentPolicy.create({ data });
   await transaction.$executeRawUnsafe(
     `ALTER TABLE "ShsElectiveEnrollmentPolicy" ENABLE TRIGGER "${POLICY_TRIGGER}"`,
   );
   return policy;
+}
+
+export async function removeLegacyPolicyFixture(
+  data: Pick<
+    Prisma.ShsElectiveEnrollmentPolicyUncheckedCreateInput,
+    "academicYearId" | "academicTermId" | "gradeLevel"
+  >,
+  transaction: Prisma.TransactionClient,
+) {
+  await transaction.$executeRawUnsafe(
+    `ALTER TABLE "ShsElectiveEnrollmentPolicy" DISABLE TRIGGER "${POLICY_TRIGGER}"`,
+  );
+  await transaction.shsElectiveEnrollmentPolicy.deleteMany({
+    where: {
+      academicYearId: data.academicYearId,
+      academicTermId: data.academicTermId,
+      gradeLevel: data.gradeLevel,
+    },
+  });
+  await transaction.$executeRawUnsafe(
+    `ALTER TABLE "ShsElectiveEnrollmentPolicy" ENABLE TRIGGER "${POLICY_TRIGGER}"`,
+  );
 }

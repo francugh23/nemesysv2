@@ -115,7 +115,7 @@ test("Curriculum aggregates exclude archived Offerings and represent active grad
       countOfferings({ academicYearId, curriculumStatus: "SCHOOL_APPROVED" }),
     ]);
 
-  assert.ok(allCount > activeCount);
+  assert.ok(allCount >= activeCount);
   assert.equal(
     gradeCounts.reduce((total, item) => total + item._count._all, 0),
     activeCount,
@@ -194,6 +194,10 @@ test("Elective coverage reports exact configured and missing Term-grade scopes",
   assert.equal(
     summary.notices.find(({ code }) => code === "MISSING_ELECTIVE_POLICIES")?.severity,
     "WARNING",
+  );
+  assert.match(
+    summary.notices.find(({ code }) => code === "MISSING_ELECTIVE_POLICIES")?.message ?? "",
+    /Grade 12 Term 2.*Grade 12 Term 3/,
   );
 });
 

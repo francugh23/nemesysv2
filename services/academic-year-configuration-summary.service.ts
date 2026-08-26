@@ -100,10 +100,13 @@ export function buildAcademicYearConfigurationSummary({
   }
 
   if (missingScopes.length > 0) {
+    const missingScopeLabels = missingScopes.map(
+      ({ gradeLevel, termName }) => `Grade ${gradeLevel} ${termName}`,
+    );
     notices.push({
       code: "MISSING_ELECTIVE_POLICIES",
       severity: historical ? "INFORMATION" : "WARNING",
-      message: `${missingScopes.length} SHS elective-policy scope${missingScopes.length === 1 ? " is" : "s are"} not configured.`,
+      message: `${missingScopes.length} SHS elective-policy scope${missingScopes.length === 1 ? " is" : "s are"} not configured: ${missingScopeLabels.join(", ")}.`,
     });
   }
 
