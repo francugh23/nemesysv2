@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 
 import { AuthorizationError, requireRole } from "@/lib/authorization";
 import prisma from "@/lib/prisma";
-import { finalizeCurriculumService } from "@/services/curriculum-finalization.service";
 import { promoteShsSubjectOfferingService } from "@/services/subject-offering.service";
 
 const confirmation = "PHASE_22D_APPROVE_AND_FINALIZE_SY_2026_2027";
@@ -28,8 +27,7 @@ export async function POST(request: Request) {
       prisma.shsElectiveEnrollmentPolicy.count({ where: { academicYearId: year.id } }),
     ]);
     if (pending || approved !== 8 || policies !== 6) throw new Error("SHS approval or elective-policy readiness is incomplete.");
-    await finalizeCurriculumService(year.id);
-    return NextResponse.json({ academicYearId: year.id, finalized: true }, { headers: { "Cache-Control": "private, no-store" } });
+    return NextResponse.json({ academicYearId: year.id, readyForFinalization: true, finalized: false }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     if (error instanceof AuthorizationError) return NextResponse.json({ message: error.message }, { status: error.status });
     return NextResponse.json({ message: error instanceof Error ? error.message : "Internal Server Error" }, { status: 500 });
