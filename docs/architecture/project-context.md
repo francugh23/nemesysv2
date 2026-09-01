@@ -9,7 +9,7 @@ This document is the repository's current operational state. It is not implement
 
 ### Current Milestone
 
-Phase 22D-A configured SY 2026-2027 from the Phase 22C clean baseline: three Terms, five organizational Sections (Grades 7-11 A), 32 full-year JHS Offerings, five full-year Grade 11 Core Offerings, and three Grade 11 elective Offerings. Phase 22D-B1 approved all eight SHS Offerings with legitimate DepEd Order No. 017, s. 2026 evidence; six policy scopes are intact. Phase 22D-B2 finalized Curriculum configuration while the Academic Year remains ACTIVE; finalization is not AY locking. The dashboard correctly reports five organizational Sections but zero enrollment-derived Active Sections until active Enrollments exist. The retained Phase 22C rollback database is `nemesysv2_phase22c_rollback_20260901062030`.
+Phase 22D-A configured SY 2026-2027 from the Phase 22C clean baseline: three Terms, five organizational Sections (Grades 7-11 A), 32 full-year JHS Offerings, five full-year Grade 11 Core Offerings, and three Grade 11 elective Offerings. Phase 22D-B1 approved all eight SHS Offerings with legitimate DepEd Order No. 017, s. 2026 evidence; six policy scopes are intact. Phase 22D-B2 finalized Curriculum configuration while the Academic Year remains ACTIVE; finalization is not AY locking. Phase 23-A is the completed Offering-Term-scoped Teacher assignment baseline. Work Immersion remains a reusable Grade 12 Subject only; Grade 12 operational Curriculum remains deferred. The dashboard correctly reports five organizational Sections but zero enrollment-derived Active Sections until active Enrollments exist. The retained Phase 22C rollback database is `nemesysv2_phase22c_rollback_20260901062030`.
 
 ### Current Objective
 

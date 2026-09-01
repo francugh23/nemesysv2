@@ -24,8 +24,8 @@ test("Subject Assignment reads expose active Offering-Term scopes without assign
 
   assert.equal(assignments.length, 0, "baseline setup must not create Assignments");
   assert.equal(teachers.length, 0, "verified baseline has no Teachers");
-  assert.equal(sections.length, 6, "expected the six organizational Sections");
+  assert.equal(sections.length, 5, "expected the five organizational Sections");
   assert.equal(academicYears.length, 1, "expected the ACTIVE Academic Year");
-  assert.equal(scopes.length, 125, "expected exact Curriculum Offering-Term scopes");
+  assert.equal(scopes.length, 116, "expected exact Curriculum Offering-Term scopes");
   assert.ok(scopes.every((scope) => scope.subjectOffering.academicYearId === academicYears[0]?.id));
 });
