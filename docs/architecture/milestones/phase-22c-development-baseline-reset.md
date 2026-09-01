@@ -34,8 +34,8 @@ The successful rollback database is retained. Rollback requires the separate `RO
 
 - One selected active Super Admin, preserving ID, username, email, password hash, session state, and first-login state.
 - 32 active reusable Grade 7-10 Subjects, asserted at preflight.
-- Five reusable Grade 11 Core Subjects: Effective Communication, Life and Career Skills, General Mathematics, General Science, and Philippine History and Society.
-- No Grade 11 elective Subject definitions. Academic and TechPro clusters remain reusable configuration choices for future Academic Year-owned Curriculum Offerings.
+- Five reusable Grade 11 Core Subjects: Effective Communication / Mabisang Komunikasyon, Life and Career Skills, General Mathematics, General Science, and Pag-aaral ng Kasaysayan at Lipunang Pilipino.
+- Sixteen reusable Grade 11 elective Subject definitions from the approved compact starter catalog: two for each retained Academic or TechPro cluster. They contain no persisted cluster, classification, provenance, approval, or Term applicability; those facts remain future Academic Year-owned Curriculum Offering configuration.
 - Eight school-facing clusters: `ACA-ASSH`, `ACA-BE`, `ACA-ICT`, `ACA-STEM`, `TP-ASET`, `TP-CBT`, `TP-CADT`, and `TP-HT`.
 - No Academic Years, Terms, Offerings, Offering Terms, SHS contexts, policies, school approvals, operational records, history/evidence, or audit logs.
 
@@ -43,4 +43,4 @@ Subject definitions contain no permanent Term assignment. Term placement remains
 
 ## Verification
 
-The applied reset correction removed the exact sixteen unreferenced `SSHS-G11-ACA-*` and `SSHS-G11-TP-*` elective Subject rows only after checking every foreign-key dependency into `Subject`. The final baseline has 1 User, 37 Subjects (32 active Grade 7-10 and five Grade 11 Core), zero Grade 11 elective Subjects, 8 clusters, and zero rows in every reset operational, configuration, policy, participation, result, correction, reference, and audit table. The source migration ledger contains 56 applied migrations and matches the candidate checksum identity. Prisma status and schema diff report no drift.
+The reset applied on 2026-09-01 asserts and produced 1 User, 53 Subjects (32 active Grade 7-10, five Grade 11 Core, and sixteen curated Grade 11 electives), 8 clusters, and zero rows in every reset operational, configuration, policy, participation, result, correction, reference, and audit table. It verified exact curated SHS Subject definitions, byte-for-byte selected Super Admin preservation, the complete 59-migration ledger, schema fingerprint, and database grants before the atomic swap. Prisma status and schema diff report no drift. The original source remains retained as `nemesysv2_phase22c_rollback_20260901062030` with rollback fingerprint `49b1bf149f1472267d89c02c573829d13034d1d76be861b4188604dd62afbc97`.

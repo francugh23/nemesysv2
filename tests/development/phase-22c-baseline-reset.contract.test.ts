@@ -41,30 +41,25 @@ test("Phase 22C baseline has only approved reusable definitions and no operation
   const tool = source("scripts/reset-development-baseline.ts");
 
   for (const code of ["ACA-ASSH", "ACA-BE", "ACA-ICT", "ACA-STEM", "TP-ASET", "TP-CBT", "TP-CADT", "TP-HT"]) assert.match(tool, new RegExp(`"${code}"`));
-  for (const title of ["Effective Communication", "Life and Career Skills", "General Mathematics", "General Science", "Philippine History and Society"]) assert.match(tool, new RegExp(title));
+  for (const title of ["Effective Communication / Mabisang Komunikasyon", "Life and Career Skills", "General Mathematics", "General Science", "Pag-aaral ng Kasaysayan at Lipunang Pilipino"]) assert.match(tool, new RegExp(title));
+  for (const title of ["Contemporary Literature 1", "Contemporary Literature 2", "Introduction to Organization and Management", "Business 1 - Basic Accounting", "Database Management", "Empowerment Technologies", "Biology 1", "Biology 2", "Driving and Automotive Servicing", "Motorcycle and Small Engine Servicing", "Carpentry", "Technical Drafting", "Visual Graphic Design", "Animation", "Food and Beverage Operation", "Bakery Operations"]) assert.match(tool, new RegExp(title));
   assert.match(tool, /const JHS_SUBJECT_COUNT = 32/);
-  assert.match(tool, /return coreSubjects\.map/);
-  assert.doesNotMatch(tool, /const electiveSubjects/);
-  assert.match(tool, /expected\.Subject = jhsCount \+ coreSubjects\.length/);
-  assert.match(tool, /grade11Electives: 0/);
-  assert.match(tool, /subjects: JHS_SUBJECT_COUNT \+ coreSubjects\.length/);
+  assert.match(tool, /const electiveSubjects/);
+  assert.match(tool, /return \[\.\.\.coreSubjects, \.\.\.electiveSubjects\]\.map/);
+  assert.match(tool, /expected\.Subject = jhsCount \+ coreSubjects\.length \+ electiveSubjects\.length/);
+  assert.match(tool, /grade11ElectiveSubjects: electiveSubjects\.length/);
+  assert.match(tool, /subjects: JHS_SUBJECT_COUNT \+ coreSubjects\.length \+ electiveSubjects\.length/);
   assert.match(tool, /expected\.ShsCurriculumCluster = clusters\.length/);
   assert.match(tool, /"ShsCurriculumReference"/);
+  assert.match(tool, /shsCurriculumReferences: 0/);
+  assert.match(tool, /sourceTableFingerprint: hash\(source\.tables\)/);
+  assert.match(tool, /Candidate SHS Subject definitions differ from the approved baseline/);
+  assert.match(tool, /DEPED_SSHS_CATALOG_URL/);
   assert.match(tool, /gradeLevel: "11", semester: null/);
   assert.doesNotMatch(tool, /TRUNCATE CASCADE/);
   assert.doesNotMatch(tool, /DISABLE TRIGGER/);
   assert.doesNotMatch(tool, /DROP SCHEMA/);
   assert.doesNotMatch(tool, /migrate reset/);
-});
-
-test("Phase 22C removes only unreferenced curated electives from the current baseline", () => {
-  const tool = source("scripts/reset-development-baseline.ts");
-
-  assert.match(tool, /--remove-curated-electives/);
-  assert.match(tool, /curatedElectiveCodes/);
-  assert.match(tool, /confrelid = '\\"Subject\\"'::regclass/);
-  assert.match(tool, /Refusing curated elective deletion because dependent references exist/);
-  assert.match(tool, /DELETE FROM "Subject" WHERE "id" = ANY/);
-  assert.match(tool, /Deleted \$\{deleted\.rowCount\} curated elective Subjects/);
-  assert.match(tool, /Curated elective deletion verification failed/);
+  assert.doesNotMatch(tool, /--remove-curated-electives/);
+  assert.doesNotMatch(tool, /TRUNCATE CASCADE/);
 });
