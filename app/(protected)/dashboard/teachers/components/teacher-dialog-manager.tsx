@@ -3,10 +3,11 @@
 import type { TeacherListItem } from "@/schemas";
 
 import { DeactivateTeacherDialog } from "./deactivate-teacher-dialog";
+import { ArchiveTeacherDialog } from "./archive-teacher-dialog";
 import { TeacherEditDialog } from "./edit-teacher-dialog";
 import { TeacherViewDialog } from "./teacher-view-dialog";
 
-export type TeacherDialogType = "view" | "edit" | "deactivate" | null;
+export type TeacherDialogType = "view" | "edit" | "deactivate" | "archive" | null;
 
 interface TeacherDialogManagerProps {
   teacher: TeacherListItem | null;
@@ -40,6 +41,7 @@ export function TeacherDialogManager({
         open={dialog === "deactivate"}
         onOpenChange={(open) => !open && onClose()}
       />
+      <ArchiveTeacherDialog teacher={teacher} open={dialog === "archive"} onOpenChange={(open) => !open && onClose()} />
     </>
   );
 }

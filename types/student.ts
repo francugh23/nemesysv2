@@ -12,11 +12,9 @@ export type StudentListItem = Student & {
     room: string | null;
     shift: "MORNING" | "AFTERNOON" | null;
     adviser: {
-      user: {
-        firstName: string;
-        middleName: string | null;
-        lastName: string;
-      };
+      firstName: string;
+      middleName: string | null;
+      lastName: string;
     } | null;
   } | null;
 };

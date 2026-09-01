@@ -84,12 +84,10 @@ test("change-password schema rejects exact current-password reuse", () => {
   );
 });
 
-test("Teacher temporary credentials use the shared bcrypt byte boundary", () => {
+test("Teacher personnel creation does not accept credential requirements", () => {
   const teacher = {
     employeeNumber: "T-001",
-    username: "teacher",
     email: "teacher@example.com",
-    temporaryPassword: "a".repeat(73),
     firstName: "Test",
     middleName: "",
     lastName: "Teacher",
@@ -98,12 +96,5 @@ test("Teacher temporary credentials use the shared bcrypt byte boundary", () => 
     major: "",
   };
 
-  assert.equal(CreateTeacherSchema.safeParse(teacher).success, false);
-  assert.equal(
-    CreateTeacherSchema.safeParse({
-      ...teacher,
-      temporaryPassword: "valid123",
-    }).success,
-    true,
-  );
+  assert.equal(CreateTeacherSchema.safeParse(teacher).success, true);
 });

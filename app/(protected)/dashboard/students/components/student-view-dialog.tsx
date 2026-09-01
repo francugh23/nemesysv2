@@ -30,9 +30,9 @@ export function StudentViewDialog({
   const currentSection = student.currentSection;
   const adviser = currentSection?.adviser
     ? formatFullName(
-        currentSection.adviser.user.firstName,
-        currentSection.adviser.user.middleName,
-        currentSection.adviser.user.lastName,
+        currentSection.adviser.firstName,
+        currentSection.adviser.middleName,
+        currentSection.adviser.lastName,
       )
     : null;
   const shift = currentSection?.shift

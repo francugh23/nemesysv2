@@ -19,6 +19,11 @@ enum UserStatus {
   INACTIVE
 }
 
+enum TeacherStatus {
+  ACTIVE
+  INACTIVE
+}
+
 enum Gender {
   MALE
   FEMALE
@@ -214,12 +219,20 @@ model Student {
 model Teacher {
   id String @id @default(cuid())
 
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeNumber String @unique
+
+  firstName  String
+  middleName String?
+  lastName   String
+  gender     Gender
+  email      String?
+
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   degree    String?
   major     String?
-  isAdviser Boolean @default(false)
+  status    TeacherStatus @default(ACTIVE)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -227,6 +240,9 @@ model Teacher {
 
   advisedSections    Section[]           @relation("SectionAdviser")
   subjectAssignments SubjectAssignment[]
+
+  @@index([status])
+  @@index([email])
 }
 
 model AcademicTerm {

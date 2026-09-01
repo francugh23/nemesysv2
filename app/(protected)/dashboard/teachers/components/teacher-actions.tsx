@@ -15,12 +15,14 @@ interface TeacherActionsProps {
   teacher: TeacherListItem;
   onEdit: (teacher: TeacherListItem) => void;
   onDeactivate: (teacher: TeacherListItem) => void;
+  onArchive: (teacher: TeacherListItem) => void;
 }
 
 export function TeacherActions({
   teacher,
   onEdit,
   onDeactivate,
+  onArchive,
 }: TeacherActionsProps) {
   return (
     <DropdownMenu>
@@ -52,7 +54,10 @@ export function TeacherActions({
             onDeactivate(teacher);
           }}
         >
-          Deactivate
+          {teacher.status === "ACTIVE" ? "Deactivate" : "Inactive"}
+        </DropdownMenuItem>
+        <DropdownMenuItem className="text-destructive" onClick={(event) => { event.stopPropagation(); onArchive(teacher); }}>
+          Archive
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

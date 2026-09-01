@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useTeacherFilterOptions } from "@/hooks/teacher.hook";
 
-export const teacherFilterKeys = ["status", "gender"] as const;
+export const teacherFilterKeys = ["status", "gender", "adviser"] as const;
 
 export type TeacherFilterKey = (typeof teacherFilterKeys)[number];
 
@@ -84,6 +84,14 @@ export function TeacherToolbar({
         value={filters.status}
         options={statusOptions}
         onValueChange={(value) => onFilterChange("status", value)}
+        disabled={isLoading || isError}
+      />
+      <DataTableFacetedFilter
+        label="Adviser"
+        allLabel="All Teachers"
+        value={filters.adviser}
+        options={[{ label: "Has active section", value: "true" }, { label: "No active section", value: "false" }]}
+        onValueChange={(value) => onFilterChange("adviser", value)}
         disabled={isLoading || isError}
       />
       <DataTableFacetedFilter

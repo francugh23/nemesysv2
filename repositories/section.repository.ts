@@ -16,15 +16,7 @@ const sectionListSelect = {
   room: true,
   shift: true,
   adviser: {
-    select: {
-      user: {
-        select: {
-          firstName: true,
-          middleName: true,
-          lastName: true,
-        },
-      },
-    },
+    select: { firstName: true, middleName: true, lastName: true },
   },
 } satisfies Prisma.SectionSelect;
 
@@ -43,15 +35,7 @@ function getSectionListWhere(
         { sectionName: { contains: term, mode: "insensitive" } },
         { room: { contains: term, mode: "insensitive" } },
         {
-          adviser: {
-            user: {
-              OR: [
-                { firstName: { contains: term, mode: "insensitive" } },
-                { middleName: { contains: term, mode: "insensitive" } },
-                { lastName: { contains: term, mode: "insensitive" } },
-              ],
-            },
-          },
+          adviser: { OR: [{ firstName: { contains: term, mode: "insensitive" } }, { middleName: { contains: term, mode: "insensitive" } }, { lastName: { contains: term, mode: "insensitive" } }] },
         },
       ],
     })),
@@ -100,9 +84,9 @@ function getSectionGradeSortConditions(filters: SectionListFilters) {
     conditions.push(Prisma.sql`(
       "section"."sectionName" ILIKE ${pattern}
       OR "section"."room" ILIKE ${pattern}
-      OR "user"."firstName" ILIKE ${pattern}
-      OR "user"."middleName" ILIKE ${pattern}
-      OR "user"."lastName" ILIKE ${pattern}
+       OR "teacher"."firstName" ILIKE ${pattern}
+       OR "teacher"."middleName" ILIKE ${pattern}
+       OR "teacher"."lastName" ILIKE ${pattern}
     )`);
   }
 
@@ -125,8 +109,6 @@ export async function findActiveSectionsByGrade(
     FROM "Section" AS "section"
     LEFT JOIN "Teacher" AS "teacher"
       ON "teacher"."id" = "section"."adviserId"
-    LEFT JOIN "User" AS "user"
-      ON "user"."id" = "teacher"."userId"
     WHERE ${Prisma.join(getSectionGradeSortConditions(filters), " AND ")}
     ORDER BY CASE
       WHEN BTRIM("section"."gradeLevel") ~ '^[0-9]+$'
@@ -175,13 +157,9 @@ export async function findSectionFilterOptionValues() {
         adviserId: true,
         adviser: {
           select: {
-            user: {
-              select: {
-                firstName: true,
-                middleName: true,
-                lastName: true,
-              },
-            },
+             firstName: true,
+             middleName: true,
+             lastName: true,
           },
         },
       },

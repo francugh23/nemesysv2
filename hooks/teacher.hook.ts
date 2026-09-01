@@ -9,6 +9,7 @@ import {
 
 import {
   createTeacherAction,
+  archiveTeacherAction,
   deactivateTeacherAction,
   getTeacherFilterOptionsAction,
   getTeachersAction,
@@ -71,6 +72,19 @@ export function useDeactivateTeacher() {
 
   return useMutation({
     mutationFn: deactivateTeacherAction,
+    onSuccess: async (result) => {
+      if (!result.error) {
+        await invalidateTeacherQueries(queryClient);
+        await invalidateOperationalDashboard(queryClient);
+      }
+    },
+  });
+}
+
+export function useArchiveTeacher() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: archiveTeacherAction,
     onSuccess: async (result) => {
       if (!result.error) {
         await invalidateTeacherQueries(queryClient);

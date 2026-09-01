@@ -20,7 +20,7 @@ export function DeactivateTeacherDialog({
 }: DeactivateTeacherDialogProps) {
   const [confirmation, setConfirmation] = useState("");
   const deactivateTeacher = useDeactivateTeacher();
-  const employeeNumber = teacher.user.employeeNumber ?? "";
+  const employeeNumber = teacher.employeeNumber;
   const isConfirmed = Boolean(employeeNumber) && confirmation === employeeNumber;
 
   async function handleDeactivate() {
@@ -49,12 +49,12 @@ export function DeactivateTeacherDialog({
         onOpenChange(value);
       }}
       title="Deactivate Teacher"
-      description="The teacher profile will be deactivated and the account will no longer be able to sign in."
+      description="The teacher will be retained but excluded from new adviser and assignment selections. Linked account access is unchanged."
       confirmLabel="To confirm, type the employee number:"
       confirmValue={employeeNumber}
       itemLabel="Teacher"
-      itemName={`${teacher.user.lastName}, ${teacher.user.firstName}${
-        teacher.user.middleName ? ` ${teacher.user.middleName}` : ""
+       itemName={`${teacher.lastName}, ${teacher.firstName}${
+         teacher.middleName ? ` ${teacher.middleName}` : ""
       }`}
       inputValue={confirmation}
       onInputChange={setConfirmation}

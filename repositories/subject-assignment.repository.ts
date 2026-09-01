@@ -35,7 +35,7 @@ export function findActiveSubjectAssignment(identity: SubjectAssignmentIdentity,
 export function findActiveSubjectAssignmentById(id: string, transaction?: Prisma.TransactionClient) {
   return client(transaction).subjectAssignment.findFirst({
     where: { id, deletedAt: null },
-    select: { id: true, teacherId: true, sectionId: true, subjectOfferingId: true, academicTermId: true, subjectOfferingTerm: { select: { academicTerm: { select: { name: true, position: true, startDate: true, endDate: true } }, subjectOffering: { select: { gradeLevel: true, subjectCode: true, subjectDescription: true, academicYear: { select: { label: true, status: true } } } } } }, teacher: { select: { user: { select: { employeeNumber: true, firstName: true, middleName: true, lastName: true } } } }, section: { select: { gradeLevel: true, sectionName: true } } },
+    select: { id: true, teacherId: true, sectionId: true, subjectOfferingId: true, academicTermId: true, subjectOfferingTerm: { select: { academicTerm: { select: { name: true, position: true, startDate: true, endDate: true } }, subjectOffering: { select: { gradeLevel: true, subjectCode: true, subjectDescription: true, academicYear: { select: { label: true, status: true } } } } } }, teacher: { select: { employeeNumber: true, firstName: true, middleName: true, lastName: true } }, section: { select: { gradeLevel: true, sectionName: true } } },
   });
 }
 
@@ -46,7 +46,7 @@ export function archiveSubjectAssignment(id: string, transaction?: Prisma.Transa
 export function findAllSubjectAssignments() {
   return prisma.subjectAssignment.findMany({
     where: { deletedAt: null },
-    select: { id: true, teacherId: true, subjectOfferingId: true, academicTermId: true, sectionId: true, teacher: { select: { user: { select: { employeeNumber: true, firstName: true, middleName: true, lastName: true } } } }, section: { select: { gradeLevel: true, sectionName: true } }, subjectOfferingTerm: { select: { academicTerm: { select: { name: true, position: true } }, subjectOffering: { select: { subjectCode: true, subjectDescription: true, academicYear: { select: { id: true, label: true, status: true } } } } } } },
+    select: { id: true, teacherId: true, subjectOfferingId: true, academicTermId: true, sectionId: true, teacher: { select: { employeeNumber: true, firstName: true, middleName: true, lastName: true } }, section: { select: { gradeLevel: true, sectionName: true } }, subjectOfferingTerm: { select: { academicTerm: { select: { name: true, position: true } }, subjectOffering: { select: { subjectCode: true, subjectDescription: true, academicYear: { select: { id: true, label: true, status: true } } } } } } },
     orderBy: [{ subjectOfferingTerm: { subjectOffering: { academicYear: { startDate: "desc" } } } }, { section: { sectionName: "asc" } }, { subjectOfferingTerm: { subjectOffering: { subjectCode: "asc" } } }, { subjectOfferingTerm: { academicTerm: { position: "asc" } } }, { id: "asc" }],
   });
 }

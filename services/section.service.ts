@@ -61,9 +61,9 @@ function toSectionListItem(
     gradeLevel: section.gradeLevel,
     sectionName: section.sectionName,
     adviserId: section.adviserId,
-    adviserFirstName: section.adviser?.user.firstName ?? null,
-    adviserMiddleName: section.adviser?.user.middleName ?? null,
-    adviserLastName: section.adviser?.user.lastName ?? null,
+    adviserFirstName: section.adviser?.firstName ?? null,
+    adviserMiddleName: section.adviser?.middleName ?? null,
+    adviserLastName: section.adviser?.lastName ?? null,
     room: section.room,
     shift: section.shift,
   };
@@ -123,9 +123,9 @@ export async function getSectionFilterOptions(): Promise<SectionFilterOptions> {
           ? [
               {
                 id: value.adviserId,
-                firstName: value.adviser.user.firstName,
-                middleName: value.adviser.user.middleName,
-                lastName: value.adviser.user.lastName,
+                firstName: value.adviser.firstName,
+                middleName: value.adviser.middleName,
+                lastName: value.adviser.lastName,
               },
             ]
           : [],
@@ -168,10 +168,10 @@ export async function getSectionFormOptions() {
   return {
     teachers: teachers.map((teacher) => ({
       id: teacher.id,
-      employeeNumber: teacher.user.employeeNumber,
-      firstName: teacher.user.firstName,
-      middleName: teacher.user.middleName,
-      lastName: teacher.user.lastName,
+      employeeNumber: teacher.employeeNumber,
+      firstName: teacher.firstName,
+      middleName: teacher.middleName,
+      lastName: teacher.lastName,
     })),
   };
 }

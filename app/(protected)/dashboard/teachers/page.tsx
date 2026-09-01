@@ -12,6 +12,7 @@ import { useTeachers } from "@/hooks/teacher.hook";
 import { useTableUrlState } from "@/hooks/use-table-url-state.hook";
 import {
   TeacherGenderSchema,
+  TeacherAdviserFilterSchema,
   TeacherStatusSchema,
   type TeacherListItem,
   type TeacherTableQueryInput,
@@ -36,7 +37,6 @@ const teacherSortFields = [
   "gender",
   "degree",
   "major",
-  "isAdviser",
   "status",
   "createdAt",
 ] as const;
@@ -56,6 +56,7 @@ function TeachersPageContent() {
   });
   const status = TeacherStatusSchema.safeParse(tableState.filters.status);
   const gender = TeacherGenderSchema.safeParse(tableState.filters.gender);
+  const adviser = TeacherAdviserFilterSchema.safeParse(tableState.filters.adviser);
   const search = tableState.query.q?.trim().slice(0, 100);
   const normalizeUrl = useEffectEvent(() => {
     if (tableState.filters.status && !status.success) {
@@ -74,6 +75,7 @@ function TeachersPageContent() {
     q: search || undefined,
     status: status.success ? status.data : undefined,
     gender: gender.success ? gender.data : undefined,
+    adviser: adviser.success ? adviser.data : undefined,
     sort: tableState.query.sort as TeacherTableQueryInput["sort"],
     direction: tableState.query.direction as TeacherTableQueryInput["direction"],
     page: tableState.query.page,
@@ -101,6 +103,7 @@ function TeachersPageContent() {
           setSelectedTeacher(teacher);
           setDialog("deactivate");
         },
+        onArchive: (teacher) => { setSelectedTeacher(teacher); setDialog("archive"); },
       }),
     [],
   );
@@ -159,7 +162,7 @@ function TeachersPageContent() {
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold">Teacher Records</h1>
           <p className="text-sm text-muted-foreground">
-            View teacher profiles and account status.
+              View teacher personnel profiles and lifecycle status.
           </p>
         </div>
 

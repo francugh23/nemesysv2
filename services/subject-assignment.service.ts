@@ -37,7 +37,7 @@ export async function getSubjectAssignments(): Promise<SubjectAssignmentListItem
   await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
   return (await findAllSubjectAssignments()).map((assignment) => ({
     id: assignment.id, teacherId: assignment.teacherId, subjectOfferingId: assignment.subjectOfferingId, academicTermId: assignment.academicTermId, sectionId: assignment.sectionId,
-    employeeNumber: assignment.teacher.user.employeeNumber, teacherFirstName: assignment.teacher.user.firstName, teacherMiddleName: assignment.teacher.user.middleName, teacherLastName: assignment.teacher.user.lastName,
+    employeeNumber: assignment.teacher.employeeNumber, teacherFirstName: assignment.teacher.firstName, teacherMiddleName: assignment.teacher.middleName, teacherLastName: assignment.teacher.lastName,
     subjectOfferingCode: assignment.subjectOfferingTerm.subjectOffering.subjectCode, subjectOfferingDescription: assignment.subjectOfferingTerm.subjectOffering.subjectDescription,
     academicTermName: assignment.subjectOfferingTerm.academicTerm.name, academicTermPosition: assignment.subjectOfferingTerm.academicTerm.position,
     sectionGradeLevel: assignment.section.gradeLevel, sectionName: assignment.section.sectionName,
@@ -48,7 +48,7 @@ export async function getSubjectAssignments(): Promise<SubjectAssignmentListItem
 export async function getSubjectAssignmentOptions() {
   await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
   const [teachers, sections, academicYears, scopes] = await Promise.all([findActiveTeachersForAssignment(), findActiveSectionsForAssignment(), findActiveAcademicYearsForAssignment(), findAssignmentScopes()]);
-  return { teachers: teachers.map((teacher) => ({ id: teacher.id, ...teacher.user })), sections, academicYears, scopes: scopes.map((scope) => ({ subjectOfferingId: scope.subjectOfferingId, academicTermId: scope.academicTermId, academicYearId: scope.subjectOffering.academicYearId, gradeLevel: scope.subjectOffering.gradeLevel, subjectCode: scope.subjectOffering.subjectCode, subjectDescription: scope.subjectOffering.subjectDescription, academicTermName: scope.academicTerm.name, academicTermPosition: scope.academicTerm.position, shsCurriculumStatus: scope.subjectOffering.shsContext?.curriculumStatus ?? null })) };
+  return { teachers, sections, academicYears, scopes: scopes.map((scope) => ({ subjectOfferingId: scope.subjectOfferingId, academicTermId: scope.academicTermId, academicYearId: scope.subjectOffering.academicYearId, gradeLevel: scope.subjectOffering.gradeLevel, subjectCode: scope.subjectOffering.subjectCode, subjectDescription: scope.subjectOffering.subjectDescription, academicTermName: scope.academicTerm.name, academicTermPosition: scope.academicTerm.position, shsCurriculumStatus: scope.subjectOffering.shsContext?.curriculumStatus ?? null })) };
 }
 
 export async function createSubjectAssignmentService(values: Values) {

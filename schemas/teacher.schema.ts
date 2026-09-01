@@ -1,36 +1,29 @@
 import * as z from "zod";
 
-import { BcryptPasswordInputSchema } from "@/lib/password-policy";
-
 export const CreateTeacherSchema = z.object({
   employeeNumber: z.string().trim().min(1, "Employee number is required."),
-  username: z.string().trim().min(1, "Username is required."),
-  email: z.string().trim().email("A valid email address is required."),
-  temporaryPassword: BcryptPasswordInputSchema.refine(
-    (password) => Array.from(password).length >= 8,
-    "Temporary password must be at least 8 characters.",
-  ),
   firstName: z.string().trim().min(1, "First name is required."),
   middleName: z.string().trim().optional(),
   lastName: z.string().trim().min(1, "Last name is required."),
   gender: z.enum(["MALE", "FEMALE"]),
+  email: z.union([z.string().trim().email("A valid email address is required."), z.literal("")]).optional(),
   degree: z.string().trim().optional(),
   major: z.string().trim().optional(),
 });
 
 export const UpdateTeacherSchema = z.object({
   employeeNumber: z.string().trim().min(1, "Employee number is required."),
-  username: z.string().trim().min(1, "Username is required."),
-  email: z.string().trim().email("A valid email address is required."),
   firstName: z.string().trim().min(1, "First name is required."),
   middleName: z.string().trim().optional(),
   lastName: z.string().trim().min(1, "Last name is required."),
   gender: z.enum(["MALE", "FEMALE"]),
+  email: z.union([z.string().trim().email("A valid email address is required."), z.literal("")]).optional(),
   degree: z.string().trim().optional(),
   major: z.string().trim().optional(),
 });
 
 export const TeacherStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);
+export const TeacherAdviserFilterSchema = z.enum(["true", "false"]);
 
 export const TeacherGenderSchema = z.enum(["MALE", "FEMALE"]);
 
@@ -42,7 +35,6 @@ export const TeacherSortFieldSchema = z.enum([
   "gender",
   "degree",
   "major",
-  "isAdviser",
   "status",
   "createdAt",
 ]);
@@ -51,6 +43,7 @@ export const TeacherTableQuerySchema = z.object({
   q: z.string().trim().max(100).optional(),
   status: TeacherStatusSchema.optional(),
   gender: TeacherGenderSchema.optional(),
+  adviser: TeacherAdviserFilterSchema.optional(),
   sort: TeacherSortFieldSchema.optional(),
   direction: z.enum(["asc", "desc"]).optional(),
   page: z.coerce.number().int().min(1).default(1),
@@ -59,20 +52,19 @@ export const TeacherTableQuerySchema = z.object({
 
 export const TeacherListItemSchema = z.object({
   id: z.string(),
+  employeeNumber: z.string(),
+  firstName: z.string(),
+  middleName: z.string().nullable(),
+  lastName: z.string(),
+  gender: z.enum(["MALE", "FEMALE"]),
+  email: z.string().nullable(),
   degree: z.string().nullable(),
   major: z.string().nullable(),
-  isAdviser: z.boolean(),
+  status: z.enum(["ACTIVE", "INACTIVE"]),
+  hasLinkedAccount: z.boolean(),
+  activeSubjectAssignmentCount: z.number().int().nonnegative(),
+  activeAdvisedSectionCount: z.number().int().nonnegative(),
   createdAt: z.date(),
-  user: z.object({
-    employeeNumber: z.string().nullable(),
-    username: z.string(),
-    email: z.string(),
-    firstName: z.string(),
-    middleName: z.string().nullable(),
-    lastName: z.string(),
-    gender: z.enum(["MALE", "FEMALE"]),
-    status: z.enum(["ACTIVE", "INACTIVE"]),
-  }),
 });
 
 export type TeacherListItem = z.infer<typeof TeacherListItemSchema>;

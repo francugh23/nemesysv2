@@ -11,6 +11,7 @@ import {
 } from "@/schemas";
 import {
   createTeacherService,
+  archiveTeacherService,
   deactivateTeacherService,
   getTeacherFilterOptions,
   getTeachers,
@@ -139,5 +140,20 @@ export async function deactivateTeacherAction(
     return {
       error: "Something went wrong.",
     };
+  }
+}
+
+export async function archiveTeacherAction(id: string): Promise<ActionResponse> {
+  try {
+    await requirePermission(Permissions.TEACHERS);
+  } catch {
+    return { error: "Unauthorized." };
+  }
+
+  try {
+    await archiveTeacherService(id);
+    return { success: "Teacher archived successfully." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Something went wrong." };
   }
 }

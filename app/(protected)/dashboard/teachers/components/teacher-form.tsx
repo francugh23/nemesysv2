@@ -32,9 +32,7 @@ export function TeacherForm({ onSuccess }: TeacherFormProps) {
     resolver: zodResolver(CreateTeacherSchema),
     defaultValues: {
       employeeNumber: "",
-      username: "",
       email: "",
-      temporaryPassword: "",
       firstName: "",
       middleName: "",
       lastName: "",
@@ -60,9 +58,7 @@ export function TeacherForm({ onSuccess }: TeacherFormProps) {
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       <section className="space-y-4">
-        <h2 className="text-sm font-semibold uppercase text-muted-foreground">
-          Account Information
-        </h2>
+        <h2 className="text-sm font-semibold uppercase text-muted-foreground">Personnel Information</h2>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Field>
@@ -74,23 +70,9 @@ export function TeacherForm({ onSuccess }: TeacherFormProps) {
           </Field>
 
           <Field>
-            <FieldLabel>Username</FieldLabel>
-            <Input {...form.register("username")} />
-            <FieldError>{form.formState.errors.username?.message}</FieldError>
-          </Field>
-
-          <Field>
-            <FieldLabel>Email</FieldLabel>
+            <FieldLabel>Email (optional)</FieldLabel>
             <Input type="email" {...form.register("email")} />
             <FieldError>{form.formState.errors.email?.message}</FieldError>
-          </Field>
-
-          <Field>
-            <FieldLabel>Temporary Password</FieldLabel>
-            <Input type="password" {...form.register("temporaryPassword")} />
-            <FieldError>
-              {form.formState.errors.temporaryPassword?.message}
-            </FieldError>
           </Field>
         </div>
       </section>

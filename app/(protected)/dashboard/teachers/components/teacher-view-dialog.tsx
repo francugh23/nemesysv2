@@ -34,39 +34,39 @@ export function TeacherViewDialog({
             <div className="space-y-1">
               <h2 className="text-xl font-bold">
                 {formatFullName(
-                  teacher.user.firstName,
-                  teacher.user.middleName,
-                  teacher.user.lastName,
+                  teacher.firstName,
+                  teacher.middleName,
+                  teacher.lastName,
                 )}
               </h2>
               <p className="font-mono text-sm font-medium">
-                {displayValue(teacher.user.employeeNumber)}
+                {teacher.employeeNumber}
               </p>
             </div>
 
             <Badge
-              variant={teacher.user.status === "ACTIVE" ? "secondary" : "outline"}
+               variant={teacher.status === "ACTIVE" ? "secondary" : "outline"}
             >
-              {teacher.user.status === "ACTIVE" ? "Active" : "Inactive"}
+               {teacher.status === "ACTIVE" ? "Active" : "Inactive"}
             </Badge>
           </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
           <section className="space-y-3">
-            <h3 className="font-semibold">Account Information</h3>
-            <TeacherInfoItem label="Username" value={teacher.user.username} />
-            <TeacherInfoItem label="Email" value={teacher.user.email} />
+            <h3 className="font-semibold">Account</h3>
+            <TeacherInfoItem label="Linked account" value={teacher.hasLinkedAccount ? "Yes" : "No"} />
+            <TeacherInfoItem label="Email" value={teacher.email} />
           </section>
 
           <section className="space-y-3">
             <h3 className="font-semibold">Personal Information</h3>
-            <TeacherInfoItem label="First Name" value={teacher.user.firstName} />
-            <TeacherInfoItem label="Middle Name" value={teacher.user.middleName} />
-            <TeacherInfoItem label="Last Name" value={teacher.user.lastName} />
+            <TeacherInfoItem label="First Name" value={teacher.firstName} />
+            <TeacherInfoItem label="Middle Name" value={teacher.middleName} />
+            <TeacherInfoItem label="Last Name" value={teacher.lastName} />
             <div className="space-y-1">
               <p className="text-sm font-medium text-muted-foreground">Gender</p>
-              <GenderBadge gender={teacher.user.gender} />
+              <GenderBadge gender={teacher.gender} />
             </div>
           </section>
 
@@ -76,8 +76,9 @@ export function TeacherViewDialog({
             <TeacherInfoItem label="Major" value={teacher.major} />
             <TeacherInfoItem
               label="Adviser"
-              value={teacher.isAdviser ? "Yes" : "No"}
-            />
+               value={teacher.activeAdvisedSectionCount ? `Yes (${teacher.activeAdvisedSectionCount})` : "No"}
+             />
+            <TeacherInfoItem label="Active assignments" value={String(teacher.activeSubjectAssignmentCount)} />
           </section>
         </div>
       </DialogContent>

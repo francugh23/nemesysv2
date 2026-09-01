@@ -34,13 +34,12 @@ export function TeacherEditForm({ teacher, onSuccess }: TeacherEditFormProps) {
   const form = useForm<z.infer<typeof UpdateTeacherSchema>>({
     resolver: zodResolver(UpdateTeacherSchema),
     defaultValues: {
-      employeeNumber: teacher.user.employeeNumber ?? "",
-      username: teacher.user.username,
-      email: teacher.user.email,
-      firstName: teacher.user.firstName,
-      middleName: teacher.user.middleName ?? "",
-      lastName: teacher.user.lastName,
-      gender: teacher.user.gender,
+      employeeNumber: teacher.employeeNumber,
+      email: teacher.email ?? "",
+      firstName: teacher.firstName,
+      middleName: teacher.middleName ?? "",
+      lastName: teacher.lastName,
+      gender: teacher.gender,
       degree: teacher.degree ?? "",
       major: teacher.major ?? "",
     },
@@ -61,9 +60,7 @@ export function TeacherEditForm({ teacher, onSuccess }: TeacherEditFormProps) {
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       <section className="space-y-4">
-        <h2 className="text-sm font-semibold uppercase text-muted-foreground">
-          Account Information
-        </h2>
+        <h2 className="text-sm font-semibold uppercase text-muted-foreground">Personnel Information</h2>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <TeacherEditField
@@ -72,12 +69,7 @@ export function TeacherEditForm({ teacher, onSuccess }: TeacherEditFormProps) {
             input={<Input {...form.register("employeeNumber")} />}
           />
           <TeacherEditField
-            label="Username"
-            error={form.formState.errors.username?.message}
-            input={<Input {...form.register("username")} />}
-          />
-          <TeacherEditField
-            label="Email"
+            label="Email (optional)"
             error={form.formState.errors.email?.message}
             input={<Input type="email" {...form.register("email")} />}
           />
@@ -107,7 +99,7 @@ export function TeacherEditForm({ teacher, onSuccess }: TeacherEditFormProps) {
           <Field>
             <FieldLabel>Gender</FieldLabel>
             <Select
-              defaultValue={teacher.user.gender}
+               defaultValue={teacher.gender}
               onValueChange={(value) =>
                 form.setValue("gender", value as "MALE" | "FEMALE", {
                   shouldValidate: true,

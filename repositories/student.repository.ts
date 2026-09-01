@@ -20,13 +20,9 @@ const studentListInclude = {
       shift: true,
       adviser: {
         select: {
-          user: {
-            select: {
-              firstName: true,
-              middleName: true,
-              lastName: true,
-            },
-          },
+          firstName: true,
+          middleName: true,
+          lastName: true,
         },
       },
     },
