@@ -22,6 +22,6 @@ test("Teaching Assignment grade selection uses existing shadcn Select primitives
   const assignments = await read("app/(protected)/dashboard/assignments/page.tsx");
   assert.match(assignments, /Select, SelectContent, SelectItem, SelectTrigger, SelectValue/);
   assert.match(assignments, /<Select value=\{gradeLevel\}/);
-  assert.match(assignments, /<SelectTrigger aria-label="Grade">/);
+  assert.match(assignments, /<SelectTrigger[^>]*aria-label="Grade"/);
   assert.doesNotMatch(assignments, /<select/);
 });

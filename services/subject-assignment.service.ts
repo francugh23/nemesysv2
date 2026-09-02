@@ -225,7 +225,7 @@ export async function getAssignmentMatrix(query: AssignmentMatrixQuery) {
           const protectedOwnership = Boolean(assignment && scope.academicTerm.startDate.toISOString().slice(0, 10) <= today);
           if (assignment) assignedScopes += 1;
           if (protectedOwnership) protectedScopes += 1;
-          return { academicTermId: scope.academicTermId, academicTermName: scope.academicTerm.name, academicTermPosition: scope.academicTerm.position, assignmentId: assignment?.id ?? null, teacher: assignment ? { id: assignment.teacher.id, employeeNumber: assignment.teacher.employeeNumber, name: `${assignment.teacher.lastName}, ${assignment.teacher.firstName}${assignment.teacher.middleName ? ` ${assignment.teacher.middleName}` : ""}` } : null, initialAssignmentAllowed: !assignment, ownershipEditable: !protectedOwnership, protectedOwnership };
+          return { academicTermId: scope.academicTermId, academicTermName: scope.academicTerm.name, academicTermPosition: scope.academicTerm.position, assignmentId: assignment?.id ?? null, teacher: assignment ? { id: assignment.teacher.id, employeeNumber: assignment.teacher.employeeNumber, name: `${assignment.teacher.lastName}, ${assignment.teacher.firstName}${assignment.teacher.middleName ? ` ${assignment.teacher.middleName}` : ""}` } : null, termHasStarted: scope.academicTerm.startDate.toISOString().slice(0, 10) <= today, initialAssignmentAllowed: !assignment, ownershipEditable: !protectedOwnership, protectedOwnership };
         });
         const assigned = termAssignments.filter((term) => term.assignmentId);
         const teachers = new Set(assigned.map((term) => term.teacher?.id));
