@@ -32,6 +32,17 @@ export function findActiveSubjectAssignment(identity: SubjectAssignmentIdentity,
   return client(transaction).subjectAssignment.findFirst({ where: { ...identity, deletedAt: null }, select: { id: true } });
 }
 
+export function findActiveSubjectAssignmentsForMatrixMutation(
+  identities: SubjectAssignmentIdentity[],
+  transaction?: Prisma.TransactionClient,
+) {
+  if (!identities.length) return Promise.resolve([]);
+  return client(transaction).subjectAssignment.findMany({
+    where: { deletedAt: null, OR: identities },
+    select: { id: true, teacherId: true, subjectOfferingId: true, academicTermId: true, sectionId: true },
+  });
+}
+
 export function findActiveSubjectAssignmentById(id: string, transaction?: Prisma.TransactionClient) {
   return client(transaction).subjectAssignment.findFirst({
     where: { id, deletedAt: null },

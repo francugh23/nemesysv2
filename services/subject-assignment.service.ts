@@ -4,10 +4,11 @@ import { isAcademicYearWritable } from "@/lib/academic-year";
 import { getPhilippineCalendarDate } from "@/lib/academic-term-current";
 import prisma from "@/lib/prisma";
 import { createAuditLogs } from "@/repositories/audit.repository";
+import { lockAcademicYearForAcademicTerms } from "@/repositories/academic-year.repository";
 import { findActiveSectionForAssignment, findActiveSectionsForAssignment } from "@/repositories/section.repository";
 import { findActiveTeacherForAssignment, findActiveTeachersForAssignment } from "@/repositories/teacher.repository";
-import { archiveSubjectAssignment, createSubjectAssignment, findActiveAcademicYearsForAssignment, findActiveAcademicYearsForMatrix, findActiveSubjectAssignment, findActiveSubjectAssignmentById, findAllSubjectAssignments, findAssignmentMatrixAssignments, findAssignmentMatrixScopes, findAssignmentMatrixSections, findAssignmentMatrixTeacherLoads, findAssignmentScope, findAssignmentScopes, updateSubjectAssignment } from "@/repositories/subject-assignment.repository";
-import { AssignmentMatrixQuerySchema, CreateSubjectAssignmentSchema, type AssignmentMatrixQuery, type SubjectAssignmentListItem, UpdateSubjectAssignmentSchema } from "@/schemas";
+import { archiveSubjectAssignment, createSubjectAssignment, findActiveAcademicYearsForAssignment, findActiveAcademicYearsForMatrix, findActiveSubjectAssignment, findActiveSubjectAssignmentById, findActiveSubjectAssignmentsForMatrixMutation, findAllSubjectAssignments, findAssignmentMatrixAssignments, findAssignmentMatrixScopes, findAssignmentMatrixSections, findAssignmentMatrixTeacherLoads, findAssignmentScope, findAssignmentScopes, updateSubjectAssignment } from "@/repositories/subject-assignment.repository";
+import { AssignmentMatrixMutationSchema, AssignmentMatrixQuerySchema, CreateSubjectAssignmentSchema, type AssignmentMatrixMutation, type AssignmentMatrixQuery, type SubjectAssignmentListItem, UpdateSubjectAssignmentSchema } from "@/schemas";
 import { z } from "zod";
 
 type Values = z.infer<typeof CreateSubjectAssignmentSchema>;
@@ -30,7 +31,151 @@ async function validateValues(values: Values, transaction: Prisma.TransactionCli
 
 function conflict(error: unknown): never {
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") throw new Error("An active Teacher assignment already exists for this Curriculum Offering Term and Section.");
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") throw new Error("Teaching assignment state changed concurrently. Refresh the matrix and try again.");
   throw error;
+}
+
+type MatrixScope = {
+  subjectOfferingId: string;
+  academicTermId: string;
+  sectionId: string;
+  expectedAssignmentId: string | null;
+};
+
+const scopeKey = (scope: Pick<MatrixScope, "subjectOfferingId" | "academicTermId" | "sectionId">) => `${scope.subjectOfferingId}:${scope.academicTermId}:${scope.sectionId}`;
+
+function assertDistinctScopes(scopes: MatrixScope[]) {
+  const seen = new Set<string>();
+  for (const scope of scopes) {
+    const key = scopeKey(scope);
+    if (seen.has(key)) throw new Error("Duplicate teaching assignment scope submitted.");
+    seen.add(key);
+  }
+}
+
+async function validateMatrixScope(
+  scope: MatrixScope,
+  academicYearId: string,
+  gradeLevel: string,
+  transaction: Prisma.TransactionClient,
+) {
+  const [section, offeringTerm] = await Promise.all([
+    findActiveSectionForAssignment(scope.sectionId, transaction),
+    findAssignmentScope(scope.subjectOfferingId, scope.academicTermId, transaction),
+  ]);
+  if (!section) throw new Error("Section not found or inactive.");
+  if (!offeringTerm || offeringTerm.subjectOffering.deletedAt) throw new Error("Curriculum Offering Term not found or archived.");
+  if (offeringTerm.subjectOffering.academicYear.id !== academicYearId || offeringTerm.subjectOffering.gradeLevel !== gradeLevel) throw new Error("Teaching assignment scope is outside the active matrix.");
+  if (section.gradeLevel !== offeringTerm.subjectOffering.gradeLevel) throw new Error("Curriculum Offering and Section grade levels must match.");
+  if ((gradeLevel === "11" || gradeLevel === "12") && offeringTerm.subjectOffering.shsContext?.curriculumStatus !== "SCHOOL_APPROVED") throw new Error("SHS Curriculum Offering must be school approved before assignment.");
+  return { section, offeringTerm };
+}
+
+function assertExpectedAssignment(
+  scope: MatrixScope,
+  assignment: { id: string; teacherId: string } | undefined,
+) {
+  if (scope.expectedAssignmentId !== (assignment?.id ?? null)) {
+    throw new Error("Teaching assignment state is stale. Refresh the matrix and try again.");
+  }
+}
+
+export async function mutateAssignmentMatrix(values: AssignmentMatrixMutation) {
+  const session = await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  const validated = AssignmentMatrixMutationSchema.parse(values);
+  const requestedScopes = validated.action === "COPY"
+    ? [...validated.sourceScopes, ...validated.destinationScopes]
+    : validated.scopes;
+  assertDistinctScopes(requestedScopes);
+  try {
+    return await prisma.$transaction(async (transaction) => {
+      const academicYear = await lockAcademicYearForAcademicTerms(validated.academicYearId, transaction, "SHARE");
+      if (!academicYear || !isAcademicYearWritable(academicYear.status)) throw new Error("Teaching assignments can only be changed while their Academic Year is active.");
+
+      const orderedScopes = [...requestedScopes].sort((a, b) => scopeKey(a).localeCompare(scopeKey(b)));
+      const scopeDetails = new Map<string, Awaited<ReturnType<typeof validateMatrixScope>>>();
+      for (const scope of orderedScopes) {
+        scopeDetails.set(scopeKey(scope), await validateMatrixScope(scope, validated.academicYearId, validated.gradeLevel, transaction));
+      }
+      const activeAssignments = await findActiveSubjectAssignmentsForMatrixMutation(orderedScopes, transaction);
+      const assignmentByScope = new Map(activeAssignments.map((assignment) => [scopeKey(assignment), assignment]));
+
+      let teacherId: string | undefined;
+      if (validated.action === "ASSIGN") {
+        const teacher = await findActiveTeacherForAssignment(validated.teacherId, transaction);
+        if (!teacher) throw new Error("Teacher not found or inactive.");
+        teacherId = teacher.id;
+      }
+
+      const changes: Array<{ action: "CREATE" | "UPDATE" | "ARCHIVE"; scope: MatrixScope; teacherId?: string; previousTeacherId?: string }> = [];
+      if (validated.action === "COPY") {
+        const sourceTeacherByOfferingTerm = new Map<string, string>();
+        for (const source of validated.sourceScopes) {
+          const assignment = assignmentByScope.get(scopeKey(source));
+          assertExpectedAssignment(source, assignment);
+          if (!assignment) throw new Error("Copy source assignment is no longer available. Refresh the matrix and try again.");
+          sourceTeacherByOfferingTerm.set(`${source.subjectOfferingId}:${source.academicTermId}`, assignment.teacherId);
+        }
+        for (const sourceTeacherId of new Set(sourceTeacherByOfferingTerm.values())) {
+          if (!await findActiveTeacherForAssignment(sourceTeacherId, transaction)) {
+            throw new Error("Copy source Teacher not found or inactive.");
+          }
+        }
+        for (const destination of validated.destinationScopes) {
+          const assignment = assignmentByScope.get(scopeKey(destination));
+          assertExpectedAssignment(destination, assignment);
+          const copiedTeacherId = sourceTeacherByOfferingTerm.get(`${destination.subjectOfferingId}:${destination.academicTermId}`);
+          if (!copiedTeacherId) throw new Error("Every copy destination must match an explicitly selected source Offering Term.");
+          changes.push({ action: assignment ? "UPDATE" : "CREATE", scope: destination, teacherId: copiedTeacherId, previousTeacherId: assignment?.teacherId });
+        }
+      } else {
+        for (const scope of validated.scopes) {
+          const assignment = assignmentByScope.get(scopeKey(scope));
+          assertExpectedAssignment(scope, assignment);
+          changes.push({ action: validated.action === "CLEAR" ? "ARCHIVE" : assignment ? "UPDATE" : "CREATE", scope, teacherId, previousTeacherId: assignment?.teacherId });
+        }
+      }
+
+      const changedAssignmentIds: string[] = [];
+      const audits: Prisma.AuditLogCreateManyInput[] = [];
+      for (const change of changes.sort((a, b) => scopeKey(a.scope).localeCompare(scopeKey(b.scope)))) {
+        const current = assignmentByScope.get(scopeKey(change.scope));
+        const detail = scopeDetails.get(scopeKey(change.scope));
+        if (!detail) throw new Error("Teaching assignment scope is invalid.");
+        const started = termHasStarted(detail.offeringTerm.academicTerm.startDate);
+        if (change.action === "CREATE") {
+          if (current) throw new Error("Teaching assignment state is stale. Refresh the matrix and try again.");
+          const assignment = await createSubjectAssignment({
+            subjectOfferingId: change.scope.subjectOfferingId,
+            academicTermId: change.scope.academicTermId,
+            sectionId: change.scope.sectionId,
+            teacherId: change.teacherId!,
+          }, transaction);
+          changedAssignmentIds.push(assignment.id);
+          audits.push({ userId: session.user.id, action: "CREATE", module: "SubjectAssignment", recordId: assignment.id, recordName: slotName(detail.offeringTerm, detail.section.sectionName), description: "Created Teacher assignment for Curriculum Offering Term.", metadata: { source: "TeachingMatrix", academicYearId: validated.academicYearId } });
+        } else {
+          if (!current) throw new Error("Teaching assignment state is stale. Refresh the matrix and try again.");
+          if (change.action === "UPDATE" && current.teacherId === change.teacherId) continue;
+          if (started) throw new Error(change.action === "ARCHIVE" ? "This Term has started. Assigned teaching ownership cannot be cleared." : "This Term has started. Assigned teaching ownership cannot be changed.");
+          if (change.action === "UPDATE") {
+            const assignment = await updateSubjectAssignment(current.id, { teacherId: change.teacherId! }, transaction);
+            changedAssignmentIds.push(assignment.id);
+            audits.push({ userId: session.user.id, action: "UPDATE", module: "SubjectAssignment", recordId: assignment.id, recordName: slotName(detail.offeringTerm, detail.section.sectionName), description: "Updated Teacher assignment for Curriculum Offering Term.", metadata: { source: "TeachingMatrix", previousTeacherId: current.teacherId, teacherId: change.teacherId } });
+          } else {
+            const assignment = await archiveSubjectAssignment(current.id, transaction);
+            changedAssignmentIds.push(assignment.id);
+            audits.push({ userId: session.user.id, action: "ARCHIVE", module: "SubjectAssignment", recordId: assignment.id, recordName: slotName(detail.offeringTerm, detail.section.sectionName), description: "Archived Teacher assignment for future Curriculum Offering Term.", metadata: { source: "TeachingMatrix" } });
+          }
+        }
+      }
+      if (audits.length) {
+        const batchId = crypto.randomUUID();
+        audits.push({ userId: session.user.id, action: validated.action, module: "SubjectAssignmentBulk", recordId: batchId, recordName: "Teaching matrix batch", description: `Applied ${audits.length} teaching assignment mutation${audits.length === 1 ? "" : "s"}.`, metadata: { batchId, action: validated.action, count: audits.length, assignmentIds: changedAssignmentIds.slice(0, 100) } });
+        await createAuditLogs(audits, transaction);
+      }
+      return { changedCount: changedAssignmentIds.length };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  } catch (error) { conflict(error); }
 }
 
 export async function getSubjectAssignments(): Promise<SubjectAssignmentListItem[]> {

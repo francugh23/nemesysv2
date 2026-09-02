@@ -15,6 +15,45 @@ export const AssignmentMatrixQuerySchema = z.object({
   gradeLevel: z.enum(["7", "8", "9", "10", "11", "12"]),
 });
 
+export const AssignmentMatrixScopeSchema = z.object({
+  subjectOfferingId: z.string().min(1),
+  academicTermId: z.string().min(1),
+  sectionId: z.string().min(1),
+  expectedAssignmentId: z.string().min(1).nullable(),
+});
+
+const MatrixMutationBaseSchema = z.object({
+  academicYearId: z.string().min(1),
+  gradeLevel: z.enum(["7", "8", "9", "10", "11", "12"]),
+});
+
+export const MatrixAssignSchema = MatrixMutationBaseSchema.extend({
+  action: z.literal("ASSIGN"),
+  teacherId: z.string().min(1, "Teacher is required."),
+  scopes: z.array(AssignmentMatrixScopeSchema).min(1),
+});
+
+export const MatrixClearSchema = MatrixMutationBaseSchema.extend({
+  action: z.literal("CLEAR"),
+  scopes: z.array(AssignmentMatrixScopeSchema).min(1),
+});
+
+export const MatrixCopySchema = MatrixMutationBaseSchema.extend({
+  action: z.literal("COPY"),
+  sourceScopes: z.array(AssignmentMatrixScopeSchema).min(1),
+  destinationScopes: z.array(AssignmentMatrixScopeSchema).min(1),
+});
+
+export const AssignmentMatrixMutationSchema = z.discriminatedUnion("action", [
+  MatrixAssignSchema,
+  MatrixClearSchema,
+  MatrixCopySchema,
+]);
+
+export type AssignmentMatrixMutation = z.infer<
+  typeof AssignmentMatrixMutationSchema
+>;
+
 export type AssignmentMatrixQuery = z.output<typeof AssignmentMatrixQuerySchema>;
 
 export const SubjectAssignmentListItemSchema = z.object({

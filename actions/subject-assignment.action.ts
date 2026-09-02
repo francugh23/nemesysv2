@@ -5,11 +5,13 @@ import * as z from "zod";
 import { Permissions, requirePermission } from "@/lib/authorization";
 import {
   AssignmentMatrixQuerySchema,
+  AssignmentMatrixMutationSchema,
   CreateSubjectAssignmentSchema,
   UpdateSubjectAssignmentSchema,
 } from "@/schemas";
 import {
   archiveSubjectAssignmentService,
+  mutateAssignmentMatrix,
   createSubjectAssignmentService,
   getSubjectAssignmentOptions,
   getAssignmentMatrix,
@@ -35,6 +37,24 @@ export async function getAssignmentMatrixAction(query: unknown) {
   const validated = AssignmentMatrixQuerySchema.safeParse(query);
   if (!validated.success) throw new Error("Invalid assignment matrix query.");
   return getAssignmentMatrix(validated.data);
+}
+
+export async function mutateAssignmentMatrixAction(values: unknown): Promise<ActionResponse> {
+  try {
+    await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  } catch {
+    return { error: "Unauthorized." };
+  }
+
+  const validated = AssignmentMatrixMutationSchema.safeParse(values);
+  if (!validated.success) return { error: "Invalid matrix assignment request." };
+
+  try {
+    const result = await mutateAssignmentMatrix(validated.data);
+    return { success: `${result.changedCount} teaching assignment scope${result.changedCount === 1 ? "" : "s"} updated.` };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Something went wrong." };
+  }
 }
 
 export async function createSubjectAssignmentAction(

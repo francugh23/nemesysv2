@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   archiveSubjectAssignmentAction,
+  mutateAssignmentMatrixAction,
   getSubjectAssignmentOptionsAction,
   getAssignmentMatrixAction,
   getSubjectAssignmentsAction,
@@ -26,6 +27,21 @@ export function useSubjectAssignmentOptions() {
 
 export function useAssignmentMatrix(query: { academicYearId?: string; gradeLevel: "7" | "8" | "9" | "10" | "11" | "12" }) {
   return useQuery({ queryKey: ["assignment-matrix", query], queryFn: () => getAssignmentMatrixAction(query) });
+}
+
+export function useMutateAssignmentMatrix() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: mutateAssignmentMatrixAction,
+    onSuccess: async (result) => {
+      if (result.error) return;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["assignment-matrix"] }),
+        queryClient.invalidateQueries({ queryKey: ["subject-assignments"] }),
+        queryClient.invalidateQueries({ queryKey: ["subject-assignment-options"] }),
+      ]);
+    },
+  });
 }
 
 export function useUpdateSubjectAssignment() {
