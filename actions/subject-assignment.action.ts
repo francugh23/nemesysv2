@@ -7,6 +7,8 @@ import {
   AssignmentMatrixQuerySchema,
   AssignmentMatrixMutationSchema,
   CreateSubjectAssignmentSchema,
+  SubjectAssignmentHistoryFilterOptionsQuerySchema,
+  SubjectAssignmentHistoryQuerySchema,
   UpdateSubjectAssignmentSchema,
 } from "@/schemas";
 import {
@@ -15,6 +17,8 @@ import {
   createSubjectAssignmentService,
   getSubjectAssignmentOptions,
   getAssignmentMatrix,
+  getSubjectAssignmentHistory,
+  getSubjectAssignmentHistoryFilterOptions,
   getSubjectAssignments,
   updateSubjectAssignmentService,
 } from "@/services/subject-assignment.service";
@@ -24,6 +28,18 @@ export async function getSubjectAssignmentsAction() {
   await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
 
   return await getSubjectAssignments();
+}
+
+export async function getSubjectAssignmentHistoryAction(query: unknown) {
+  await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  return getSubjectAssignmentHistory(SubjectAssignmentHistoryQuerySchema.parse(query));
+}
+
+export async function getSubjectAssignmentHistoryFilterOptionsAction(query: unknown) {
+  await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  return getSubjectAssignmentHistoryFilterOptions(
+    SubjectAssignmentHistoryFilterOptionsQuerySchema.parse(query),
+  );
 }
 
 export async function getSubjectAssignmentOptionsAction() {

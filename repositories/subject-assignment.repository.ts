@@ -62,6 +62,133 @@ export function findAllSubjectAssignments() {
   });
 }
 
+export type SubjectAssignmentHistoryFilters = {
+  q?: string;
+  status?: "ACTIVE" | "ARCHIVED";
+  academicYearId?: string;
+  academicTermId?: string;
+};
+
+function getSubjectAssignmentHistoryWhere(
+  filters: SubjectAssignmentHistoryFilters,
+): Prisma.SubjectAssignmentWhereInput {
+  const searchTerms = filters.q?.split(/\s+/).filter(Boolean) ?? [];
+
+  return {
+    deletedAt:
+      filters.status === "ACTIVE"
+        ? null
+        : filters.status === "ARCHIVED"
+          ? { not: null }
+          : undefined,
+    academicTermId: filters.academicTermId,
+    subjectOfferingTerm: {
+      subjectOffering: {
+        academicYearId: filters.academicYearId,
+      },
+    },
+    AND: searchTerms.map((term) => ({
+      OR: [
+        { teacher: { employeeNumber: { contains: term, mode: "insensitive" } } },
+        { teacher: { firstName: { contains: term, mode: "insensitive" } } },
+        { teacher: { middleName: { contains: term, mode: "insensitive" } } },
+        { teacher: { lastName: { contains: term, mode: "insensitive" } } },
+        { section: { sectionName: { contains: term, mode: "insensitive" } } },
+        { subjectOfferingTerm: { subjectOffering: { subjectCode: { contains: term, mode: "insensitive" } } } },
+        { subjectOfferingTerm: { subjectOffering: { subjectDescription: { contains: term, mode: "insensitive" } } } },
+        { subjectOfferingTerm: { subjectOffering: { academicYear: { label: { contains: term, mode: "insensitive" } } } } },
+      ],
+    })),
+  };
+}
+
+const subjectAssignmentHistorySelect = {
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  deletedAt: true,
+  teacher: {
+    select: {
+      id: true,
+      employeeNumber: true,
+      firstName: true,
+      middleName: true,
+      lastName: true,
+    },
+  },
+  section: { select: { id: true, sectionName: true, gradeLevel: true } },
+  subjectOfferingTerm: {
+    select: {
+      academicTerm: { select: { id: true, name: true, position: true } },
+      subjectOffering: {
+        select: {
+          id: true,
+          subjectCode: true,
+          subjectDescription: true,
+          gradeLevel: true,
+          academicYear: { select: { id: true, label: true } },
+        },
+      },
+    },
+  },
+} satisfies Prisma.SubjectAssignmentSelect;
+
+export function countSubjectAssignmentHistory(
+  filters: SubjectAssignmentHistoryFilters,
+  transaction?: Prisma.TransactionClient,
+) {
+  return client(transaction).subjectAssignment.count({
+    where: getSubjectAssignmentHistoryWhere(filters),
+  });
+}
+
+export function findSubjectAssignmentHistory(
+  filters: SubjectAssignmentHistoryFilters,
+  pagination: { skip: number; take: number },
+  transaction?: Prisma.TransactionClient,
+) {
+  return client(transaction).subjectAssignment.findMany({
+    where: getSubjectAssignmentHistoryWhere(filters),
+    select: subjectAssignmentHistorySelect,
+    skip: pagination.skip,
+    take: pagination.take,
+    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+  });
+}
+
+export function findSubjectAssignmentHistoryFilterOptions(
+  academicYearId?: string,
+) {
+  return Promise.all([
+    prisma.academicYear.findMany({
+      where: {
+        subjectOfferings: {
+          some: { terms: { some: { subjectAssignments: { some: {} } } } },
+        },
+      },
+      select: { id: true, label: true },
+      orderBy: [{ startDate: "desc" }, { id: "asc" }],
+    }),
+    prisma.academicTerm.findMany({
+      where: {
+        academicYearId,
+        subjectOfferings: { some: { subjectAssignments: { some: {} } } },
+      },
+      select: {
+        id: true,
+        name: true,
+        position: true,
+        academicYear: { select: { label: true } },
+      },
+      orderBy: [
+        { academicYear: { startDate: "desc" } },
+        { position: "asc" },
+        { id: "asc" },
+      ],
+    }),
+  ]);
+}
+
 export function findAcademicYearForAssignment(id: string, transaction?: Prisma.TransactionClient) {
   return client(transaction).academicYear.findUnique({ where: { id }, select: { id: true, label: true, status: true } }) as Promise<{ id: string; label: string; status: AcademicYearStatus } | null>;
 }

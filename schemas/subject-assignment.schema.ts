@@ -56,6 +56,66 @@ export type AssignmentMatrixMutation = z.infer<
 
 export type AssignmentMatrixQuery = z.output<typeof AssignmentMatrixQuerySchema>;
 
+export const SubjectAssignmentHistoryStatusSchema = z.enum([
+  "ACTIVE",
+  "ARCHIVED",
+]);
+
+export const SubjectAssignmentHistoryQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  status: SubjectAssignmentHistoryStatusSchema.optional(),
+  academicYearId: z.string().cuid().optional(),
+  academicTermId: z.string().cuid().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().refine((value) => value === 25 || value === 50, {
+    message: "Page size must be 25 or 50.",
+  }).default(25),
+});
+
+export const SubjectAssignmentHistoryFilterOptionsQuerySchema = z.object({
+  academicYearId: z.string().cuid().optional(),
+});
+
+export const SubjectAssignmentHistoryItemSchema = z.object({
+  id: z.string(),
+  status: SubjectAssignmentHistoryStatusSchema,
+  academicYear: z.object({ id: z.string(), label: z.string() }),
+  term: z.object({ id: z.string(), name: z.string(), position: z.number() }),
+  offering: z.object({
+    id: z.string(),
+    subjectCode: z.string(),
+    subjectDescription: z.string(),
+    gradeLevel: z.string(),
+  }),
+  section: z.object({ id: z.string(), sectionName: z.string(), gradeLevel: z.string() }),
+  teacher: z.object({
+    id: z.string(),
+    employeeNumber: z.string().nullable(),
+    name: z.string(),
+  }),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  deletedAt: z.date().nullable(),
+  changedAt: z.date(),
+});
+
+export type SubjectAssignmentHistoryQueryInput = z.input<
+  typeof SubjectAssignmentHistoryQuerySchema
+>;
+export type SubjectAssignmentHistoryQuery = z.output<
+  typeof SubjectAssignmentHistoryQuerySchema
+>;
+export type SubjectAssignmentHistoryItem = z.infer<
+  typeof SubjectAssignmentHistoryItemSchema
+>;
+export interface SubjectAssignmentHistoryPage {
+  items: SubjectAssignmentHistoryItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  pageCount: number;
+}
+
 export const SubjectAssignmentListItemSchema = z.object({
   id: z.string(),
   teacherId: z.string(),

@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useEffect, useEffectEvent, useMemo, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 
-import { DataTable } from "@/components/data-table";
+import { DataTable, DataTableFacetedFilter, DataTableToolbar, resolveServerPagination, type DataTableFilterOption } from "@/components/data-table";
 import { SegmentedNavigation } from "@/components/common/segmented-navigation";
 import { SubjectAssignmentTableSkeleton } from "@/components/skeletons/subject-assignment-table-skeleton";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -17,61 +18,91 @@ import {
 import { cn } from "@/lib/utils";
 import {
   useAssignmentMatrix,
-  useSubjectAssignments,
+  useSubjectAssignmentHistory,
+  useSubjectAssignmentHistoryFilterOptions,
 } from "@/hooks/subject-assignment.hook";
-import type { SubjectAssignmentListItem } from "@/schemas";
+import type { SubjectAssignmentHistoryItem, SubjectAssignmentHistoryQueryInput } from "@/schemas";
+import { useTableUrlState } from "@/hooks/use-table-url-state.hook";
 
-import { subjectAssignmentColumns } from "./components/subject-assignment-columns";
-import {
-  SubjectAssignmentDialogManager,
-  type SubjectAssignmentDialogType,
-} from "./components/subject-assignment-dialog-manager";
 import { AssignmentMatrix } from "./components/assignment-matrix";
+import { subjectAssignmentHistoryColumns } from "./components/subject-assignment-history-columns";
+import { SubjectAssignmentHistoryViewDialog } from "./components/subject-assignment-history-view-dialog";
+
+const historyFilterKeys = ["status", "academicYearId", "academicTermId"] as const;
 
 export default function SubjectAssignmentsPage() {
-  const { data, isLoading, isError, refetch, isFetching } =
-    useSubjectAssignments();
-  const [view, setView] = useState<"matrix" | "history">("matrix");
+  return (
+    <Suspense fallback={<SubjectAssignmentTableSkeleton />}>
+      <SubjectAssignmentsPageContent />
+    </Suspense>
+  );
+}
+
+function SubjectAssignmentsPageContent() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const view = searchParams.get("view") === "history" ? "history" : "matrix";
+  const tableState = useTableUrlState({
+    filterKeys: historyFilterKeys,
+    sortableColumns: [],
+    defaultPageSize: 25,
+    pageSizeOptions: [25, 50],
+  });
   const [gradeLevel, setGradeLevel] = useState<
     "7" | "8" | "9" | "10" | "11" | "12"
   >("7");
   const [termId, setTermId] = useState<string | null>(null);
   const matrixQuery = useAssignmentMatrix({ gradeLevel });
-  const [{ selectedAssignment, dialog, instanceId }, setDialogState] =
-    useState<{
-      selectedAssignment: SubjectAssignmentListItem | null;
-      dialog: SubjectAssignmentDialogType;
-      instanceId: number;
-    }>({ selectedAssignment: null, dialog: null, instanceId: 0 });
+  const [selectedAssignment, setSelectedAssignment] = useState<SubjectAssignmentHistoryItem | null>(null);
+  const status = ["ACTIVE", "ARCHIVED"].includes(tableState.filters.status)
+    ? tableState.filters.status as "ACTIVE" | "ARCHIVED"
+    : undefined;
+  const historyQuery: SubjectAssignmentHistoryQueryInput = {
+    q: tableState.query.q?.trim().slice(0, 100) || undefined,
+    status,
+    academicYearId: tableState.filters.academicYearId || undefined,
+    academicTermId: tableState.filters.academicTermId || undefined,
+    page: tableState.query.page,
+    pageSize: tableState.query.pageSize,
+  };
+  const historyQueryResult = useSubjectAssignmentHistory(historyQuery, view === "history");
+  const historyOptions = useSubjectAssignmentHistoryFilterOptions(
+    { academicYearId: historyQuery.academicYearId },
+    view === "history",
+  );
   const selectedTerm = matrixQuery.data?.terms.find(
     (term) => term.id === termId,
   );
-  const columns = useMemo(
-    () =>
-      subjectAssignmentColumns({
-        readOnly: true,
-        onEdit: (assignment) =>
-          setDialogState((current) => ({
-            selectedAssignment: assignment,
-            dialog: "edit",
-            instanceId: current.instanceId + 1,
-          })),
-        onArchive: (assignment) =>
-          setDialogState((current) => ({
-            selectedAssignment: assignment,
-            dialog: "archive",
-            instanceId: current.instanceId + 1,
-          })),
-      }),
-    [],
+  const columns = useMemo(() => subjectAssignmentHistoryColumns({ onView: setSelectedAssignment }), []);
+  const reconcilePage = useEffectEvent((page: number) => {
+    tableState.onPaginationChange({ ...tableState.pagination, pageIndex: page - 1 });
+  });
+  const serverPagination = resolveServerPagination({
+    requestedPagination: tableState.pagination,
+    resolvedPage: historyQueryResult.data,
+    isPlaceholderData: historyQueryResult.isPlaceholderData,
+  });
+  const hasFilters = Boolean(
+    historyQuery.q || status || historyQuery.academicYearId || historyQuery.academicTermId,
   );
+  const academicYearOptions: DataTableFilterOption[] = historyOptions.data?.academicYears.map((year) => ({ label: year.label, value: year.id })) ?? [];
+  const termOptions: DataTableFilterOption[] = historyOptions.data?.terms.map((term) => ({
+    label: historyQuery.academicYearId ? term.name : `${term.academicYear.label} · ${term.name}`,
+    value: term.id,
+  })) ?? [];
 
-  function closeDialog(closingInstanceId: number) {
-    setDialogState((current) =>
-      current.instanceId === closingInstanceId
-        ? { ...current, selectedAssignment: null, dialog: null }
-        : current,
-    );
+  useEffect(() => {
+    if (historyQueryResult.data && serverPagination.shouldReconcile) {
+      reconcilePage(historyQueryResult.data.page);
+    }
+  }, [historyQueryResult.data, serverPagination.shouldReconcile]);
+
+  function setView(nextView: "matrix" | "history") {
+    const params = new URLSearchParams(window.location.search);
+    if (nextView === "history") params.set("view", "history");
+    else params.delete("view");
+    const query = params.toString();
+    window.history.replaceState(null, "", query ? `${pathname}?${query}` : pathname);
   }
 
   return (
@@ -96,7 +127,7 @@ export default function SubjectAssignmentsPage() {
                     size: "sm",
                   }),
                 )}
-                onClick={() => setView("matrix")}
+                  onClick={() => setView("matrix")}
               >
                 Teaching Matrix
               </button>
@@ -109,7 +140,7 @@ export default function SubjectAssignmentsPage() {
                     size: "sm",
                   }),
                 )}
-                onClick={() => setView("history")}
+                  onClick={() => setView("history")}
               >
                 History
               </button>
@@ -197,49 +228,92 @@ export default function SubjectAssignmentsPage() {
             ) : matrixQuery.data ? (
               <AssignmentMatrix matrix={matrixQuery.data} termId={termId} />
             ) : null
-          ) : isLoading ? (
-            <SubjectAssignmentTableSkeleton />
-          ) : isError ? (
-            <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
-              <div className="space-y-1">
-                <p className="font-medium">
-                  Unable to load subject assignments
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Check your connection and try again.
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => void refetch()}
-                disabled={isFetching}
-              >
-                {isFetching ? "Retrying..." : "Try again"}
-              </Button>
-            </div>
           ) : (
             <DataTable
               columns={columns}
-              data={data ?? []}
-              onRowClick={(assignment) =>
-                setDialogState((current) => ({
-                  selectedAssignment: assignment,
-                  dialog: "view",
-                  instanceId: current.instanceId + 1,
-                }))
-              }
+              data={historyQueryResult.data?.items ?? []}
+              onRowClick={setSelectedAssignment}
+              toolbar={() => (
+                <DataTableToolbar
+                  search={tableState.search}
+                  onSearchChange={tableState.setSearch}
+                  searchPlaceholder="Search Teacher, Section, Offering, or Academic Year..."
+                  searchResetKey={tableState.resetKey}
+                  canReset={tableState.canReset}
+                  onReset={tableState.reset}
+                  isFetching={historyQueryResult.isFetching && !historyQueryResult.isLoading}
+                >
+                  <DataTableFacetedFilter
+                    label="Status"
+                    allLabel="All statuses"
+                    value={tableState.filters.status}
+                    options={[{ label: "Active", value: "ACTIVE" }, { label: "Archived", value: "ARCHIVED" }]}
+                    onValueChange={(value) => tableState.setFilter("status", value)}
+                  />
+                  <DataTableFacetedFilter
+                    label="Academic Year"
+                    allLabel="All Academic Years"
+                    value={tableState.filters.academicYearId}
+                    options={academicYearOptions}
+                    onValueChange={(value) => {
+                      tableState.setFilter("academicYearId", value);
+                      tableState.setFilter("academicTermId", "");
+                    }}
+                  />
+                  <DataTableFacetedFilter
+                    label="Term"
+                    allLabel="All Terms"
+                    value={tableState.filters.academicTermId}
+                    options={termOptions}
+                    onValueChange={(value) => tableState.setFilter("academicTermId", value)}
+                  />
+                </DataTableToolbar>
+              )}
+              server={{
+                pagination: serverPagination.pagination,
+                sorting: tableState.sorting,
+                pageCount: historyQueryResult.data?.pageCount ?? 0,
+                totalCount: historyQueryResult.data?.totalCount ?? 0,
+                onPaginationChange: tableState.onPaginationChange,
+                onSortingChange: tableState.onSortingChange,
+                pageSizeOptions: tableState.pageSizeOptions,
+                disabled: historyQueryResult.isPlaceholderData,
+              }}
+              state={{
+                isLoading: historyQueryResult.isLoading,
+                isError: historyQueryResult.isError,
+                isFetching: historyQueryResult.isFetching,
+                loadingFallback: <SubjectAssignmentTableSkeleton />,
+                errorFallback: <HistoryError onRetry={() => void historyQueryResult.refetch()} retrying={historyQueryResult.isFetching} />,
+                emptyTitle: status === "ARCHIVED" && !historyQuery.q && !historyQuery.academicYearId && !historyQuery.academicTermId
+                  ? "No archived teaching assignments found."
+                  : hasFilters ? "No assignments match the current filters." : "No teaching assignment history found.",
+                emptyDescription: hasFilters ? "Try adjusting or clearing the current search and filters." : "Teaching assignments will appear here when they are created.",
+                emptyAction: hasFilters ? <Button variant="outline" size="sm" onClick={tableState.reset}>Clear filters</Button> : undefined,
+              }}
             />
           )}
-          {view === "history" && (
-            <SubjectAssignmentDialogManager
-              assignment={selectedAssignment}
-              dialog={dialog}
-              instanceId={instanceId}
-              onClose={closeDialog}
-            />
-          )}
+          <SubjectAssignmentHistoryViewDialog
+            assignment={selectedAssignment}
+            open={selectedAssignment !== null}
+            onOpenChange={(open) => !open && setSelectedAssignment(null)}
+          />
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function HistoryError({ onRetry, retrying }: { onRetry: () => void; retrying: boolean }) {
+  return (
+    <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
+      <div className="space-y-1">
+        <p className="font-medium">Unable to load teaching assignment history</p>
+        <p className="text-sm text-muted-foreground">Check your connection and try again.</p>
+      </div>
+      <Button variant="outline" onClick={onRetry} disabled={retrying}>
+        {retrying ? "Retrying..." : "Try again"}
+      </Button>
     </div>
   );
 }

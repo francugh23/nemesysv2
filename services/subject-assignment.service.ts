@@ -7,8 +7,8 @@ import { createAuditLogs } from "@/repositories/audit.repository";
 import { lockAcademicYearForAcademicTerms } from "@/repositories/academic-year.repository";
 import { findActiveSectionForAssignment, findActiveSectionsForAssignment } from "@/repositories/section.repository";
 import { findActiveTeacherForAssignment, findActiveTeachersForAssignment } from "@/repositories/teacher.repository";
-import { archiveSubjectAssignment, createSubjectAssignment, findActiveAcademicYearsForAssignment, findActiveAcademicYearsForMatrix, findActiveSubjectAssignment, findActiveSubjectAssignmentById, findActiveSubjectAssignmentsForMatrixMutation, findAllSubjectAssignments, findAssignmentMatrixAssignments, findAssignmentMatrixScopes, findAssignmentMatrixSections, findAssignmentMatrixTeacherLoads, findAssignmentScope, findAssignmentScopes, updateSubjectAssignment } from "@/repositories/subject-assignment.repository";
-import { AssignmentMatrixMutationSchema, AssignmentMatrixQuerySchema, CreateSubjectAssignmentSchema, type AssignmentMatrixMutation, type AssignmentMatrixQuery, type SubjectAssignmentListItem, UpdateSubjectAssignmentSchema } from "@/schemas";
+import { archiveSubjectAssignment, countSubjectAssignmentHistory, createSubjectAssignment, findActiveAcademicYearsForAssignment, findActiveAcademicYearsForMatrix, findActiveSubjectAssignment, findActiveSubjectAssignmentById, findActiveSubjectAssignmentsForMatrixMutation, findAllSubjectAssignments, findAssignmentMatrixAssignments, findAssignmentMatrixScopes, findAssignmentMatrixSections, findAssignmentMatrixTeacherLoads, findAssignmentScope, findAssignmentScopes, findSubjectAssignmentHistory, findSubjectAssignmentHistoryFilterOptions, updateSubjectAssignment } from "@/repositories/subject-assignment.repository";
+import { AssignmentMatrixMutationSchema, AssignmentMatrixQuerySchema, CreateSubjectAssignmentSchema, SubjectAssignmentHistoryFilterOptionsQuerySchema, SubjectAssignmentHistoryQuerySchema, type AssignmentMatrixMutation, type AssignmentMatrixQuery, type SubjectAssignmentHistoryQuery, type SubjectAssignmentHistoryPage, type SubjectAssignmentListItem, UpdateSubjectAssignmentSchema } from "@/schemas";
 import { z } from "zod";
 
 type Values = z.infer<typeof CreateSubjectAssignmentSchema>;
@@ -188,6 +188,62 @@ export async function getSubjectAssignments(): Promise<SubjectAssignmentListItem
     sectionGradeLevel: assignment.section.gradeLevel, sectionName: assignment.section.sectionName,
     academicYearLabel: assignment.subjectOfferingTerm.subjectOffering.academicYear.label, academicYearStatus: assignment.subjectOfferingTerm.subjectOffering.academicYear.status,
   }));
+}
+
+export async function getSubjectAssignmentHistory(
+  query: SubjectAssignmentHistoryQuery,
+): Promise<SubjectAssignmentHistoryPage> {
+  await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  const validated = SubjectAssignmentHistoryQuerySchema.parse(query);
+
+  return prisma.$transaction(async (transaction) => {
+    const totalCount = await countSubjectAssignmentHistory(validated, transaction);
+    const pageCount = Math.ceil(totalCount / validated.pageSize);
+    const page = Math.min(validated.page, Math.max(1, pageCount));
+    const assignments = await findSubjectAssignmentHistory(
+      validated,
+      { skip: (page - 1) * validated.pageSize, take: validated.pageSize },
+      transaction,
+    );
+
+    return {
+      items: assignments.map((assignment) => ({
+        id: assignment.id,
+        status: assignment.deletedAt ? "ARCHIVED" as const : "ACTIVE" as const,
+        academicYear: assignment.subjectOfferingTerm.subjectOffering.academicYear,
+        term: assignment.subjectOfferingTerm.academicTerm,
+        offering: {
+          id: assignment.subjectOfferingTerm.subjectOffering.id,
+          subjectCode: assignment.subjectOfferingTerm.subjectOffering.subjectCode,
+          subjectDescription: assignment.subjectOfferingTerm.subjectOffering.subjectDescription,
+          gradeLevel: assignment.subjectOfferingTerm.subjectOffering.gradeLevel,
+        },
+        section: assignment.section,
+        teacher: {
+          id: assignment.teacher.id,
+          employeeNumber: assignment.teacher.employeeNumber,
+          name: `${assignment.teacher.lastName}, ${assignment.teacher.firstName}${assignment.teacher.middleName ? ` ${assignment.teacher.middleName}` : ""}`,
+        },
+        createdAt: assignment.createdAt,
+        updatedAt: assignment.updatedAt,
+        deletedAt: assignment.deletedAt,
+        changedAt: assignment.deletedAt ?? assignment.updatedAt,
+      })),
+      totalCount,
+      page,
+      pageSize: validated.pageSize,
+      pageCount,
+    };
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+}
+
+export async function getSubjectAssignmentHistoryFilterOptions(query: unknown) {
+  await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  const validated = SubjectAssignmentHistoryFilterOptionsQuerySchema.parse(query);
+  const [academicYears, terms] = await findSubjectAssignmentHistoryFilterOptions(
+    validated.academicYearId,
+  );
+  return { academicYears, terms };
 }
 
 export async function getSubjectAssignmentOptions() {

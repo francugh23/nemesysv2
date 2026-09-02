@@ -1,12 +1,14 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   archiveSubjectAssignmentAction,
   mutateAssignmentMatrixAction,
   getSubjectAssignmentOptionsAction,
   getAssignmentMatrixAction,
+  getSubjectAssignmentHistoryAction,
+  getSubjectAssignmentHistoryFilterOptionsAction,
   getSubjectAssignmentsAction,
   updateSubjectAssignmentAction,
 } from "@/actions/subject-assignment.action";
@@ -15,6 +17,29 @@ export function useSubjectAssignments() {
   return useQuery({
     queryKey: ["subject-assignments"],
     queryFn: getSubjectAssignmentsAction,
+  });
+}
+
+export function useSubjectAssignmentHistory(
+  query: Parameters<typeof getSubjectAssignmentHistoryAction>[0],
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: ["subject-assignments", "history", query],
+    queryFn: () => getSubjectAssignmentHistoryAction(query),
+    enabled,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useSubjectAssignmentHistoryFilterOptions(
+  query: Parameters<typeof getSubjectAssignmentHistoryFilterOptionsAction>[0],
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: ["subject-assignments", "history-filter-options", query],
+    queryFn: () => getSubjectAssignmentHistoryFilterOptionsAction(query),
+    enabled,
   });
 }
 
