@@ -96,6 +96,23 @@ test("Imports can add narrowly scoped dependent query invalidation", async () =>
   ]);
 });
 
+test("Teacher import invalidates only Teacher selectors and the operational dashboard", async () => {
+  const { queryClient, queryKeys } = createInvalidationRecorder();
+
+  await invalidateImportQueries(queryClient, ["teachers"], [
+    ["subject-assignment-options"],
+    ["section-form-options"],
+    ["dashboard", "operational"],
+  ]);
+
+  assert.deepEqual(queryKeys, [
+    ["teachers"],
+    ["subject-assignment-options"],
+    ["section-form-options"],
+    ["dashboard", "operational"],
+  ]);
+});
+
 test("Academic Year mutations refresh management details and operational selectors", async () => {
   const invalidated: unknown[] = [];
 

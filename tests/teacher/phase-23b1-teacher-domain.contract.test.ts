@@ -33,13 +33,14 @@ test("Phase 23-B1 personnel input requires no credentials and validates optional
 });
 
 test("Phase 23-B1 lifecycle guards preserve assignment and adviser ownership", async () => {
-  const [service, repository, assignmentService] = await Promise.all([
+  const [service, identity, repository, assignmentService] = await Promise.all([
     read("services/teacher.service.ts"),
+    read("lib/teacher-identity.ts"),
     read("repositories/teacher.repository.ts"),
     read("services/subject-assignment.service.ts"),
   ]);
-  assert.match(service, /canonicalEmployeeNumber\(value: string\).*toUpperCase/);
-  assert.match(service, /value\?\.trim\(\)\.toLowerCase\(\)/);
+  assert.match(identity, /canonicalEmployeeNumber\(value: string\)[\s\S]*toUpperCase/);
+  assert.match(identity, /value\?\.trim\(\)\.toLowerCase\(\)/);
   assert.match(service, /hasActiveTeacherDependencies/);
   assert.match(service, /active Subject Assignments/);
   assert.match(service, /adviser of an active Section/);

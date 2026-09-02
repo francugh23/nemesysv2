@@ -80,6 +80,23 @@ export async function findTeachersByEmail(email: string, transaction?: Prisma.Tr
   return (transaction ?? prisma).teacher.findMany({ where: { email: { equals: email, mode: "insensitive" } }, select: { id: true, deletedAt: true } });
 }
 
+export async function findTeachersForImport(
+  employeeNumbers: string[],
+  emails: string[],
+  transaction?: Prisma.TransactionClient,
+) {
+  if (!employeeNumbers.length && !emails.length) return [];
+  return (transaction ?? prisma).teacher.findMany({
+    where: {
+      OR: [
+        ...(employeeNumbers.length ? [{ employeeNumber: { in: employeeNumbers } }] : []),
+        ...(emails.length ? [{ email: { in: emails, mode: "insensitive" as const } }] : []),
+      ],
+    },
+    select: { id: true, employeeNumber: true, email: true, status: true, deletedAt: true },
+  });
+}
+
 export async function findActiveTeacherForAssignment(id: string, transaction?: Prisma.TransactionClient) {
   return (transaction ?? prisma).teacher.findFirst({ where: { id, deletedAt: null, status: "ACTIVE" }, select: { id: true, employeeNumber: true, firstName: true, middleName: true, lastName: true } });
 }

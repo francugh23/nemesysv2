@@ -37,7 +37,10 @@ function createImportWorksheet(definition: ImportTemplateWorksheet) {
   return worksheet;
 }
 
-function createInstructionsWorksheet(fields: readonly ImportTemplateField[]) {
+function createInstructionsWorksheet(
+  fields: readonly ImportTemplateField[],
+  instructionRows: readonly (readonly string[])[] = [],
+) {
   const rows = [
     ["Field", "Required", "Accepted Values", "Format", "Notes"],
     ...fields.map((field) => [
@@ -47,6 +50,7 @@ function createInstructionsWorksheet(fields: readonly ImportTemplateField[]) {
       field.format,
       field.notes,
     ]),
+    ...instructionRows,
   ].map((row) => row.map(neutralizeSpreadsheetFormula));
   const worksheet = XLSX.utils.aoa_to_sheet(rows);
   worksheet["!cols"] = [
@@ -74,7 +78,10 @@ export function generateImportTemplate(
   if (definition.includeInstructions) {
     XLSX.utils.book_append_sheet(
       workbook,
-      createInstructionsWorksheet(definition.importWorksheet.fields),
+      createInstructionsWorksheet(
+        definition.importWorksheet.fields,
+        definition.instructionRows,
+      ),
       INSTRUCTIONS_SHEET_NAME,
     );
   }

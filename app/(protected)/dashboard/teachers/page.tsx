@@ -1,6 +1,6 @@
 "use client";
 
-import { Download } from "lucide-react";
+import { Download, Upload } from "lucide-react";
 import { Suspense, useEffect, useEffectEvent, useMemo, useState } from "react";
 
 import { CrudToolbar } from "@/components/common/crud-toolbar";
@@ -19,6 +19,7 @@ import {
 } from "@/schemas";
 
 import { CreateTeacherDialog } from "./components/create-teacher-dialog";
+import { TeacherImportDialog } from "./components/teacher-import-dialog";
 import {
   TeacherDialogManager,
   type TeacherDialogType,
@@ -189,10 +190,13 @@ function TeachersPageContent() {
                 isFetching={isFetching && !isLoading}
                 searchResetKey={tableState.resetKey}
                 actions={
-                  <Button variant="outline" disabled>
-                    <Download />
-                    Export
-                  </Button>
+                  <>
+                    <TeacherImportDialog trigger={<Button variant="outline"><Upload />Import</Button>} />
+                    <Button variant="outline" disabled>
+                      <Download />
+                      Export
+                    </Button>
+                  </>
                 }
               />
             )}

@@ -18,12 +18,14 @@ import { parseSpreadsheet } from "@/lib/import/spreadsheet";
 import { invalidateImportQueries } from "@/hooks/query-invalidation";
 import type { ActionResponse } from "@/types/action-response";
 import type { ImportValidationResult } from "@/types/import";
+import type { ImportPreviewActionResult, ImportServerPreview } from "@/types/import";
 import type { ImportTemplateActionResult } from "@/types/import-template";
 import { WizardDialog } from "@/components/common/wizard/wizard-dialog";
 import { WizardStepPreview } from "@/components/common/wizard/wizard-step-preview";
 import { WizardStepSummary } from "@/components/common/wizard/wizard-step-summary";
 import { WizardStepUpload } from "@/components/common/wizard/wizard-step-upload";
 import { WizardStepValidation } from "@/components/common/wizard/wizard-step-validation";
+import { WizardStepServerPreview } from "@/components/common/wizard/wizard-step-server-preview";
 
 interface ImportWizardProps {
   entityLabel: string;
@@ -37,6 +39,10 @@ interface ImportWizardProps {
   ) => ImportValidationResult;
   importRecords: (rows: Record<string, unknown>[]) => Promise<ActionResponse>;
   downloadTemplate?: () => Promise<ImportTemplateActionResult>;
+  maxFileSizeBytes?: number;
+  maxRows?: number;
+  previewRecords?: (rows: Record<string, unknown>[], page: number) => Promise<ImportPreviewActionResult>;
+  confirmRecords?: (rows: Record<string, unknown>[]) => Promise<ActionResponse>;
 }
 
 export function ImportWizard({
@@ -48,11 +54,18 @@ export function ImportWizard({
   validateRows,
   importRecords,
   downloadTemplate,
+  maxFileSizeBytes,
+  maxRows,
+  previewRecords,
+  confirmRecords,
 }: ImportWizardProps) {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [serverPreview, setServerPreview] = useState<ImportServerPreview | null>(null);
+  const [isPreviewing, startPreviewTransition] = useTransition();
   const [isPending, startTransition] = useTransition();
   const [isDownloadingTemplate, startTemplateDownload] = useTransition();
   const queryClient = useQueryClient();
@@ -63,33 +76,70 @@ export function ImportWizard({
 
     let cancelled = false;
 
-    void parseSpreadsheet(file)
+    void parseSpreadsheet(file, { maxFileSizeBytes, maxRows })
       .then((spreadsheet) => {
         if (cancelled) return;
 
         setHeaders(spreadsheet.headers);
         setRows(spreadsheet.rows.map((row) => normalizeRowEvent(row)));
+        setParseError(null);
       })
-      .catch(() => {
+      .catch((error) => {
         if (!cancelled) {
           setHeaders([]);
           setRows([]);
-          toast.error("Unable to parse the selected file.");
+          const message = error instanceof Error ? error.message : "Unable to parse the selected file.";
+          setParseError(message);
+          toast.error(message);
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [file]);
+  }, [file, maxFileSizeBytes, maxRows]);
 
-  const validation = validateRows(rows, headers);
+  const clientValidation = validateRows(rows, headers);
+  const validation = parseError ? { valid: false, errors: [{ row: 0, message: parseError }] } : clientValidation;
   const importRows = validation.valid ? rows : [];
+  const previewRows = parseError ? [] : rows;
+
+  const requestPreview = useEffectEvent((page: number) => {
+    if (!previewRecords || previewRows.length === 0) return;
+    startPreviewTransition(async () => {
+      const result = await previewRecords(previewRows, page);
+      if ("error" in result) {
+        setServerPreview(null);
+        toast.error(result.error);
+        return;
+      }
+      setServerPreview(result.preview);
+    });
+  });
+
+  function handlePreviewPage(page: number) {
+    if (!previewRecords || previewRows.length === 0) return;
+    startPreviewTransition(async () => {
+      const result = await previewRecords(previewRows, page);
+      if ("error" in result) {
+        setServerPreview(null);
+        toast.error(result.error);
+        return;
+      }
+      setServerPreview(result.preview);
+    });
+  }
+
+  useEffect(() => {
+    if (previewRecords && previewRows.length > 0) requestPreview(1);
+  }, [headers, rows, parseError, previewRecords, previewRows.length]);
 
   function resetWizard() {
     setFile(null);
     setRows([]);
     setHeaders([]);
+    setParseError(null);
+    setServerPreview(null);
   }
 
   function handleOpenChange(value: boolean) {
@@ -104,13 +154,15 @@ export function ImportWizard({
     setFile(nextFile);
     setRows([]);
     setHeaders([]);
+    setParseError(null);
+    setServerPreview(null);
   }
 
   function handleImport() {
-    if (!validation.valid || importRows.length === 0) return;
+    if (!validation.valid || importRows.length === 0 || (previewRecords && !serverPreview?.canImport)) return;
 
     startTransition(async () => {
-      const result = await importRecords(importRows);
+      const result = await (confirmRecords ?? importRecords)(importRows);
 
       if (result.error) {
         toast.error(result.error);
@@ -162,7 +214,7 @@ export function ImportWizard({
         title={`Import ${entityLabel}s`}
         onFinish={handleImport}
         isFinishing={isPending}
-        isFinishDisabled={!validation.valid || importRows.length === 0}
+        isFinishDisabled={!validation.valid || importRows.length === 0 || Boolean(previewRecords && !serverPreview?.canImport)}
         steps={[
           {
             id: "upload",
@@ -193,8 +245,8 @@ export function ImportWizard({
           {
             id: "summary",
             title: "Summary",
-            description: "Review records before importing.",
-            content: <WizardStepSummary entityLabel={entityLabel} rows={importRows} />,
+            description: previewRecords ? "Server preview is advisory; confirmation revalidates every record." : "Review records before importing.",
+            content: previewRecords ? <WizardStepServerPreview preview={serverPreview} isLoading={isPreviewing} onPageChange={handlePreviewPage} /> : <WizardStepSummary entityLabel={entityLabel} rows={importRows} />,
           },
         ]}
       />

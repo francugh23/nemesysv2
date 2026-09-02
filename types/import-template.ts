@@ -20,6 +20,7 @@ export interface ImportTemplateDefinition {
   fileSlug: string;
   importWorksheet: ImportTemplateWorksheet;
   includeInstructions: boolean;
+  instructionRows?: readonly (readonly string[])[];
   additionalWorksheets?: readonly ImportTemplateWorksheet[];
 }
 
