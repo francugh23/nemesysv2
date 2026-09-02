@@ -81,7 +81,7 @@ test("Phase 23-C3.4A keeps History URL-driven, read-only, and bounded", async ()
     read("app/(protected)/dashboard/assignments/components/subject-assignment-history-view-dialog.tsx"),
   ]);
 
-  assert.match(page, /historyFilterKeys = \["status", "academicYearId", "academicTermId"\]/);
+  assert.match(page, /historyFilterKeys = \["status", "academicYearId", "academicTermId", "teacherId", "sectionId", "subjectOfferingId"\]/);
   assert.match(page, /searchParams\.get\("view"\) === "history"/);
   assert.match(page, /defaultPageSize: 25/);
   assert.match(page, /pageSizeOptions: \[25, 50\]/);

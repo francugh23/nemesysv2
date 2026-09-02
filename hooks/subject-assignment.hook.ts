@@ -9,6 +9,7 @@ import {
   getAssignmentMatrixAction,
   getSubjectAssignmentHistoryAction,
   getSubjectAssignmentHistoryFilterOptionsAction,
+  getSubjectAssignmentHistoryOptionsAction,
   getSubjectAssignmentsAction,
   updateSubjectAssignmentAction,
 } from "@/actions/subject-assignment.action";
@@ -39,6 +40,17 @@ export function useSubjectAssignmentHistoryFilterOptions(
   return useQuery({
     queryKey: ["subject-assignments", "history-filter-options", query],
     queryFn: () => getSubjectAssignmentHistoryFilterOptionsAction(query),
+    enabled,
+  });
+}
+
+export function useSubjectAssignmentHistoryOptions(
+  query: Parameters<typeof getSubjectAssignmentHistoryOptionsAction>[0],
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: ["subject-assignments", "history-options", query],
+    queryFn: () => getSubjectAssignmentHistoryOptionsAction(query),
     enabled,
   });
 }

@@ -67,6 +67,9 @@ export type SubjectAssignmentHistoryFilters = {
   status?: "ACTIVE" | "ARCHIVED";
   academicYearId?: string;
   academicTermId?: string;
+  teacherId?: string;
+  sectionId?: string;
+  subjectOfferingId?: string;
 };
 
 function getSubjectAssignmentHistoryWhere(
@@ -82,6 +85,9 @@ function getSubjectAssignmentHistoryWhere(
           ? { not: null }
           : undefined,
     academicTermId: filters.academicTermId,
+    teacherId: filters.teacherId,
+    sectionId: filters.sectionId,
+    subjectOfferingId: filters.subjectOfferingId,
     subjectOfferingTerm: {
       subjectOffering: {
         academicYearId: filters.academicYearId,
@@ -187,6 +193,102 @@ export function findSubjectAssignmentHistoryFilterOptions(
       ],
     }),
   ]);
+}
+
+export type SubjectAssignmentHistoryOptionsQuery = {
+  kind: "TEACHER" | "SECTION" | "OFFERING";
+  q?: string;
+  selectedId?: string;
+};
+
+export function findSubjectAssignmentHistoryOptions(
+  query: SubjectAssignmentHistoryOptionsQuery,
+) {
+  const searchTerms = query.q?.split(/\s+/).filter(Boolean) ?? [];
+
+  if (query.kind === "TEACHER") {
+    const where: Prisma.TeacherWhereInput = {
+      subjectAssignments: { some: {} },
+      ...(searchTerms.length || query.selectedId
+        ? {
+            OR: [
+              ...(searchTerms.length
+                ? [{
+                    AND: searchTerms.map((term) => ({
+                      OR: [
+                        { employeeNumber: { contains: term, mode: Prisma.QueryMode.insensitive } },
+                        { firstName: { contains: term, mode: Prisma.QueryMode.insensitive } },
+                        { middleName: { contains: term, mode: Prisma.QueryMode.insensitive } },
+                        { lastName: { contains: term, mode: Prisma.QueryMode.insensitive } },
+                      ],
+                    })),
+                  }]
+                : []),
+              ...(query.selectedId ? [{ id: query.selectedId }] : []),
+            ],
+          }
+        : {}),
+    };
+    return prisma.teacher.findMany({
+      where,
+      select: { id: true, employeeNumber: true, firstName: true, middleName: true, lastName: true },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }, { middleName: "asc" }, { employeeNumber: "asc" }, { id: "asc" }],
+      take: 25,
+    });
+  }
+
+  if (query.kind === "SECTION") {
+    const where: Prisma.SectionWhereInput = {
+      subjectAssignments: { some: {} },
+      ...(searchTerms.length || query.selectedId
+        ? {
+            OR: [
+              ...(searchTerms.length
+                ? [{
+                    AND: searchTerms.map((term) => ({
+                      sectionName: { contains: term, mode: Prisma.QueryMode.insensitive },
+                    })),
+                  }]
+                : []),
+              ...(query.selectedId ? [{ id: query.selectedId }] : []),
+            ],
+          }
+        : {}),
+    };
+    return prisma.section.findMany({
+      where,
+      select: { id: true, gradeLevel: true, sectionName: true },
+      orderBy: [{ gradeLevel: "asc" }, { sectionName: "asc" }, { id: "asc" }],
+      take: 25,
+    });
+  }
+
+  const where: Prisma.SubjectOfferingWhereInput = {
+      terms: { some: { subjectAssignments: { some: {} } } },
+      ...(searchTerms.length || query.selectedId
+        ? {
+            OR: [
+              ...(searchTerms.length
+                ? [{
+                    AND: searchTerms.map((term) => ({
+                      OR: [
+                        { subjectCode: { contains: term, mode: Prisma.QueryMode.insensitive } },
+                        { subjectDescription: { contains: term, mode: Prisma.QueryMode.insensitive } },
+                      ],
+                    })),
+                  }]
+                : []),
+              ...(query.selectedId ? [{ id: query.selectedId }] : []),
+            ],
+          }
+        : {}),
+    };
+  return prisma.subjectOffering.findMany({
+    where,
+    select: { id: true, subjectCode: true, subjectDescription: true },
+    orderBy: [{ subjectCode: "asc" }, { subjectDescription: "asc" }, { id: "asc" }],
+    take: 25,
+  });
 }
 
 export function findAcademicYearForAssignment(id: string, transaction?: Prisma.TransactionClient) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useEffectEvent, useMemo, useState } from "react";
+import { Suspense, useDeferredValue, useEffect, useEffectEvent, useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 import { DataTable, DataTableFacetedFilter, DataTableToolbar, resolveServerPagination, type DataTableFilterOption } from "@/components/data-table";
@@ -8,6 +8,7 @@ import { SegmentedNavigation } from "@/components/common/segmented-navigation";
 import { SubjectAssignmentTableSkeleton } from "@/components/skeletons/subject-assignment-table-skeleton";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   Select,
   SelectContent,
@@ -20,6 +21,7 @@ import {
   useAssignmentMatrix,
   useSubjectAssignmentHistory,
   useSubjectAssignmentHistoryFilterOptions,
+  useSubjectAssignmentHistoryOptions,
 } from "@/hooks/subject-assignment.hook";
 import type { SubjectAssignmentHistoryItem, SubjectAssignmentHistoryQueryInput } from "@/schemas";
 import { useTableUrlState } from "@/hooks/use-table-url-state.hook";
@@ -28,7 +30,7 @@ import { AssignmentMatrix } from "./components/assignment-matrix";
 import { subjectAssignmentHistoryColumns } from "./components/subject-assignment-history-columns";
 import { SubjectAssignmentHistoryViewDialog } from "./components/subject-assignment-history-view-dialog";
 
-const historyFilterKeys = ["status", "academicYearId", "academicTermId"] as const;
+const historyFilterKeys = ["status", "academicYearId", "academicTermId", "teacherId", "sectionId", "subjectOfferingId"] as const;
 
 export default function SubjectAssignmentsPage() {
   return (
@@ -52,6 +54,12 @@ function SubjectAssignmentsPageContent() {
     "7" | "8" | "9" | "10" | "11" | "12"
   >("7");
   const [termId, setTermId] = useState<string | null>(null);
+  const [teacherSearch, setTeacherSearch] = useState("");
+  const [sectionSearch, setSectionSearch] = useState("");
+  const [offeringSearch, setOfferingSearch] = useState("");
+  const deferredTeacherSearch = useDeferredValue(teacherSearch);
+  const deferredSectionSearch = useDeferredValue(sectionSearch);
+  const deferredOfferingSearch = useDeferredValue(offeringSearch);
   const matrixQuery = useAssignmentMatrix({ gradeLevel });
   const [selectedAssignment, setSelectedAssignment] = useState<SubjectAssignmentHistoryItem | null>(null);
   const status = ["ACTIVE", "ARCHIVED"].includes(tableState.filters.status)
@@ -62,6 +70,9 @@ function SubjectAssignmentsPageContent() {
     status,
     academicYearId: tableState.filters.academicYearId || undefined,
     academicTermId: tableState.filters.academicTermId || undefined,
+    teacherId: tableState.filters.teacherId || undefined,
+    sectionId: tableState.filters.sectionId || undefined,
+    subjectOfferingId: tableState.filters.subjectOfferingId || undefined,
     page: tableState.query.page,
     pageSize: tableState.query.pageSize,
   };
@@ -70,6 +81,21 @@ function SubjectAssignmentsPageContent() {
     { academicYearId: historyQuery.academicYearId },
     view === "history",
   );
+  const teacherOptionsQuery = useSubjectAssignmentHistoryOptions({
+    kind: "TEACHER",
+    q: deferredTeacherSearch.trim() || undefined,
+    selectedId: historyQuery.teacherId,
+  }, view === "history");
+  const sectionOptionsQuery = useSubjectAssignmentHistoryOptions({
+    kind: "SECTION",
+    q: deferredSectionSearch.trim() || undefined,
+    selectedId: historyQuery.sectionId,
+  }, view === "history");
+  const offeringOptionsQuery = useSubjectAssignmentHistoryOptions({
+    kind: "OFFERING",
+    q: deferredOfferingSearch.trim() || undefined,
+    selectedId: historyQuery.subjectOfferingId,
+  }, view === "history");
   const selectedTerm = matrixQuery.data?.terms.find(
     (term) => term.id === termId,
   );
@@ -83,13 +109,19 @@ function SubjectAssignmentsPageContent() {
     isPlaceholderData: historyQueryResult.isPlaceholderData,
   });
   const hasFilters = Boolean(
-    historyQuery.q || status || historyQuery.academicYearId || historyQuery.academicTermId,
+    historyQuery.q || status || historyQuery.academicYearId || historyQuery.academicTermId || historyQuery.teacherId || historyQuery.sectionId || historyQuery.subjectOfferingId,
   );
   const academicYearOptions: DataTableFilterOption[] = historyOptions.data?.academicYears.map((year) => ({ label: year.label, value: year.id })) ?? [];
   const termOptions: DataTableFilterOption[] = historyOptions.data?.terms.map((term) => ({
     label: historyQuery.academicYearId ? term.name : `${term.academicYear.label} · ${term.name}`,
     value: term.id,
   })) ?? [];
+  const teacherOptions = teacherOptionsQuery.data ?? [];
+  const sectionOptions = sectionOptionsQuery.data ?? [];
+  const offeringOptions = offeringOptionsQuery.data ?? [];
+  const selectedTeacherLabel = teacherOptions.find((option) => option.id === historyQuery.teacherId)?.label;
+  const selectedSectionLabel = sectionOptions.find((option) => option.id === historyQuery.sectionId)?.label;
+  const selectedOfferingLabel = offeringOptions.find((option) => option.id === historyQuery.subjectOfferingId)?.label;
 
   useEffect(() => {
     if (historyQueryResult.data && serverPagination.shouldReconcile) {
@@ -243,7 +275,7 @@ function SubjectAssignmentsPageContent() {
                   onReset={tableState.reset}
                   isFetching={historyQueryResult.isFetching && !historyQueryResult.isLoading}
                 >
-                  <DataTableFacetedFilter
+                    <DataTableFacetedFilter
                     label="Status"
                     allLabel="All statuses"
                     value={tableState.filters.status}
@@ -265,8 +297,56 @@ function SubjectAssignmentsPageContent() {
                     allLabel="All Terms"
                     value={tableState.filters.academicTermId}
                     options={termOptions}
-                    onValueChange={(value) => tableState.setFilter("academicTermId", value)}
-                  />
+                      onValueChange={(value) => tableState.setFilter("academicTermId", value)}
+                    />
+                    <SearchableSelect
+                      ariaLabel="Teacher"
+                      value={historyQuery.teacherId}
+                      onValueChange={(value) => {
+                        setTeacherSearch("");
+                        tableState.setFilter("teacherId", value);
+                      }}
+                      options={teacherOptions.map((option) => ({ value: option.id, label: option.label, searchValue: option.searchValue }))}
+                      placeholder="Search Teachers..."
+                      inputValue={teacherSearch || selectedTeacherLabel || ""}
+                      onInputValueChange={setTeacherSearch}
+                      isLoading={teacherOptionsQuery.isLoading || teacherOptionsQuery.isFetching}
+                      loadingLabel="Search Teachers..."
+                      emptyLabel="No matching Teachers"
+                      className="w-full min-w-48"
+                    />
+                    <SearchableSelect
+                      ariaLabel="Section"
+                      value={historyQuery.sectionId}
+                      onValueChange={(value) => {
+                        setSectionSearch("");
+                        tableState.setFilter("sectionId", value);
+                      }}
+                      options={sectionOptions.map((option) => ({ value: option.id, label: option.label, searchValue: option.searchValue }))}
+                      placeholder="Search Sections..."
+                      inputValue={sectionSearch || selectedSectionLabel || ""}
+                      onInputValueChange={setSectionSearch}
+                      isLoading={sectionOptionsQuery.isLoading || sectionOptionsQuery.isFetching}
+                      loadingLabel="Search Sections..."
+                      emptyLabel="No matching Sections"
+                      className="w-full min-w-48"
+                    />
+                    <SearchableSelect
+                      ariaLabel="Offering"
+                      value={historyQuery.subjectOfferingId}
+                      onValueChange={(value) => {
+                        setOfferingSearch("");
+                        tableState.setFilter("subjectOfferingId", value);
+                      }}
+                      options={offeringOptions.map((option) => ({ value: option.id, label: option.label, searchValue: option.searchValue }))}
+                      placeholder="Search Offerings..."
+                      inputValue={offeringSearch || selectedOfferingLabel || ""}
+                      onInputValueChange={setOfferingSearch}
+                      isLoading={offeringOptionsQuery.isLoading || offeringOptionsQuery.isFetching}
+                      loadingLabel="Search Offerings..."
+                      emptyLabel="No matching Offerings"
+                      className="w-full min-w-48"
+                    />
                 </DataTableToolbar>
               )}
               server={{
@@ -285,7 +365,7 @@ function SubjectAssignmentsPageContent() {
                 isFetching: historyQueryResult.isFetching,
                 loadingFallback: <SubjectAssignmentTableSkeleton />,
                 errorFallback: <HistoryError onRetry={() => void historyQueryResult.refetch()} retrying={historyQueryResult.isFetching} />,
-                emptyTitle: status === "ARCHIVED" && !historyQuery.q && !historyQuery.academicYearId && !historyQuery.academicTermId
+                emptyTitle: status === "ARCHIVED" && !historyQuery.q && !historyQuery.academicYearId && !historyQuery.academicTermId && !historyQuery.teacherId && !historyQuery.sectionId && !historyQuery.subjectOfferingId
                   ? "No archived teaching assignments found."
                   : hasFilters ? "No assignments match the current filters." : "No teaching assignment history found.",
                 emptyDescription: hasFilters ? "Try adjusting or clearing the current search and filters." : "Teaching assignments will appear here when they are created.",

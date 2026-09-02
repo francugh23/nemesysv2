@@ -7,8 +7,8 @@ import { createAuditLogs } from "@/repositories/audit.repository";
 import { lockAcademicYearForAcademicTerms } from "@/repositories/academic-year.repository";
 import { findActiveSectionForAssignment, findActiveSectionsForAssignment } from "@/repositories/section.repository";
 import { findActiveTeacherForAssignment, findActiveTeachersForAssignment } from "@/repositories/teacher.repository";
-import { archiveSubjectAssignment, countSubjectAssignmentHistory, createSubjectAssignment, findActiveAcademicYearsForAssignment, findActiveAcademicYearsForMatrix, findActiveSubjectAssignment, findActiveSubjectAssignmentById, findActiveSubjectAssignmentsForMatrixMutation, findAllSubjectAssignments, findAssignmentMatrixAssignments, findAssignmentMatrixScopes, findAssignmentMatrixSections, findAssignmentMatrixTeacherLoads, findAssignmentScope, findAssignmentScopes, findSubjectAssignmentHistory, findSubjectAssignmentHistoryFilterOptions, updateSubjectAssignment } from "@/repositories/subject-assignment.repository";
-import { AssignmentMatrixMutationSchema, AssignmentMatrixQuerySchema, CreateSubjectAssignmentSchema, SubjectAssignmentHistoryFilterOptionsQuerySchema, SubjectAssignmentHistoryQuerySchema, type AssignmentMatrixMutation, type AssignmentMatrixQuery, type SubjectAssignmentHistoryQuery, type SubjectAssignmentHistoryPage, type SubjectAssignmentListItem, UpdateSubjectAssignmentSchema } from "@/schemas";
+import { archiveSubjectAssignment, countSubjectAssignmentHistory, createSubjectAssignment, findActiveAcademicYearsForAssignment, findActiveAcademicYearsForMatrix, findActiveSubjectAssignment, findActiveSubjectAssignmentById, findActiveSubjectAssignmentsForMatrixMutation, findAllSubjectAssignments, findAssignmentMatrixAssignments, findAssignmentMatrixScopes, findAssignmentMatrixSections, findAssignmentMatrixTeacherLoads, findAssignmentScope, findAssignmentScopes, findSubjectAssignmentHistory, findSubjectAssignmentHistoryFilterOptions, findSubjectAssignmentHistoryOptions, updateSubjectAssignment } from "@/repositories/subject-assignment.repository";
+import { AssignmentMatrixMutationSchema, AssignmentMatrixQuerySchema, CreateSubjectAssignmentSchema, SubjectAssignmentHistoryFilterOptionsQuerySchema, SubjectAssignmentHistoryOptionsQuerySchema, SubjectAssignmentHistoryQuerySchema, type AssignmentMatrixMutation, type AssignmentMatrixQuery, type SubjectAssignmentHistoryOption, type SubjectAssignmentHistoryOptionsQuery, type SubjectAssignmentHistoryQuery, type SubjectAssignmentHistoryPage, type SubjectAssignmentListItem, UpdateSubjectAssignmentSchema } from "@/schemas";
 import { z } from "zod";
 
 type Values = z.infer<typeof CreateSubjectAssignmentSchema>;
@@ -244,6 +244,39 @@ export async function getSubjectAssignmentHistoryFilterOptions(query: unknown) {
     validated.academicYearId,
   );
   return { academicYears, terms };
+}
+
+export async function getSubjectAssignmentHistoryOptions(
+  query: SubjectAssignmentHistoryOptionsQuery,
+): Promise<SubjectAssignmentHistoryOption[]> {
+  await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  const validated = SubjectAssignmentHistoryOptionsQuerySchema.parse(query);
+  const options = await findSubjectAssignmentHistoryOptions(validated);
+
+  return options.map((option) => {
+    if ("employeeNumber" in option) {
+      const name = `${option.lastName}, ${option.firstName}${option.middleName ? ` ${option.middleName}` : ""}`;
+      return {
+        id: option.id,
+        label: `${option.employeeNumber} · ${name}`,
+        searchValue: `${option.employeeNumber} ${option.firstName} ${option.middleName ?? ""} ${option.lastName}`,
+      };
+    }
+
+    if ("sectionName" in option) {
+      return {
+        id: option.id,
+        label: `Grade ${option.gradeLevel} ${option.sectionName}`,
+        searchValue: `${option.gradeLevel} ${option.sectionName}`,
+      };
+    }
+
+    return {
+      id: option.id,
+      label: `${option.subjectCode} · ${option.subjectDescription}`,
+      searchValue: `${option.subjectCode} ${option.subjectDescription}`,
+    };
+  });
 }
 
 export async function getSubjectAssignmentOptions() {

@@ -24,6 +24,11 @@ interface SearchableSelectProps {
   placeholder: string;
   disabled?: boolean;
   className?: string;
+  inputValue?: string;
+  onInputValueChange?: (value: string) => void;
+  isLoading?: boolean;
+  loadingLabel?: string;
+  emptyLabel?: string;
 }
 
 export function SearchableSelect({
@@ -35,6 +40,11 @@ export function SearchableSelect({
   placeholder,
   disabled = false,
   className,
+  inputValue,
+  onInputValueChange,
+  isLoading = false,
+  loadingLabel = "Loading options...",
+  emptyLabel = "No matching options.",
 }: SearchableSelectProps) {
   const optionsByValue = new Map(
     options.map((option) => [option.value, option]),
@@ -60,6 +70,8 @@ export function SearchableSelect({
       itemToStringLabel={getOptionLabel}
       filter={filterOption}
       disabled={disabled}
+      inputValue={inputValue}
+      onInputValueChange={onInputValueChange}
     >
       <ComboboxInput
         id={id}
@@ -69,7 +81,7 @@ export function SearchableSelect({
         disabled={disabled}
       />
       <ComboboxContent>
-        <ComboboxEmpty>No matching options.</ComboboxEmpty>
+        <ComboboxEmpty>{isLoading ? loadingLabel : emptyLabel}</ComboboxEmpty>
         <ComboboxList>
           {(option) => (
             <ComboboxItem key={option} value={option}>

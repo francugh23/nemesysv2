@@ -66,6 +66,9 @@ export const SubjectAssignmentHistoryQuerySchema = z.object({
   status: SubjectAssignmentHistoryStatusSchema.optional(),
   academicYearId: z.string().cuid().optional(),
   academicTermId: z.string().cuid().optional(),
+  teacherId: z.string().cuid().optional(),
+  sectionId: z.string().cuid().optional(),
+  subjectOfferingId: z.string().cuid().optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().refine((value) => value === 25 || value === 50, {
     message: "Page size must be 25 or 50.",
@@ -74,6 +77,24 @@ export const SubjectAssignmentHistoryQuerySchema = z.object({
 
 export const SubjectAssignmentHistoryFilterOptionsQuerySchema = z.object({
   academicYearId: z.string().cuid().optional(),
+});
+
+export const SubjectAssignmentHistoryOptionKindSchema = z.enum([
+  "TEACHER",
+  "SECTION",
+  "OFFERING",
+]);
+
+export const SubjectAssignmentHistoryOptionsQuerySchema = z.object({
+  kind: SubjectAssignmentHistoryOptionKindSchema,
+  q: z.string().trim().max(100).optional(),
+  selectedId: z.string().cuid().optional(),
+});
+
+export const SubjectAssignmentHistoryOptionSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  searchValue: z.string(),
 });
 
 export const SubjectAssignmentHistoryItemSchema = z.object({
@@ -104,6 +125,12 @@ export type SubjectAssignmentHistoryQueryInput = z.input<
 >;
 export type SubjectAssignmentHistoryQuery = z.output<
   typeof SubjectAssignmentHistoryQuerySchema
+>;
+export type SubjectAssignmentHistoryOptionsQuery = z.output<
+  typeof SubjectAssignmentHistoryOptionsQuerySchema
+>;
+export type SubjectAssignmentHistoryOption = z.infer<
+  typeof SubjectAssignmentHistoryOptionSchema
 >;
 export type SubjectAssignmentHistoryItem = z.infer<
   typeof SubjectAssignmentHistoryItemSchema
