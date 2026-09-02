@@ -9,6 +9,7 @@ import {
   CreateSubjectAssignmentSchema,
   SubjectAssignmentExportSchema,
   SubjectAssignmentImportPreviewSchema,
+  SubjectAssignmentImportConfirmSchema,
   SubjectAssignmentHistoryFilterOptionsQuerySchema,
   SubjectAssignmentHistoryOptionsQuerySchema,
   SubjectAssignmentHistoryQuerySchema,
@@ -26,6 +27,7 @@ import {
   getSubjectAssignments,
   getSubjectAssignmentImportTemplate,
   previewSubjectAssignmentImport,
+  confirmSubjectAssignmentImport,
   exportSubjectAssignments,
   updateSubjectAssignmentService,
 } from "@/services/subject-assignment.service";
@@ -85,6 +87,21 @@ export async function previewSubjectAssignmentImportAction(rows: unknown, gradeL
     return { preview: await previewSubjectAssignmentImport(validated.data) };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Unable to preview teaching assignments." };
+  }
+}
+
+export async function confirmSubjectAssignmentImportAction(rows: unknown, gradeLevel: unknown, previewFingerprint: unknown) {
+  try {
+    await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  } catch {
+    return { error: "Unauthorized." };
+  }
+  const validated = SubjectAssignmentImportConfirmSchema.safeParse({ rows, gradeLevel, previewFingerprint });
+  if (!validated.success) return { error: "Invalid teaching assignment confirmation request." };
+  try {
+    return { result: await confirmSubjectAssignmentImport(validated.data) };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Unable to confirm teaching assignments." };
   }
 }
 

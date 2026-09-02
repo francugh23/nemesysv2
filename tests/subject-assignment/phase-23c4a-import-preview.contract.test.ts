@@ -85,7 +85,7 @@ test("Phase 23-C4.1 previews Grade-scoped assignment ownership with deterministi
   assert.match(repository, /findSubjectAssignmentImportContext[\s\S]*findMany/);
   assert.match(repository, /findSubjectAssignmentImportAssignments/);
   assert.match(action, /requirePermission\(Permissions\.SUBJECT_ASSIGNMENTS\)/);
-  assert.doesNotMatch(service.slice(service.indexOf("export async function previewSubjectAssignmentImport"), service.indexOf("export async function exportSubjectAssignments")), /createSubjectAssignment|updateSubjectAssignment|archiveSubjectAssignment|createAuditLogs/);
+  assert.doesNotMatch(service.slice(service.indexOf("export async function previewSubjectAssignmentImport"), service.indexOf("export async function confirmSubjectAssignmentImport")), /createSubjectAssignment|updateSubjectAssignment|archiveSubjectAssignment|createAuditLogs/);
 });
 
 test("Phase 23-C4.1 exports assigned and unassigned eligible Grade scopes without IDs", async () => {

@@ -395,7 +395,7 @@ export function findSubjectAssignmentImportAssignments(
       academicTermId: { in: academicTermIds },
       sectionId: { in: sectionIds },
     },
-    select: { subjectOfferingId: true, academicTermId: true, sectionId: true, teacher: { select: { employeeNumber: true, firstName: true, middleName: true, lastName: true } } },
+    select: { id: true, teacherId: true, subjectOfferingId: true, academicTermId: true, sectionId: true, teacher: { select: { employeeNumber: true, firstName: true, middleName: true, lastName: true } } },
   });
 }
 

@@ -12,10 +12,11 @@ import { lockAcademicYearForAcademicTerms } from "@/repositories/academic-year.r
 import { findActiveSectionForAssignment, findActiveSectionsForAssignment } from "@/repositories/section.repository";
 import { findActiveTeacherForAssignment, findActiveTeachersForAssignment } from "@/repositories/teacher.repository";
 import { archiveSubjectAssignment, countSubjectAssignmentHistory, createSubjectAssignment, findActiveAcademicYearsForAssignment, findActiveAcademicYearsForMatrix, findActiveSubjectAssignment, findActiveSubjectAssignmentById, findActiveSubjectAssignmentsForMatrixMutation, findAllSubjectAssignments, findAssignmentMatrixAssignments, findAssignmentMatrixScopes, findAssignmentMatrixSections, findAssignmentMatrixTeacherLoads, findAssignmentScope, findAssignmentScopes, findSubjectAssignmentExportContext, findSubjectAssignmentHistory, findSubjectAssignmentHistoryFilterOptions, findSubjectAssignmentHistoryOptions, findSubjectAssignmentImportAcademicYears, findSubjectAssignmentImportAssignments, findSubjectAssignmentImportContext, updateSubjectAssignment } from "@/repositories/subject-assignment.repository";
-import { AssignmentMatrixMutationSchema, AssignmentMatrixQuerySchema, CreateSubjectAssignmentSchema, SubjectAssignmentExportSchema, SubjectAssignmentImportPreviewSchema, SubjectAssignmentHistoryFilterOptionsQuerySchema, SubjectAssignmentHistoryOptionsQuerySchema, SubjectAssignmentHistoryQuerySchema, type AssignmentMatrixMutation, type AssignmentMatrixQuery, type SubjectAssignmentHistoryOption, type SubjectAssignmentHistoryOptionsQuery, type SubjectAssignmentHistoryQuery, type SubjectAssignmentHistoryPage, type SubjectAssignmentListItem, UpdateSubjectAssignmentSchema } from "@/schemas";
+import { AssignmentMatrixMutationSchema, AssignmentMatrixQuerySchema, CreateSubjectAssignmentSchema, SubjectAssignmentExportSchema, SubjectAssignmentImportConfirmSchema, SubjectAssignmentImportPreviewSchema, SubjectAssignmentHistoryFilterOptionsQuerySchema, SubjectAssignmentHistoryOptionsQuerySchema, SubjectAssignmentHistoryQuerySchema, type AssignmentMatrixMutation, type AssignmentMatrixQuery, type SubjectAssignmentHistoryOption, type SubjectAssignmentHistoryOptionsQuery, type SubjectAssignmentHistoryQuery, type SubjectAssignmentHistoryPage, type SubjectAssignmentListItem, UpdateSubjectAssignmentSchema } from "@/schemas";
 import { generateExport } from "@/services/export.service";
 import { generateImportTemplate } from "@/services/import-template.service";
 import { z } from "zod";
+import { createHash, randomUUID } from "node:crypto";
 
 type Values = z.infer<typeof CreateSubjectAssignmentSchema>;
 
@@ -305,13 +306,13 @@ export async function getSubjectAssignmentImportTemplate() {
   return generateImportTemplate(subjectAssignmentImportTemplateDefinition);
 }
 
-export async function previewSubjectAssignmentImport(values: unknown) {
-  await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
-  const validated = SubjectAssignmentImportPreviewSchema.parse(values);
+async function resolveSubjectAssignmentImport(
+  validated: z.output<typeof SubjectAssignmentImportPreviewSchema>,
+  transaction: Prisma.TransactionClient,
+) {
   const normalizedRows = validated.rows.map(normalizeSubjectAssignmentImportRow);
   const parsedRows = normalizedRows.map((row) => SubjectAssignmentImportRowSchema.safeParse(row));
 
-  return prisma.$transaction(async (transaction) => {
     const years = await findSubjectAssignmentImportAcademicYears(transaction);
     if (years.length !== 1) throw new Error("Exactly one active Academic Year is required for teaching assignment import.");
     const academicYear = years[0];
@@ -446,8 +447,81 @@ export async function previewSubjectAssignmentImport(values: unknown) {
     });
     const pageCount = Math.max(1, Math.ceil(outcomes.length / SUBJECT_ASSIGNMENT_IMPORT_PAGE_SIZE));
     const page = Math.min(validated.page, pageCount);
-    return { academicYear: academicYear.label, totalRows: outcomes.length, counts, page, pageCount, outcomes: outcomes.slice((page - 1) * SUBJECT_ASSIGNMENT_IMPORT_PAGE_SIZE, page * SUBJECT_ASSIGNMENT_IMPORT_PAGE_SIZE) };
+    const operations = outcomes.flatMap((outcome, index) => {
+      if (outcome.classification !== "VALID" && outcome.classification !== "CHANGE" && outcome.classification !== "ALREADY_ASSIGNED") return [];
+      const row = parsedRows[index];
+      if (!row.success) return [];
+      const teacher = teacherByEmployeeNumber.get(normalizedAssignmentImportText(row.data.teacherEmployeeNumber));
+      const section = (sectionsByName.get(normalizedAssignmentImportText(row.data.section)) ?? [])[0];
+      const offering = (offeringsByCode.get(normalizedAssignmentImportText(row.data.subjectCode)) ?? [])[0];
+      const term = matchingTerms(row.data.term)[0];
+      if (!teacher || !section || !offering || !term) return [];
+      return [{ action: outcome.classification === "VALID" ? "CREATE" as const : outcome.classification === "CHANGE" ? "UPDATE" as const : "NO_OP" as const, teacherId: teacher.id, sectionId: section.id, subjectOfferingId: offering.id, academicTermId: term.id, recordName: `${offering.subjectCode} - ${offering.subjectDescription} | ${term.name} | ${section.sectionName}`, assignment: assignmentByScope.get(`${offering.id}:${term.id}:${section.id}`) }];
+    });
+    const fingerprint = createHash("sha256").update(JSON.stringify(outcomes.map((outcome) => [
+      outcome.rowNumber,
+      outcome.gradeLevel,
+      outcome.subjectCode,
+      outcome.section,
+      outcome.term,
+      outcome.requestedTeacher,
+      outcome.currentTeacher,
+      outcome.classification,
+      outcome.issue,
+    ]))).digest("hex");
+    return { academicYear, fingerprint, operations, totalRows: outcomes.length, counts, page, pageCount, outcomes: outcomes.slice((page - 1) * SUBJECT_ASSIGNMENT_IMPORT_PAGE_SIZE, page * SUBJECT_ASSIGNMENT_IMPORT_PAGE_SIZE) };
+}
+
+export async function previewSubjectAssignmentImport(values: unknown) {
+  await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  const validated = SubjectAssignmentImportPreviewSchema.parse(values);
+  return prisma.$transaction(async (transaction) => {
+    const result = await resolveSubjectAssignmentImport(validated, transaction);
+    return { academicYear: result.academicYear.label, fingerprint: result.fingerprint, totalRows: result.totalRows, counts: result.counts, page: result.page, pageCount: result.pageCount, outcomes: result.outcomes };
   }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+}
+
+export async function confirmSubjectAssignmentImport(values: unknown) {
+  const session = await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  const validated = SubjectAssignmentImportConfirmSchema.parse(values);
+  try {
+    return await prisma.$transaction(async (transaction) => {
+      const years = await findSubjectAssignmentImportAcademicYears(transaction);
+      if (years.length !== 1) throw new Error("Exactly one active Academic Year is required for teaching assignment import.");
+      const academicYear = await lockAcademicYearForAcademicTerms(years[0].id, transaction, "SHARE");
+      if (!academicYear || !isAcademicYearWritable(academicYear.status)) throw new Error("Teaching assignments can only be changed while their Academic Year is active.");
+      const resolved = await resolveSubjectAssignmentImport({ ...validated, page: 1 }, transaction);
+      if (resolved.fingerprint !== validated.previewFingerprint) throw new Error("Teaching assignments changed after this file was previewed. Preview the file again before confirming.");
+      if (resolved.outcomes.some((outcome) => outcome.classification !== "VALID" && outcome.classification !== "CHANGE" && outcome.classification !== "ALREADY_ASSIGNED")) throw new Error("Teaching assignment import contains blocking rows. Correct the file and preview it again before confirming.");
+
+      const batchId = randomUUID();
+      const audits: Prisma.AuditLogCreateManyInput[] = [];
+      const assignmentIds: string[] = [];
+      let createdCount = 0;
+      let updatedCount = 0;
+      let unchangedCount = 0;
+      for (const operation of resolved.operations.sort((a, b) => `${a.subjectOfferingId}:${a.academicTermId}:${a.sectionId}`.localeCompare(`${b.subjectOfferingId}:${b.academicTermId}:${b.sectionId}`))) {
+        if (operation.action === "NO_OP") { unchangedCount += 1; continue; }
+        if (operation.action === "UPDATE" && !operation.assignment) throw new Error("Teaching assignment state changed concurrently. Preview the file again before confirming.");
+        if (operation.action === "CREATE") {
+          const assignment = await createSubjectAssignment({ subjectOfferingId: operation.subjectOfferingId, academicTermId: operation.academicTermId, sectionId: operation.sectionId, teacherId: operation.teacherId }, transaction);
+          createdCount += 1;
+          assignmentIds.push(assignment.id);
+          audits.push({ userId: session.user.id, action: "CREATE", module: "SubjectAssignment", recordId: assignment.id, recordName: operation.recordName, description: "Created Teacher assignment from spreadsheet import.", metadata: { source: "SubjectAssignmentImport", batchId } });
+        } else {
+          const currentAssignment = operation.assignment;
+          if (!currentAssignment) throw new Error("Teaching assignment state changed concurrently. Preview the file again before confirming.");
+          const assignment = await updateSubjectAssignment(currentAssignment.id, { teacherId: operation.teacherId }, transaction);
+          updatedCount += 1;
+          assignmentIds.push(assignment.id);
+          audits.push({ userId: session.user.id, action: "UPDATE", module: "SubjectAssignment", recordId: assignment.id, recordName: operation.recordName, description: "Updated Teacher assignment from spreadsheet import.", metadata: { source: "SubjectAssignmentImport", batchId, previousTeacherId: currentAssignment.teacherId, teacherId: operation.teacherId } });
+        }
+      }
+      if (audits.length) await createAuditLogs(audits, transaction);
+      await createAuditLogs([{ userId: session.user.id, action: "CREATE", module: "SubjectAssignmentImport", recordId: batchId, recordName: "Teaching assignment import", description: `Confirmed ${validated.rows.length} teaching assignment row${validated.rows.length === 1 ? "" : "s"}.`, metadata: { batchId, gradeLevel: validated.gradeLevel, submittedCount: validated.rows.length, createdCount, updatedCount, unchangedCount, assignmentIds: assignmentIds.slice(0, 100) } }], transaction);
+      return { batchId, createdCount, updatedCount, unchangedCount };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  } catch (error) { conflict(error); }
 }
 
 export async function exportSubjectAssignments(gradeLevel: string) {

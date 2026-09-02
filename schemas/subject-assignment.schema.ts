@@ -23,6 +23,12 @@ export const SubjectAssignmentImportPreviewSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
 });
 
+export const SubjectAssignmentImportConfirmSchema = z.object({
+  gradeLevel: SubjectAssignmentImportGradeSchema,
+  rows: z.array(z.record(z.string(), z.unknown())).min(1).max(2000),
+  previewFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+});
+
 export const SubjectAssignmentExportSchema = z.object({
   gradeLevel: SubjectAssignmentImportGradeSchema,
 });

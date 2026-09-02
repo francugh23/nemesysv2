@@ -14,6 +14,7 @@ import {
   getSubjectAssignmentsAction,
   exportSubjectAssignmentsAction,
   previewSubjectAssignmentImportAction,
+  confirmSubjectAssignmentImportAction,
   updateSubjectAssignmentAction,
 } from "@/actions/subject-assignment.action";
 
@@ -72,6 +73,21 @@ export function useAssignmentMatrix(query: { academicYearId?: string; gradeLevel
 export function usePreviewSubjectAssignmentImport() {
   return useMutation({
     mutationFn: ({ rows, gradeLevel, page }: { rows: Record<string, unknown>[]; gradeLevel: "7" | "8" | "9" | "10" | "11" | "12"; page: number }) => previewSubjectAssignmentImportAction(rows, gradeLevel, page),
+  });
+}
+
+export function useConfirmSubjectAssignmentImport() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ rows, gradeLevel, previewFingerprint }: { rows: Record<string, unknown>[]; gradeLevel: "7" | "8" | "9" | "10" | "11" | "12"; previewFingerprint: string }) => confirmSubjectAssignmentImportAction(rows, gradeLevel, previewFingerprint),
+    onSuccess: async (response) => {
+      if ("error" in response) return;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["assignment-matrix"] }),
+        queryClient.invalidateQueries({ queryKey: ["subject-assignments"] }),
+        queryClient.invalidateQueries({ queryKey: ["subject-assignment-options"] }),
+      ]);
+    },
   });
 }
 

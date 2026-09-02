@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
+  useConfirmSubjectAssignmentImport,
   useExportSubjectAssignments,
   usePreviewSubjectAssignmentImport,
   useSubjectAssignmentImportTemplate,
@@ -45,6 +46,7 @@ type GradeLevel = "7" | "8" | "9" | "10" | "11" | "12";
 type PreviewClassification = keyof typeof previewLabels;
 type AssignmentPreview = {
   academicYear: string;
+  fingerprint: string;
   totalRows: number;
   counts: Record<PreviewClassification, number>;
   page: number;
@@ -76,6 +78,7 @@ export function TeachingAssignmentImportDialog({
   const [previewRows, setPreviewRows] = useState<Record<string, unknown>[]>([]);
   const [preview, setPreview] = useState<AssignmentPreview | null>(null);
   const previewMutation = usePreviewSubjectAssignmentImport();
+  const confirmMutation = useConfirmSubjectAssignmentImport();
   const exportMutation = useExportSubjectAssignments();
   const templateMutation = useSubjectAssignmentImportTemplate();
   const [isParsing, startParsing] = useTransition();
@@ -148,6 +151,19 @@ export function TeachingAssignmentImportDialog({
     });
   }
 
+  function handleConfirm() {
+    if (!preview) return;
+    confirmMutation.mutate({ rows: previewRows, gradeLevel, previewFingerprint: preview.fingerprint }, {
+      onSuccess: (result) => {
+        if ("error" in result) { toast.error(result.error); return; }
+        toast.success(`${result.result.createdCount} created, ${result.result.updatedCount} updated, ${result.result.unchangedCount} unchanged. Batch ${result.result.batchId}.`);
+        setOpen(false);
+        reset();
+      },
+      onError: () => toast.error("Unable to confirm teaching assignments."),
+    });
+  }
+
   return (
     <>
       <div className="flex flex-wrap gap-2">
@@ -187,7 +203,7 @@ export function TeachingAssignmentImportDialog({
             </div>
           )}
           {preview && !isParsing && !previewMutation.isPending && (
-            <AssignmentPreview preview={preview} onPageChange={(page) => void requestPreview(previewRows, page)} />
+            <AssignmentPreview preview={preview} onPageChange={(page) => void requestPreview(previewRows, page)} onConfirm={handleConfirm} isConfirming={confirmMutation.isPending} />
           )}
           {preview && <p className="text-center text-sm text-muted-foreground">Preview complete. No teaching assignments have been changed.</p>}
         </div>
@@ -199,11 +215,16 @@ export function TeachingAssignmentImportDialog({
 function AssignmentPreview({
   preview,
   onPageChange,
+  onConfirm,
+  isConfirming,
 }: {
   preview: AssignmentPreview;
   onPageChange: (page: number) => void;
+  onConfirm: () => void;
+  isConfirming: boolean;
 }) {
   const errors = preview.totalRows - preview.counts.VALID - preview.counts.ALREADY_ASSIGNED - preview.counts.CHANGE - preview.counts.PROTECTED;
+  const confirmable = errors === 0 && preview.counts.PROTECTED === 0;
 
   return (
     <div className="min-h-0 space-y-4">
@@ -214,6 +235,11 @@ function AssignmentPreview({
         <span>Changes: {preview.counts.CHANGE}</span>
         <span>Protected: {preview.counts.PROTECTED}</span>
         <span>Errors: {errors}</span>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3 text-sm">
+        <span>Grade {preview.outcomes[0]?.gradeLevel ?? ""} · {preview.academicYear}: {preview.totalRows} rows, {preview.counts.VALID} new, {preview.counts.CHANGE} Teacher changes, {preview.counts.ALREADY_ASSIGNED} already assigned.</span>
+        <Button type="button" onClick={onConfirm} disabled={!confirmable || isConfirming}>{isConfirming && <Loader2 className="animate-spin" />}Confirm assignments</Button>
+        {!confirmable && <span className="text-destructive">Correct blocking rows and preview the file again before confirming.</span>}
       </div>
       <ScrollArea className="h-80 rounded-md border">
         <Table>
