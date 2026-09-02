@@ -337,3 +337,106 @@ export function findAssignmentMatrixTeacherLoads(academicYearId: string, transac
     select: { teacherId: true, subjectOfferingId: true, academicTermId: true, sectionId: true, teacher: { select: { id: true, employeeNumber: true, firstName: true, middleName: true, lastName: true, status: true, deletedAt: true } } },
   });
 }
+
+export function findSubjectAssignmentImportAcademicYears(transaction?: Prisma.TransactionClient) {
+  return client(transaction).academicYear.findMany({
+    where: { status: "ACTIVE" },
+    select: { id: true, label: true },
+    orderBy: [{ startDate: "desc" }, { id: "asc" }],
+  });
+}
+
+export function findSubjectAssignmentImportContext(
+  academicYearId: string,
+  employeeNumbers: string[],
+  sectionNames: string[],
+  subjectCodes: string[],
+  transaction?: Prisma.TransactionClient,
+) {
+  return Promise.all([
+    client(transaction).teacher.findMany({
+      where: { employeeNumber: { in: employeeNumbers } },
+      select: { id: true, employeeNumber: true, status: true, deletedAt: true, firstName: true, middleName: true, lastName: true },
+      orderBy: [{ employeeNumber: "asc" }, { id: "asc" }],
+    }),
+    client(transaction).section.findMany({
+      where: { deletedAt: null, sectionName: { in: sectionNames, mode: Prisma.QueryMode.insensitive } },
+      select: { id: true, gradeLevel: true, sectionName: true },
+      orderBy: [{ gradeLevel: "asc" }, { sectionName: "asc" }, { id: "asc" }],
+    }),
+    client(transaction).subjectOffering.findMany({
+      where: {
+        academicYearId,
+        deletedAt: null,
+        subjectCode: { in: subjectCodes, mode: Prisma.QueryMode.insensitive },
+      },
+      select: { id: true, gradeLevel: true, subjectCode: true, subjectDescription: true, terms: { select: { academicTermId: true } }, shsContext: { select: { curriculumStatus: true } } },
+      orderBy: [{ gradeLevel: "asc" }, { subjectCode: "asc" }, { id: "asc" }],
+    }),
+    client(transaction).academicTerm.findMany({
+      where: { academicYearId },
+      select: { id: true, name: true, position: true, startDate: true },
+      orderBy: [{ position: "asc" }, { id: "asc" }],
+    }),
+  ]);
+}
+
+export function findSubjectAssignmentImportAssignments(
+  subjectOfferingIds: string[],
+  academicTermIds: string[],
+  sectionIds: string[],
+  transaction?: Prisma.TransactionClient,
+) {
+  if (!subjectOfferingIds.length || !academicTermIds.length || !sectionIds.length) return Promise.resolve([]);
+  return client(transaction).subjectAssignment.findMany({
+    where: {
+      deletedAt: null,
+      subjectOfferingId: { in: subjectOfferingIds },
+      academicTermId: { in: academicTermIds },
+      sectionId: { in: sectionIds },
+    },
+    select: { subjectOfferingId: true, academicTermId: true, sectionId: true, teacher: { select: { employeeNumber: true, firstName: true, middleName: true, lastName: true } } },
+  });
+}
+
+export function findSubjectAssignmentExportContext(
+  academicYearId: string,
+  gradeLevel: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return Promise.all([
+    client(transaction).subjectOfferingTerm.findMany({
+      where: {
+        subjectOffering: {
+          academicYearId,
+          gradeLevel,
+          deletedAt: null,
+          ...((gradeLevel === "11" || gradeLevel === "12") ? { shsContext: { is: { curriculumStatus: "SCHOOL_APPROVED" } } } : {}),
+        },
+      },
+      select: {
+        subjectOfferingId: true,
+        academicTermId: true,
+        academicTerm: { select: { name: true, position: true } },
+        subjectOffering: { select: { gradeLevel: true, subjectCode: true, subjectDescription: true } },
+      },
+      orderBy: [{ subjectOffering: { subjectCode: "asc" } }, { academicTerm: { position: "asc" } }, { subjectOfferingId: "asc" }],
+    }),
+    client(transaction).section.findMany({
+      where: { deletedAt: null, gradeLevel },
+      select: { id: true, sectionName: true },
+      orderBy: [{ sectionName: "asc" }, { id: "asc" }],
+    }),
+  ]).then(async ([scopes, sections]) => {
+    const subjectOfferingIds = [...new Set(scopes.map((scope) => scope.subjectOfferingId))];
+    const academicTermIds = [...new Set(scopes.map((scope) => scope.academicTermId))];
+    const sectionIds = sections.map((section) => section.id);
+    const assignments = !subjectOfferingIds.length || !academicTermIds.length || !sectionIds.length
+      ? []
+      : await client(transaction).subjectAssignment.findMany({
+          where: { deletedAt: null, subjectOfferingId: { in: subjectOfferingIds }, academicTermId: { in: academicTermIds }, sectionId: { in: sectionIds } },
+          select: { subjectOfferingId: true, academicTermId: true, sectionId: true, teacher: { select: { employeeNumber: true, firstName: true, middleName: true, lastName: true } } },
+        });
+    return { scopes, sections, assignments };
+  });
+}

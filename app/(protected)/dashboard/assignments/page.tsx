@@ -27,6 +27,7 @@ import type { SubjectAssignmentHistoryItem, SubjectAssignmentHistoryQueryInput }
 import { useTableUrlState } from "@/hooks/use-table-url-state.hook";
 
 import { AssignmentMatrix } from "./components/assignment-matrix";
+import { TeachingAssignmentImportDialog } from "./components/teaching-assignment-import-dialog";
 import { subjectAssignmentHistoryColumns } from "./components/subject-assignment-history-columns";
 import { SubjectAssignmentHistoryViewDialog } from "./components/subject-assignment-history-view-dialog";
 
@@ -178,7 +179,8 @@ function SubjectAssignmentsPageContent() {
               </button>
             </SegmentedNavigation>
             {view === "matrix" && (
-              <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-auto lg:grid-cols-[minmax(9rem,auto)_minmax(12rem,auto)]">
+              <div className="flex w-full flex-col gap-3 lg:w-auto lg:items-end">
+              <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(9rem,auto)_minmax(12rem,auto)]">
                 <div className="space-y-1">
                   <label
                     className="text-sm font-medium"
@@ -242,6 +244,11 @@ function SubjectAssignmentsPageContent() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+                <TeachingAssignmentImportDialog
+                  gradeLevel={gradeLevel}
+                  academicYearLabel={matrixQuery.data?.academicYear.label ?? "Active Academic Year"}
+                />
               </div>
             )}
           </div>

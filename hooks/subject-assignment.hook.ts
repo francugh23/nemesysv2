@@ -10,7 +10,10 @@ import {
   getSubjectAssignmentHistoryAction,
   getSubjectAssignmentHistoryFilterOptionsAction,
   getSubjectAssignmentHistoryOptionsAction,
+  getSubjectAssignmentImportTemplateAction,
   getSubjectAssignmentsAction,
+  exportSubjectAssignmentsAction,
+  previewSubjectAssignmentImportAction,
   updateSubjectAssignmentAction,
 } from "@/actions/subject-assignment.action";
 
@@ -64,6 +67,24 @@ export function useSubjectAssignmentOptions() {
 
 export function useAssignmentMatrix(query: { academicYearId?: string; gradeLevel: "7" | "8" | "9" | "10" | "11" | "12" }) {
   return useQuery({ queryKey: ["assignment-matrix", query], queryFn: () => getAssignmentMatrixAction(query) });
+}
+
+export function usePreviewSubjectAssignmentImport() {
+  return useMutation({
+    mutationFn: ({ rows, gradeLevel, page }: { rows: Record<string, unknown>[]; gradeLevel: "7" | "8" | "9" | "10" | "11" | "12"; page: number }) => previewSubjectAssignmentImportAction(rows, gradeLevel, page),
+  });
+}
+
+export function useExportSubjectAssignments() {
+  return useMutation({
+    mutationFn: (gradeLevel: "7" | "8" | "9" | "10" | "11" | "12") => exportSubjectAssignmentsAction(gradeLevel),
+  });
+}
+
+export function useSubjectAssignmentImportTemplate() {
+  return useMutation({
+    mutationFn: getSubjectAssignmentImportTemplateAction,
+  });
 }
 
 export function useMutateAssignmentMatrix() {

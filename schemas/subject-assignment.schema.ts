@@ -15,6 +15,20 @@ export const AssignmentMatrixQuerySchema = z.object({
   gradeLevel: z.enum(["7", "8", "9", "10", "11", "12"]),
 });
 
+export const SubjectAssignmentImportGradeSchema = z.enum(["7", "8", "9", "10", "11", "12"]);
+
+export const SubjectAssignmentImportPreviewSchema = z.object({
+  gradeLevel: SubjectAssignmentImportGradeSchema,
+  rows: z.array(z.record(z.string(), z.unknown())).min(1).max(2000),
+  page: z.coerce.number().int().min(1).default(1),
+});
+
+export const SubjectAssignmentExportSchema = z.object({
+  gradeLevel: SubjectAssignmentImportGradeSchema,
+});
+
+export type SubjectAssignmentImportPreviewInput = z.input<typeof SubjectAssignmentImportPreviewSchema>;
+
 export const AssignmentMatrixScopeSchema = z.object({
   subjectOfferingId: z.string().min(1),
   academicTermId: z.string().min(1),

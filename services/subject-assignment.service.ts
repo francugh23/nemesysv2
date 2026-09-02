@@ -2,19 +2,34 @@ import { Prisma } from "@/app/generated/prisma/client";
 import { Permissions, requirePermission } from "@/lib/authorization";
 import { isAcademicYearWritable } from "@/lib/academic-year";
 import { getPhilippineCalendarDate } from "@/lib/academic-term-current";
+import { subjectAssignmentExportDefinition } from "@/lib/export/definitions/subject-assignment-export.definition";
+import { subjectAssignmentImportTemplateDefinition } from "@/lib/import/definitions/subject-assignment-import-template.definition";
+import { assignmentImportTermPosition, normalizedAssignmentImportText, normalizeSubjectAssignmentImportRow } from "@/lib/subject-assignment-import-normalizer";
+import { SubjectAssignmentImportRowSchema } from "@/lib/subject-assignment-import-validator";
 import prisma from "@/lib/prisma";
 import { createAuditLogs } from "@/repositories/audit.repository";
 import { lockAcademicYearForAcademicTerms } from "@/repositories/academic-year.repository";
 import { findActiveSectionForAssignment, findActiveSectionsForAssignment } from "@/repositories/section.repository";
 import { findActiveTeacherForAssignment, findActiveTeachersForAssignment } from "@/repositories/teacher.repository";
-import { archiveSubjectAssignment, countSubjectAssignmentHistory, createSubjectAssignment, findActiveAcademicYearsForAssignment, findActiveAcademicYearsForMatrix, findActiveSubjectAssignment, findActiveSubjectAssignmentById, findActiveSubjectAssignmentsForMatrixMutation, findAllSubjectAssignments, findAssignmentMatrixAssignments, findAssignmentMatrixScopes, findAssignmentMatrixSections, findAssignmentMatrixTeacherLoads, findAssignmentScope, findAssignmentScopes, findSubjectAssignmentHistory, findSubjectAssignmentHistoryFilterOptions, findSubjectAssignmentHistoryOptions, updateSubjectAssignment } from "@/repositories/subject-assignment.repository";
-import { AssignmentMatrixMutationSchema, AssignmentMatrixQuerySchema, CreateSubjectAssignmentSchema, SubjectAssignmentHistoryFilterOptionsQuerySchema, SubjectAssignmentHistoryOptionsQuerySchema, SubjectAssignmentHistoryQuerySchema, type AssignmentMatrixMutation, type AssignmentMatrixQuery, type SubjectAssignmentHistoryOption, type SubjectAssignmentHistoryOptionsQuery, type SubjectAssignmentHistoryQuery, type SubjectAssignmentHistoryPage, type SubjectAssignmentListItem, UpdateSubjectAssignmentSchema } from "@/schemas";
+import { archiveSubjectAssignment, countSubjectAssignmentHistory, createSubjectAssignment, findActiveAcademicYearsForAssignment, findActiveAcademicYearsForMatrix, findActiveSubjectAssignment, findActiveSubjectAssignmentById, findActiveSubjectAssignmentsForMatrixMutation, findAllSubjectAssignments, findAssignmentMatrixAssignments, findAssignmentMatrixScopes, findAssignmentMatrixSections, findAssignmentMatrixTeacherLoads, findAssignmentScope, findAssignmentScopes, findSubjectAssignmentExportContext, findSubjectAssignmentHistory, findSubjectAssignmentHistoryFilterOptions, findSubjectAssignmentHistoryOptions, findSubjectAssignmentImportAcademicYears, findSubjectAssignmentImportAssignments, findSubjectAssignmentImportContext, updateSubjectAssignment } from "@/repositories/subject-assignment.repository";
+import { AssignmentMatrixMutationSchema, AssignmentMatrixQuerySchema, CreateSubjectAssignmentSchema, SubjectAssignmentExportSchema, SubjectAssignmentImportPreviewSchema, SubjectAssignmentHistoryFilterOptionsQuerySchema, SubjectAssignmentHistoryOptionsQuerySchema, SubjectAssignmentHistoryQuerySchema, type AssignmentMatrixMutation, type AssignmentMatrixQuery, type SubjectAssignmentHistoryOption, type SubjectAssignmentHistoryOptionsQuery, type SubjectAssignmentHistoryQuery, type SubjectAssignmentHistoryPage, type SubjectAssignmentListItem, UpdateSubjectAssignmentSchema } from "@/schemas";
+import { generateExport } from "@/services/export.service";
+import { generateImportTemplate } from "@/services/import-template.service";
 import { z } from "zod";
 
 type Values = z.infer<typeof CreateSubjectAssignmentSchema>;
 
+const SUBJECT_ASSIGNMENT_IMPORT_PAGE_SIZE = 25;
+const importClassifications = ["VALID", "ALREADY_ASSIGNED", "CHANGE", "PROTECTED", "TEACHER_NOT_FOUND", "INACTIVE_TEACHER", "ARCHIVED_TEACHER", "SECTION_NOT_FOUND", "OFFERING_NOT_FOUND", "TERM_NOT_FOUND", "TERM_NOT_APPLICABLE", "GRADE_MISMATCH", "UNAPPROVED_SHS", "DUPLICATE_IN_FILE", "AMBIGUOUS_SECTION", "AMBIGUOUS_OFFERING", "AMBIGUOUS_TERM", "INVALID"] as const;
+type SubjectAssignmentImportClassification = (typeof importClassifications)[number];
+
+function importCounts() {
+  return Object.fromEntries(importClassifications.map((classification) => [classification, 0])) as Record<SubjectAssignmentImportClassification, number>;
+}
+
 function termHasStarted(startDate: Date) { return startDate.toISOString().slice(0, 10) <= getPhilippineCalendarDate(); }
 function slotName(scope: NonNullable<Awaited<ReturnType<typeof findAssignmentScope>>>, sectionName: string) { return `${scope.subjectOffering.subjectCode} - ${scope.subjectOffering.subjectDescription} | ${scope.academicTerm.name} | ${sectionName}`; }
+function teacherLabel(teacher: { employeeNumber: string; firstName: string; middleName: string | null; lastName: string }) { return `${teacher.employeeNumber} · ${teacher.lastName}, ${teacher.firstName}${teacher.middleName ? ` ${teacher.middleName}` : ""}`; }
 
 async function validateValues(values: Values, transaction: Prisma.TransactionClient) {
   const [teacher, section, scope] = await Promise.all([findActiveTeacherForAssignment(values.teacherId, transaction), findActiveSectionForAssignment(values.sectionId, transaction), findAssignmentScope(values.subjectOfferingId, values.academicTermId, transaction)]);
@@ -283,6 +298,184 @@ export async function getSubjectAssignmentOptions() {
   await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
   const [teachers, sections, academicYears, scopes] = await Promise.all([findActiveTeachersForAssignment(), findActiveSectionsForAssignment(), findActiveAcademicYearsForAssignment(), findAssignmentScopes()]);
   return { teachers, sections, academicYears, scopes: scopes.map((scope) => ({ subjectOfferingId: scope.subjectOfferingId, academicTermId: scope.academicTermId, academicYearId: scope.subjectOffering.academicYearId, gradeLevel: scope.subjectOffering.gradeLevel, subjectCode: scope.subjectOffering.subjectCode, subjectDescription: scope.subjectOffering.subjectDescription, academicTermName: scope.academicTerm.name, academicTermPosition: scope.academicTerm.position, shsCurriculumStatus: scope.subjectOffering.shsContext?.curriculumStatus ?? null })) };
+}
+
+export async function getSubjectAssignmentImportTemplate() {
+  await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  return generateImportTemplate(subjectAssignmentImportTemplateDefinition);
+}
+
+export async function previewSubjectAssignmentImport(values: unknown) {
+  await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  const validated = SubjectAssignmentImportPreviewSchema.parse(values);
+  const normalizedRows = validated.rows.map(normalizeSubjectAssignmentImportRow);
+  const parsedRows = normalizedRows.map((row) => SubjectAssignmentImportRowSchema.safeParse(row));
+
+  return prisma.$transaction(async (transaction) => {
+    const years = await findSubjectAssignmentImportAcademicYears(transaction);
+    if (years.length !== 1) throw new Error("Exactly one active Academic Year is required for teaching assignment import.");
+    const academicYear = years[0];
+    const [teachers, sections, offerings, terms] = await findSubjectAssignmentImportContext(
+      academicYear.id,
+      [...new Set(normalizedRows.map((row) => row.teacherEmployeeNumber))],
+      [...new Set(normalizedRows.map((row) => row.section))],
+      [...new Set(normalizedRows.map((row) => row.subjectCode))],
+      transaction,
+    );
+    const teacherByEmployeeNumber = new Map(teachers.map((teacher) => [normalizedAssignmentImportText(teacher.employeeNumber), teacher]));
+    const sectionsByName = new Map<string, typeof sections>();
+    sections.forEach((section) => {
+      const key = normalizedAssignmentImportText(section.sectionName);
+      sectionsByName.set(key, [...(sectionsByName.get(key) ?? []), section]);
+    });
+    const offeringsByCode = new Map<string, typeof offerings>();
+    offerings.forEach((offering) => {
+      const key = normalizedAssignmentImportText(offering.subjectCode);
+      offeringsByCode.set(key, [...(offeringsByCode.get(key) ?? []), offering]);
+    });
+    const matchingTerms = (value: string) => terms.filter((term) =>
+      normalizedAssignmentImportText(term.name) === normalizedAssignmentImportText(value)
+      || term.position === assignmentImportTermPosition(value),
+    );
+    const duplicateScopeCounts = new Map<string, number>();
+    parsedRows.forEach((parsed) => {
+      if (!parsed.success) return;
+      const sectionMatches = sectionsByName.get(normalizedAssignmentImportText(parsed.data.section)) ?? [];
+      const offeringMatches = offeringsByCode.get(normalizedAssignmentImportText(parsed.data.subjectCode)) ?? [];
+      const termMatches = matchingTerms(parsed.data.term);
+      if (sectionMatches.length !== 1 || offeringMatches.length !== 1 || termMatches.length !== 1) return;
+      const [section] = sectionMatches;
+      const [offering] = offeringMatches;
+      const [term] = termMatches;
+      if (parsed.data.gradeLevel !== validated.gradeLevel || section.gradeLevel !== validated.gradeLevel || offering.gradeLevel !== validated.gradeLevel || !offering.terms.some((offeringTerm) => offeringTerm.academicTermId === term.id)) return;
+      const key = `${offering.id}:${term.id}:${section.id}`;
+      duplicateScopeCounts.set(key, (duplicateScopeCounts.get(key) ?? 0) + 1);
+    });
+    const assignments = await findSubjectAssignmentImportAssignments(
+      offerings.map((offering) => offering.id),
+      terms.map((term) => term.id),
+      sections.map((section) => section.id),
+      transaction,
+    );
+    const assignmentByScope = new Map(assignments.map((assignment) => [`${assignment.subjectOfferingId}:${assignment.academicTermId}:${assignment.sectionId}`, assignment]));
+    const counts = importCounts();
+    const outcomes = parsedRows.map((parsed, index) => {
+      const row = normalizedRows[index];
+      let classification: SubjectAssignmentImportClassification = "VALID";
+      let issue: string | null = null;
+      let currentTeacher = "Unassigned";
+      if (!parsed.success) {
+        classification = "INVALID";
+        issue = parsed.error.issues[0]?.message ?? "Invalid teaching assignment data.";
+      } else {
+        const sectionMatches = sectionsByName.get(normalizedAssignmentImportText(parsed.data.section)) ?? [];
+        const offeringMatches = offeringsByCode.get(normalizedAssignmentImportText(parsed.data.subjectCode)) ?? [];
+        const termMatches = matchingTerms(parsed.data.term);
+        const resolvedScope = sectionMatches.length === 1 && offeringMatches.length === 1 && termMatches.length === 1
+          ? `${offeringMatches[0].id}:${termMatches[0].id}:${sectionMatches[0].id}`
+          : null;
+        if (resolvedScope && (duplicateScopeCounts.get(resolvedScope) ?? 0) > 1) {
+          classification = "DUPLICATE_IN_FILE";
+          issue = "Teaching assignment scope is duplicated in this import file.";
+        } else {
+          const teacher = teacherByEmployeeNumber.get(normalizedAssignmentImportText(parsed.data.teacherEmployeeNumber));
+          if (!teacher) {
+            classification = "TEACHER_NOT_FOUND";
+            issue = "Teacher employee number was not found.";
+          } else if (teacher.deletedAt) {
+            classification = "ARCHIVED_TEACHER";
+            issue = "Teacher is archived.";
+          } else if (teacher.status !== "ACTIVE") {
+            classification = "INACTIVE_TEACHER";
+            issue = "Teacher is inactive.";
+          } else {
+            if (!sectionMatches.length) {
+              classification = "SECTION_NOT_FOUND";
+              issue = "Active Section was not found.";
+            } else if (sectionMatches.length > 1) {
+              classification = "AMBIGUOUS_SECTION";
+              issue = "Section name matches more than one active Section.";
+            } else if (!offeringMatches.length) {
+              classification = "OFFERING_NOT_FOUND";
+              issue = "Active Curriculum Offering was not found.";
+            } else if (offeringMatches.length > 1) {
+              classification = "AMBIGUOUS_OFFERING";
+              issue = "Subject Code matches more than one active Curriculum Offering.";
+            } else if (!termMatches.length) {
+              classification = "TERM_NOT_FOUND";
+              issue = "Configured Academic Term was not found.";
+            } else if (termMatches.length > 1) {
+              classification = "AMBIGUOUS_TERM";
+              issue = "Term value matches more than one configured Academic Term.";
+            } else {
+              const section = sectionMatches[0];
+              const offering = offeringMatches[0];
+              const term = termMatches[0];
+              if (parsed.data.gradeLevel !== validated.gradeLevel || section.gradeLevel !== validated.gradeLevel || offering.gradeLevel !== validated.gradeLevel) {
+                classification = "GRADE_MISMATCH";
+                issue = "Grade, Section, and Curriculum Offering must match the selected Grade.";
+              } else if (!offering.terms.some((offeringTerm) => offeringTerm.academicTermId === term.id)) {
+                classification = "TERM_NOT_APPLICABLE";
+                issue = "Curriculum Offering does not apply to the selected Term.";
+              } else if ((offering.gradeLevel === "11" || offering.gradeLevel === "12") && offering.shsContext?.curriculumStatus !== "SCHOOL_APPROVED") {
+                classification = "UNAPPROVED_SHS";
+                issue = "SHS Curriculum Offering is not school approved.";
+              } else {
+                const existing = assignmentByScope.get(`${offering.id}:${term.id}:${section.id}`);
+                if (existing) {
+                  currentTeacher = teacherLabel(existing.teacher);
+                  if (normalizedAssignmentImportText(existing.teacher.employeeNumber) === normalizedAssignmentImportText(teacher.employeeNumber)) {
+                    classification = "ALREADY_ASSIGNED";
+                    issue = "Teacher is already assigned to this scope.";
+                  } else if (termHasStarted(term.startDate)) {
+                    classification = "PROTECTED";
+                    issue = "This Term has started. Assigned teaching ownership is protected.";
+                  } else {
+                    classification = "CHANGE";
+                    issue = "A different Teacher is currently assigned to this scope.";
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      counts[classification] += 1;
+      const requestedTeacher = teacherByEmployeeNumber.get(normalizedAssignmentImportText(row.teacherEmployeeNumber));
+      return { rowNumber: index + 2, gradeLevel: row.gradeLevel, subjectCode: row.subjectCode, section: row.section, term: row.term, requestedTeacher: requestedTeacher ? teacherLabel(requestedTeacher) : row.teacherEmployeeNumber, currentTeacher, classification, issue };
+    });
+    const pageCount = Math.max(1, Math.ceil(outcomes.length / SUBJECT_ASSIGNMENT_IMPORT_PAGE_SIZE));
+    const page = Math.min(validated.page, pageCount);
+    return { academicYear: academicYear.label, totalRows: outcomes.length, counts, page, pageCount, outcomes: outcomes.slice((page - 1) * SUBJECT_ASSIGNMENT_IMPORT_PAGE_SIZE, page * SUBJECT_ASSIGNMENT_IMPORT_PAGE_SIZE) };
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+}
+
+export async function exportSubjectAssignments(gradeLevel: string) {
+  await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  const validated = SubjectAssignmentExportSchema.parse({ gradeLevel });
+  return prisma.$transaction(async (transaction) => {
+    const years = await findSubjectAssignmentImportAcademicYears(transaction);
+    if (years.length !== 1) throw new Error("Exactly one active Academic Year is required for teaching assignment export.");
+    const context = await findSubjectAssignmentExportContext(years[0].id, validated.gradeLevel, transaction);
+    const assignmentByScope = new Map(context.assignments.map((assignment) => [`${assignment.subjectOfferingId}:${assignment.academicTermId}:${assignment.sectionId}`, assignment]));
+    const rows = context.scopes.flatMap((scope) => context.sections.map((section) => {
+      const assignment = assignmentByScope.get(`${scope.subjectOfferingId}:${scope.academicTermId}:${section.id}`);
+      return {
+        gradeLevel: scope.subjectOffering.gradeLevel,
+        subjectCode: scope.subjectOffering.subjectCode,
+        subjectDescription: scope.subjectOffering.subjectDescription,
+        sectionName: section.sectionName,
+        termName: scope.academicTerm.name,
+        employeeNumber: assignment?.teacher.employeeNumber ?? null,
+        teacherName: assignment ? `${assignment.teacher.lastName}, ${assignment.teacher.firstName}${assignment.teacher.middleName ? ` ${assignment.teacher.middleName}` : ""}` : null,
+      };
+    }));
+    return generateExport(undefined, "xlsx", {
+      ...subjectAssignmentExportDefinition,
+      count: async () => rows.length,
+      loadBatch: async (_query, pagination) => rows.slice(pagination.skip, pagination.skip + pagination.take),
+    });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
 }
 
 export async function getAssignmentMatrix(query: AssignmentMatrixQuery) {

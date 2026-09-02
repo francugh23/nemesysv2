@@ -7,6 +7,8 @@ import {
   AssignmentMatrixQuerySchema,
   AssignmentMatrixMutationSchema,
   CreateSubjectAssignmentSchema,
+  SubjectAssignmentExportSchema,
+  SubjectAssignmentImportPreviewSchema,
   SubjectAssignmentHistoryFilterOptionsQuerySchema,
   SubjectAssignmentHistoryOptionsQuerySchema,
   SubjectAssignmentHistoryQuerySchema,
@@ -22,9 +24,14 @@ import {
   getSubjectAssignmentHistoryFilterOptions,
   getSubjectAssignmentHistoryOptions,
   getSubjectAssignments,
+  getSubjectAssignmentImportTemplate,
+  previewSubjectAssignmentImport,
+  exportSubjectAssignments,
   updateSubjectAssignmentService,
 } from "@/services/subject-assignment.service";
 import { ActionResponse } from "@/types/action-response";
+import type { ExportActionResult } from "@/types/export";
+import type { ImportTemplateActionResult } from "@/types/import-template";
 
 export async function getSubjectAssignmentsAction() {
   await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
@@ -55,6 +62,45 @@ export async function getSubjectAssignmentOptionsAction() {
   await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
 
   return await getSubjectAssignmentOptions();
+}
+
+export async function getSubjectAssignmentImportTemplateAction(): Promise<ImportTemplateActionResult> {
+  try {
+    await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+    return { file: await getSubjectAssignmentImportTemplate() };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Unable to generate the teaching assignment template." };
+  }
+}
+
+export async function previewSubjectAssignmentImportAction(rows: unknown, gradeLevel: unknown, page: unknown) {
+  try {
+    await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  } catch {
+    return { error: "Unauthorized." };
+  }
+  const validated = SubjectAssignmentImportPreviewSchema.safeParse({ rows, gradeLevel, page });
+  if (!validated.success) return { error: "Invalid teaching assignment import data." };
+  try {
+    return { preview: await previewSubjectAssignmentImport(validated.data) };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Unable to preview teaching assignments." };
+  }
+}
+
+export async function exportSubjectAssignmentsAction(gradeLevel: unknown): Promise<ExportActionResult> {
+  try {
+    await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  } catch {
+    return { error: "Unauthorized." };
+  }
+  const validated = SubjectAssignmentExportSchema.safeParse({ gradeLevel });
+  if (!validated.success) return { error: "Invalid teaching assignment export request." };
+  try {
+    return { file: await exportSubjectAssignments(validated.data.gradeLevel) };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Unable to export teaching assignments." };
+  }
 }
 
 export async function getAssignmentMatrixAction(query: unknown) {
