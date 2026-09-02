@@ -42,6 +42,7 @@ test("Teacher mutations refresh only their list and dependent selectors", async 
     ["teachers"],
     ["subject-assignment-options"],
     ["section-form-options"],
+    ["assignment-matrix"],
   ]);
 });
 
@@ -54,6 +55,7 @@ test("Subject mutations refresh only their list and Assignment selectors", async
     ["subjects"],
     ["subject-offering-options"],
     ["subject-assignment-options"],
+    ["assignment-matrix"],
   ]);
 });
 
@@ -78,6 +80,7 @@ test("Section invalidation retains every existing dependent selector", async () 
     ["section-form-options"],
     ["subject-assignment-options"],
     ["enrollment-form-options"],
+    ["assignment-matrix"],
   ]);
 });
 
@@ -130,6 +133,7 @@ test("Academic Year mutations refresh management details and operational selecto
     ["enrollment-form-options"],
     ["subject-offering-options"],
     ["shs-current-term-progression"],
+    ["assignment-matrix"],
   ]);
 });
 
@@ -144,6 +148,7 @@ test("Academic Term mutations refresh their parent management view and term quer
     ["academic-terms", "academic-year-2026-2027"],
     ["subject-offering-options"],
     ["dashboard", "operational"],
+    ["assignment-matrix"],
   ]);
 });
 

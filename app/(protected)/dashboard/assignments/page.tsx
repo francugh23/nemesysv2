@@ -1,24 +1,29 @@
 "use client";
 
-import { CrudToolbar } from "@/components/common/crud-toolbar";
 import { DataTable } from "@/components/data-table";
+import { SegmentedNavigation } from "@/components/common/segmented-navigation";
 import { SubjectAssignmentTableSkeleton } from "@/components/skeletons/subject-assignment-table-skeleton";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useSubjectAssignments } from "@/hooks/subject-assignment.hook";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { useAssignmentMatrix, useSubjectAssignments } from "@/hooks/subject-assignment.hook";
 import type { SubjectAssignmentListItem } from "@/schemas";
 import { useMemo, useState } from "react";
 
 import { subjectAssignmentColumns } from "./components/subject-assignment-columns";
-import { CreateSubjectAssignmentDialog } from "./components/create-subject-assignment-dialog";
 import {
   SubjectAssignmentDialogManager,
   type SubjectAssignmentDialogType,
 } from "./components/subject-assignment-dialog-manager";
+import { AssignmentMatrix } from "./components/assignment-matrix";
 
 export default function SubjectAssignmentsPage() {
   const { data, isLoading, isError, refetch, isFetching } =
     useSubjectAssignments();
+  const [view, setView] = useState<"matrix" | "history">("matrix");
+  const [gradeLevel, setGradeLevel] = useState<"7" | "8" | "9" | "10" | "11" | "12">("7");
+  const matrixQuery = useAssignmentMatrix({ gradeLevel });
   const [{ selectedAssignment, dialog, instanceId }, setDialogState] = useState<{
     selectedAssignment: SubjectAssignmentListItem | null;
     dialog: SubjectAssignmentDialogType;
@@ -31,6 +36,7 @@ export default function SubjectAssignmentsPage() {
   const columns = useMemo(
     () =>
       subjectAssignmentColumns({
+        readOnly: true,
         onEdit: (assignment) => {
           setDialogState((current) => ({
             selectedAssignment: assignment,
@@ -61,18 +67,18 @@ export default function SubjectAssignmentsPage() {
     <div className="space-y-6 p-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold">Subject Assignments</h1>
+          <h1 className="text-2xl font-semibold">Teaching Assignments</h1>
           <p className="text-sm text-muted-foreground">
-            View teacher subject assignments by section and academic year.
+             Review active Academic Year teaching coverage by grade and section.
           </p>
         </div>
 
-        <CrudToolbar primaryAction={<CreateSubjectAssignmentDialog />} />
       </div>
 
       <Card>
         <CardContent className="pt-6">
-          {isLoading ? (
+          <div className="mb-4 flex flex-wrap items-center gap-2"><SegmentedNavigation ariaLabel="Teaching assignment view"><button type="button" aria-pressed={view === "matrix"} className={cn(buttonVariants({ variant: view === "matrix" ? "secondary" : "ghost", size: "sm" }))} onClick={() => setView("matrix")}>Teaching Matrix</button><button type="button" aria-pressed={view === "history"} className={cn(buttonVariants({ variant: view === "history" ? "secondary" : "ghost", size: "sm" }))} onClick={() => setView("history")}>History</button></SegmentedNavigation>{view === "matrix" && <><span className="ml-2 text-sm text-muted-foreground">{matrixQuery.data?.academicYear.label ?? "Active Academic Year"}</span><Select value={gradeLevel} onValueChange={(value) => setGradeLevel(value as typeof gradeLevel)}><SelectTrigger aria-label="Grade"><SelectValue /></SelectTrigger><SelectContent>{["7", "8", "9", "10", "11", "12"].map((grade) => <SelectItem key={grade} value={grade}>Grade {grade}</SelectItem>)}</SelectContent></Select></>}</div>
+          {view === "matrix" ? matrixQuery.isLoading ? <SubjectAssignmentTableSkeleton /> : matrixQuery.isError ? <div className="p-8 text-center text-sm text-muted-foreground">Unable to load the teaching matrix.</div> : matrixQuery.data ? <AssignmentMatrix matrix={matrixQuery.data} /> : null : isLoading ? (
             <SubjectAssignmentTableSkeleton />
           ) : isError ? (
             <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
@@ -105,12 +111,12 @@ export default function SubjectAssignmentsPage() {
               }}
             />
           )}
-          <SubjectAssignmentDialogManager
+          {view === "history" && <SubjectAssignmentDialogManager
             assignment={selectedAssignment}
             dialog={dialog}
             instanceId={instanceId}
             onClose={closeDialog}
-          />
+          />}
         </CardContent>
       </Card>
     </div>

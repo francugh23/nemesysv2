@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
+import { SegmentedNavigation } from "@/components/common/segmented-navigation";
 import { ACADEMIC_CONFIGURATION_LINKS } from "@/lib/academic-configuration";
 import { cn } from "@/lib/utils";
 
@@ -12,10 +13,7 @@ export function AcademicConfigurationNav({
   showSubjects?: boolean;
 }) {
   return (
-    <nav
-      aria-label="Related academic configuration"
-      className="flex w-fit flex-wrap gap-1 rounded-lg border bg-muted/30 p-1"
-    >
+    <SegmentedNavigation ariaLabel="Related academic configuration">
       {ACADEMIC_CONFIGURATION_LINKS.filter(
         (item) => showSubjects || item.title !== "Subjects",
       ).map((item) => (
@@ -33,6 +31,6 @@ export function AcademicConfigurationNav({
           {item.title}
         </Link>
       ))}
-    </nav>
+    </SegmentedNavigation>
   );
 }

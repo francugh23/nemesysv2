@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   archiveSubjectAssignmentAction,
   getSubjectAssignmentOptionsAction,
+  getAssignmentMatrixAction,
   getSubjectAssignmentsAction,
   updateSubjectAssignmentAction,
 } from "@/actions/subject-assignment.action";
@@ -21,6 +22,10 @@ export function useSubjectAssignmentOptions() {
     queryKey: ["subject-assignment-options"],
     queryFn: getSubjectAssignmentOptionsAction,
   });
+}
+
+export function useAssignmentMatrix(query: { academicYearId?: string; gradeLevel: "7" | "8" | "9" | "10" | "11" | "12" }) {
+  return useQuery({ queryKey: ["assignment-matrix", query], queryFn: () => getAssignmentMatrixAction(query) });
 }
 
 export function useUpdateSubjectAssignment() {
@@ -41,6 +46,7 @@ export function useUpdateSubjectAssignment() {
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["subject-assignments"] }),
+        queryClient.invalidateQueries({ queryKey: ["assignment-matrix"] }),
         queryClient.invalidateQueries({
           queryKey: ["subject-assignment-options"],
         }),
@@ -61,6 +67,7 @@ export function useArchiveSubjectAssignment() {
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["subject-assignments"] }),
+        queryClient.invalidateQueries({ queryKey: ["assignment-matrix"] }),
         queryClient.invalidateQueries({
           queryKey: ["subject-assignment-options"],
         }),

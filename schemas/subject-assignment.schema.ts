@@ -10,6 +10,13 @@ const SubjectAssignmentFieldsSchema = z.object({
 export const CreateSubjectAssignmentSchema = SubjectAssignmentFieldsSchema;
 export const UpdateSubjectAssignmentSchema = SubjectAssignmentFieldsSchema;
 
+export const AssignmentMatrixQuerySchema = z.object({
+  academicYearId: z.string().min(1).optional(),
+  gradeLevel: z.enum(["7", "8", "9", "10", "11", "12"]),
+});
+
+export type AssignmentMatrixQuery = z.output<typeof AssignmentMatrixQuerySchema>;
+
 export const SubjectAssignmentListItemSchema = z.object({
   id: z.string(),
   teacherId: z.string(),

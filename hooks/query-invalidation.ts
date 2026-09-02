@@ -10,6 +10,10 @@ export function invalidateOperationalDashboard(
   });
 }
 
+export function invalidateAssignmentMatrixQueries(queryClient: QueryInvalidator) {
+  return queryClient.invalidateQueries({ queryKey: ["assignment-matrix"] });
+}
+
 export function invalidateAcademicYearConfigurationQueries(
   queryClient: QueryInvalidator,
   academicYearId?: string,
@@ -28,6 +32,7 @@ export async function invalidateTeacherQueries(queryClient: QueryInvalidator) {
       queryKey: ["subject-assignment-options"],
     }),
     queryClient.invalidateQueries({ queryKey: ["section-form-options"] }),
+    invalidateAssignmentMatrixQueries(queryClient),
   ]);
 }
 
@@ -38,6 +43,7 @@ export async function invalidateSubjectQueries(queryClient: QueryInvalidator) {
     queryClient.invalidateQueries({
       queryKey: ["subject-assignment-options"],
     }),
+    invalidateAssignmentMatrixQueries(queryClient),
   ]);
 }
 
@@ -56,6 +62,7 @@ export async function invalidateSectionQueries(queryClient: QueryInvalidator) {
       queryKey: ["subject-assignment-options"],
     }),
     queryClient.invalidateQueries({ queryKey: ["enrollment-form-options"] }),
+    invalidateAssignmentMatrixQueries(queryClient),
   ]);
 }
 
@@ -71,6 +78,7 @@ export async function invalidateAcademicYearQueries(
     queryClient.invalidateQueries({ queryKey: ["enrollment-form-options"] }),
     queryClient.invalidateQueries({ queryKey: ["subject-offering-options"] }),
     queryClient.invalidateQueries({ queryKey: ["shs-current-term-progression"] }),
+    invalidateAssignmentMatrixQueries(queryClient),
   ]);
 }
 
@@ -86,6 +94,7 @@ export async function invalidateAcademicTermQueries(
     }),
     queryClient.invalidateQueries({ queryKey: ["subject-offering-options"] }),
     invalidateOperationalDashboard(queryClient),
+    invalidateAssignmentMatrixQueries(queryClient),
   ]);
 }
 

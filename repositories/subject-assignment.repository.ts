@@ -54,3 +54,46 @@ export function findAllSubjectAssignments() {
 export function findAcademicYearForAssignment(id: string, transaction?: Prisma.TransactionClient) {
   return client(transaction).academicYear.findUnique({ where: { id }, select: { id: true, label: true, status: true } }) as Promise<{ id: string; label: string; status: AcademicYearStatus } | null>;
 }
+
+export function findActiveAcademicYearsForMatrix(transaction?: Prisma.TransactionClient) {
+  return client(transaction).academicYear.findMany({ where: { status: "ACTIVE" }, select: { id: true, label: true }, orderBy: [{ startDate: "desc" }, { id: "asc" }] });
+}
+
+export function findAssignmentMatrixScopes(academicYearId: string, gradeLevel: string, transaction?: Prisma.TransactionClient) {
+  return client(transaction).subjectOfferingTerm.findMany({
+    where: {
+      subjectOffering: {
+        academicYearId,
+        gradeLevel,
+        deletedAt: null,
+        ...(gradeLevel === "11" ? { shsContext: { is: { curriculumStatus: "SCHOOL_APPROVED" } } } : {}),
+      },
+    },
+    select: {
+      subjectOfferingId: true,
+      academicTermId: true,
+      academicTerm: { select: { id: true, name: true, position: true, startDate: true } },
+      subjectOffering: { select: { id: true, subjectCode: true, subjectDescription: true } },
+    },
+    orderBy: [{ subjectOffering: { subjectCode: "asc" } }, { academicTerm: { position: "asc" } }, { subjectOfferingId: "asc" }],
+  });
+}
+
+export function findAssignmentMatrixSections(gradeLevel: string, transaction?: Prisma.TransactionClient) {
+  return client(transaction).section.findMany({ where: { deletedAt: null, gradeLevel }, select: { id: true, sectionName: true, gradeLevel: true }, orderBy: [{ sectionName: "asc" }, { id: "asc" }] });
+}
+
+export function findAssignmentMatrixAssignments(subjectOfferingIds: string[], academicTermIds: string[], sectionIds: string[], transaction?: Prisma.TransactionClient) {
+  if (!subjectOfferingIds.length || !academicTermIds.length || !sectionIds.length) return Promise.resolve([]);
+  return client(transaction).subjectAssignment.findMany({
+    where: { deletedAt: null, subjectOfferingId: { in: subjectOfferingIds }, academicTermId: { in: academicTermIds }, sectionId: { in: sectionIds } },
+    select: { id: true, teacherId: true, subjectOfferingId: true, academicTermId: true, sectionId: true, teacher: { select: { id: true, employeeNumber: true, firstName: true, middleName: true, lastName: true } } },
+  });
+}
+
+export function findAssignmentMatrixTeacherLoads(academicYearId: string, transaction?: Prisma.TransactionClient) {
+  return client(transaction).subjectAssignment.findMany({
+    where: { deletedAt: null, subjectOfferingTerm: { subjectOffering: { academicYearId } } },
+    select: { teacherId: true, subjectOfferingId: true, academicTermId: true, sectionId: true, teacher: { select: { id: true, employeeNumber: true, firstName: true, middleName: true, lastName: true, status: true, deletedAt: true } } },
+  });
+}

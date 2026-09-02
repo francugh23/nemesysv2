@@ -45,6 +45,9 @@ export function CreateSubjectAssignmentForm({
       await queryClient.invalidateQueries({
         queryKey: ["subject-assignments"],
       });
+      await queryClient.invalidateQueries({
+        queryKey: ["assignment-matrix"],
+      });
       form.reset();
       onSuccess?.();
     });

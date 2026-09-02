@@ -4,6 +4,7 @@ import * as z from "zod";
 
 import { Permissions, requirePermission } from "@/lib/authorization";
 import {
+  AssignmentMatrixQuerySchema,
   CreateSubjectAssignmentSchema,
   UpdateSubjectAssignmentSchema,
 } from "@/schemas";
@@ -11,6 +12,7 @@ import {
   archiveSubjectAssignmentService,
   createSubjectAssignmentService,
   getSubjectAssignmentOptions,
+  getAssignmentMatrix,
   getSubjectAssignments,
   updateSubjectAssignmentService,
 } from "@/services/subject-assignment.service";
@@ -26,6 +28,13 @@ export async function getSubjectAssignmentOptionsAction() {
   await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
 
   return await getSubjectAssignmentOptions();
+}
+
+export async function getAssignmentMatrixAction(query: unknown) {
+  await requirePermission(Permissions.SUBJECT_ASSIGNMENTS);
+  const validated = AssignmentMatrixQuerySchema.safeParse(query);
+  if (!validated.success) throw new Error("Invalid assignment matrix query.");
+  return getAssignmentMatrix(validated.data);
 }
 
 export async function createSubjectAssignmentAction(

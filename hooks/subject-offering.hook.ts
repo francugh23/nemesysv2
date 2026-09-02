@@ -2,7 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { invalidateAcademicYearConfigurationQueries, invalidateOperationalDashboard } from "@/hooks/query-invalidation";
+import { invalidateAcademicYearConfigurationQueries, invalidateAssignmentMatrixQueries, invalidateOperationalDashboard } from "@/hooks/query-invalidation";
 
 import {
   archiveShsCurriculumClusterAction,
@@ -54,6 +54,7 @@ function useInvalidate(invalidateSubjects = false, invalidateDashboard = false) 
     queryClient.invalidateQueries({ queryKey: ["curriculum-correction-context"] }),
     queryClient.invalidateQueries({ queryKey: ["curriculum-correction-detail"] }),
     invalidateAcademicYearConfigurationQueries(queryClient),
+    invalidateAssignmentMatrixQueries(queryClient),
     ...(invalidateDashboard ? [invalidateOperationalDashboard(queryClient)] : []),
   ]);
 }

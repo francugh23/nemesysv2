@@ -9,13 +9,15 @@ import type { SubjectAssignmentListItem } from "@/schemas";
 import { SubjectAssignmentActions } from "./subject-assignment-actions";
 
 interface SubjectAssignmentColumnProps {
-  onEdit: (assignment: SubjectAssignmentListItem) => void;
-  onArchive: (assignment: SubjectAssignmentListItem) => void;
+  onEdit?: (assignment: SubjectAssignmentListItem) => void;
+  onArchive?: (assignment: SubjectAssignmentListItem) => void;
+  readOnly?: boolean;
 }
 
 export function subjectAssignmentColumns({
   onEdit,
   onArchive,
+  readOnly = false,
 }: SubjectAssignmentColumnProps): ColumnDef<SubjectAssignmentListItem>[] {
   return [
     {
@@ -30,7 +32,7 @@ export function subjectAssignmentColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Teacher" />
       ),
-      cell: ({ row }) =>
+      cell: ({ row }: { row: { original: SubjectAssignmentListItem } }) =>
         formatFullName(
           row.original.teacherFirstName,
           row.original.teacherMiddleName,
@@ -71,16 +73,16 @@ export function subjectAssignmentColumns({
         <DataTableColumnHeader column={column} title="Academic Year" />
       ),
     },
-    {
-      id: "actions",
-      cell: ({ row }) =>
+      ...(readOnly ? [] : [{
+        id: "actions",
+      cell: ({ row }: { row: { original: SubjectAssignmentListItem } }) =>
         row.original.academicYearStatus === "ACTIVE" ? (
           <SubjectAssignmentActions
             assignment={row.original}
-            onEdit={onEdit}
-            onArchive={onArchive}
+            onEdit={onEdit!}
+            onArchive={onArchive!}
           />
         ) : null,
-    },
+      }]),
   ];
 }
