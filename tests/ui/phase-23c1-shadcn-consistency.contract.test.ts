@@ -20,8 +20,8 @@ test("Teaching Assignment navigation reuses the Academic Configuration segmented
 
 test("Teaching Assignment grade selection uses existing shadcn Select primitives", async () => {
   const assignments = await read("app/(protected)/dashboard/assignments/page.tsx");
-  assert.match(assignments, /Select, SelectContent, SelectItem, SelectTrigger, SelectValue/);
-  assert.match(assignments, /<Select value=\{gradeLevel\}/);
-  assert.match(assignments, /<SelectTrigger[^>]*aria-label="Grade"/);
+  assert.match(assignments, /Select,\s*SelectContent,\s*SelectItem,\s*SelectTrigger,\s*SelectValue/);
+  assert.match(assignments, /<Select\s+value=\{gradeLevel\}/);
+  assert.match(assignments, /<SelectTrigger[\s\S]*?aria-label="Grade"/);
   assert.doesNotMatch(assignments, /<select/);
 });

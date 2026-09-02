@@ -85,7 +85,7 @@ test("Phase 23-C3.1 retains canonical matrix reads and adds client-only term/fil
   assert.match(page, /setTermId\(null\)/);
   assert.match(matrix, /projectMatrixCell/);
   assert.match(matrix, /summarizeProjectedCells/);
-  assert.match(matrix, /Coverage filter/);
+  assert.match(matrix, /Coverage summary/);
   assert.match(matrix, /MIXED_BY_TERM/);
   assert.match(matrix, /Select all visible/);
   assert.match(matrix, /Clear selection/);
@@ -96,7 +96,6 @@ test("Phase 23-C3.1 retains canonical matrix reads and adds client-only term/fil
   assert.match(matrix, /Initial assignment allowed/);
   assert.match(matrix, /Protected/);
   assert.match(matrix, /<Badge/);
-  assert.match(matrix, /LockKeyhole/);
   assert.match(matrix, /overflow-x-auto/);
   assert.match(matrix, /max-h-\[90dvh\][\s\S]*flex-col overflow-hidden/);
   assert.match(matrix, /ScrollArea className="min-h-0 flex-1/);

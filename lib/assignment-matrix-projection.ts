@@ -1,4 +1,5 @@
 export type MatrixCoverageFilter = "ALL" | "MISSING" | "ASSIGNED" | "MIXED_BY_TERM" | "PROTECTED";
+export type MatrixTeacherFocus = "ALL" | "UNASSIGNED" | string;
 
 export type MatrixTermAssignment = {
   academicTermId: string;
@@ -48,6 +49,40 @@ export function matchesMatrixCoverageFilter(cell: ProjectedMatrixCell, filter: M
   if (filter === "ASSIGNED") return cell.assignedScopeCount > 0;
   if (filter === "MIXED_BY_TERM") return cell.state === "MIXED_BY_TERM";
   return cell.protectedScopeCount > 0;
+}
+
+export function matchesMatrixTeacherFocus(cell: ProjectedMatrixCell, teacherFocus: MatrixTeacherFocus) {
+  if (teacherFocus === "ALL") return true;
+  if (teacherFocus === "UNASSIGNED") return cell.missingScopeCount > 0;
+  return cell.termAssignments.some((term) => term.teacher?.id === teacherFocus);
+}
+
+export function matchingTeacherTerms<T extends MatrixTermAssignment>(cell: ProjectedMatrixCell<T>, teacherId: string) {
+  return cell.termAssignments.filter((term) => term.teacher?.id === teacherId);
+}
+
+export type MissingMatrixScope = {
+  offeringId: string;
+  offeringCode: string;
+  offeringDescription: string;
+  sectionId: string;
+  sectionName: string;
+  academicTermId: string;
+  academicTermName: string;
+  termHasStarted: boolean;
+  initialAssignmentAllowed: boolean;
+};
+
+export function groupMissingMatrixScopes(scopes: MissingMatrixScope[]) {
+  const groups = new Map<string, { offeringId: string; offeringCode: string; offeringDescription: string; scopes: MissingMatrixScope[]; sectionNames: string[]; termNames: string[] }>();
+  for (const scope of scopes) {
+    const group = groups.get(scope.offeringId) ?? { offeringId: scope.offeringId, offeringCode: scope.offeringCode, offeringDescription: scope.offeringDescription, scopes: [], sectionNames: [], termNames: [] };
+    group.scopes.push(scope);
+    if (!group.sectionNames.includes(scope.sectionName)) group.sectionNames.push(scope.sectionName);
+    if (!group.termNames.includes(scope.academicTermName)) group.termNames.push(scope.academicTermName);
+    groups.set(scope.offeringId, group);
+  }
+  return [...groups.values()].sort((a, b) => a.offeringCode.localeCompare(b.offeringCode));
 }
 
 export function summarizeProjectedCells(cells: ProjectedMatrixCell[]) {

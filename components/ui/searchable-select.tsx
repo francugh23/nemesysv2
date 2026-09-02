@@ -16,6 +16,8 @@ export interface SearchableSelectOption {
 }
 
 interface SearchableSelectProps {
+  id?: string;
+  ariaLabel?: string;
   value?: string;
   onValueChange: (value: string) => void;
   options: SearchableSelectOption[];
@@ -25,6 +27,8 @@ interface SearchableSelectProps {
 }
 
 export function SearchableSelect({
+  id,
+  ariaLabel,
   value,
   onValueChange,
   options,
@@ -58,6 +62,8 @@ export function SearchableSelect({
       disabled={disabled}
     >
       <ComboboxInput
+        id={id}
+        aria-label={ariaLabel}
         className={className}
         placeholder={placeholder}
         disabled={disabled}
