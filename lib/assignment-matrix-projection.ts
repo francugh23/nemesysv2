@@ -1,5 +1,40 @@
 export type MatrixCoverageFilter = "ALL" | "MISSING" | "ASSIGNED" | "MIXED_BY_TERM" | "PROTECTED";
 export type MatrixTeacherFocus = "ALL" | "UNASSIGNED" | string;
+export const MATRIX_SECTION_WINDOW_SIZE = 12;
+
+export function getVisibleSectionIds({
+  sectionIds,
+  sectionFocus,
+  windowStart,
+  narrow,
+}: {
+  sectionIds: string[];
+  sectionFocus: string;
+  windowStart: number;
+  narrow: boolean;
+}) {
+  if (!sectionIds.length) return [];
+  if (sectionFocus !== "ALL")
+    return sectionIds.includes(sectionFocus) ? [sectionFocus] : [];
+  if (narrow) return [sectionIds[0]];
+  if (sectionIds.length <= MATRIX_SECTION_WINDOW_SIZE) return sectionIds;
+  return sectionIds.slice(windowStart, windowStart + MATRIX_SECTION_WINDOW_SIZE);
+}
+
+export function getSectionWindowRange(total: number, windowStart: number) {
+  if (total <= MATRIX_SECTION_WINDOW_SIZE)
+    return { start: 0, end: total, hasWindowing: false };
+  const start = Math.min(
+    Math.max(windowStart, 0),
+    Math.floor((total - 1) / MATRIX_SECTION_WINDOW_SIZE) *
+      MATRIX_SECTION_WINDOW_SIZE,
+  );
+  return {
+    start,
+    end: Math.min(start + MATRIX_SECTION_WINDOW_SIZE, total),
+    hasWindowing: true,
+  };
+}
 
 export type MatrixTermAssignment = {
   academicTermId: string;

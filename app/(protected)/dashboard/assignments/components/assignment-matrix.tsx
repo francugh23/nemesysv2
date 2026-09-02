@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { getAssignmentMatrixAction } from "@/actions/subject-assignment.action";
 import type { AssignmentMatrixMutation } from "@/schemas";
 import {
   groupMissingMatrixScopes,
+  getSectionWindowRange,
+  getVisibleSectionIds,
+  MATRIX_SECTION_WINDOW_SIZE,
   matchesMatrixCoverageFilter,
   matchesMatrixTeacherFocus,
   matchingTeacherTerms,
@@ -14,6 +17,7 @@ import {
   type MatrixCoverageFilter,
   type MatrixTeacherFocus,
 } from "@/lib/assignment-matrix-projection";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   useMutateAssignmentMatrix,
   useSubjectAssignmentOptions,
@@ -64,6 +68,16 @@ type MissingGroup = ReturnType<typeof groupMissingMatrixScopes>[number];
 
 const cellKey = (offeringId: string, sectionId: string) =>
   `${offeringId}:${sectionId}`;
+
+function copySourceLabel(detail: Detail) {
+  const ownership = detail.cell.termAssignments
+    .map(
+      (term) =>
+        `T${term.academicTermPosition} ${term.teacher?.name ?? "Unassigned"}`,
+    )
+    .join(" · ");
+  return `${detail.offering.subjectCode} · ${detail.section.sectionName}${ownership ? ` · ${ownership}` : ""}`;
+}
 
 function teacherLabel(teacher: {
   employeeNumber: string | null;
@@ -372,6 +386,8 @@ export function AssignmentMatrix({
   const [coverageFilter, setCoverageFilter] =
     useState<MatrixCoverageFilter>("ALL");
   const [teacherFocus, setTeacherFocus] = useState<MatrixTeacherFocus>("ALL");
+  const [sectionFocus, setSectionFocus] = useState("ALL");
+  const [sectionWindowStart, setSectionWindowStart] = useState(0);
   const [showLoads, setShowLoads] = useState(false);
   const [missingGroup, setMissingGroup] = useState<MissingGroup | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -383,11 +399,66 @@ export function AssignmentMatrix({
   } | null>(null);
   const options = useSubjectAssignmentOptions();
   const mutation = useMutateAssignmentMatrix();
+  const isMobile = useIsMobile();
+  const sectionIds = useMemo(
+    () => matrix.sections.map((section) => section.id),
+    [matrix.sections],
+  );
+  const sectionById = useMemo(
+    () => new Map(matrix.sections.map((section) => [section.id, section])),
+    [matrix.sections],
+  );
+  const sectionOptions = useMemo<SearchableSelectOption[]>(
+    () => [
+      ...(isMobile ? [] : [{ value: "ALL", label: "All Sections" }]),
+      ...matrix.sections.map((section) => ({
+        value: section.id,
+        label: `Grade ${section.gradeLevel} · ${section.sectionName}`,
+        searchValue: section.sectionName,
+      })),
+    ],
+    [isMobile, matrix.sections],
+  );
+  const effectiveSectionFocus =
+    sectionFocus !== "ALL" && sectionById.has(sectionFocus)
+      ? sectionFocus
+      : isMobile
+        ? (matrix.sections[0]?.id ?? "ALL")
+        : "ALL";
+  const sectionWindow = getSectionWindowRange(
+    matrix.sections.length,
+    sectionWindowStart,
+  );
+  const visibleSectionIds = useMemo(
+    () =>
+      getVisibleSectionIds({
+        sectionIds,
+        sectionFocus: effectiveSectionFocus,
+        windowStart: sectionWindow.start,
+        narrow: isMobile,
+      }),
+    [effectiveSectionFocus, isMobile, sectionIds, sectionWindow.start],
+  );
+  const visibleSectionIdSet = useMemo(
+    () => new Set(visibleSectionIds),
+    [visibleSectionIds],
+  );
+  const visibleSections = useMemo(
+    () =>
+      visibleSectionIds.flatMap((sectionId) => {
+        const section = sectionById.get(sectionId);
+        return section ? [section] : [];
+      }),
+    [sectionById, visibleSectionIds],
+  );
   const previousContext = useRef<{
     gradeLevel: string;
     termId: string | null;
     coverageFilter: MatrixCoverageFilter;
     teacherFocus: MatrixTeacherFocus;
+    sectionFocus: string;
+    sectionWindowStart: number;
+    isMobile: boolean;
   } | null>(null);
   const effectiveCoverageFilter =
     termId && coverageFilter === "MIXED_BY_TERM" ? "ALL" : coverageFilter;
@@ -413,6 +484,9 @@ export function AssignmentMatrix({
       termId,
       coverageFilter: effectiveCoverageFilter,
       teacherFocus,
+      sectionFocus: effectiveSectionFocus,
+      sectionWindowStart: sectionWindow.start,
+      isMobile,
     };
     const previous = previousContext.current;
     previousContext.current = context;
@@ -421,7 +495,10 @@ export function AssignmentMatrix({
       (previous.gradeLevel === context.gradeLevel &&
         previous.termId === context.termId &&
         previous.coverageFilter === context.coverageFilter &&
-        previous.teacherFocus === context.teacherFocus)
+        previous.teacherFocus === context.teacherFocus &&
+        previous.sectionFocus === context.sectionFocus &&
+        previous.sectionWindowStart === context.sectionWindowStart &&
+        previous.isMobile === context.isMobile)
     )
       return;
     const reason =
@@ -431,7 +508,13 @@ export function AssignmentMatrix({
           ? "Term view"
           : previous.coverageFilter !== context.coverageFilter
             ? "coverage filter"
-            : "Teacher focus";
+            : previous.teacherFocus !== context.teacherFocus
+              ? "Teacher focus"
+              : previous.sectionFocus !== context.sectionFocus
+                ? "Section focus"
+                : previous.sectionWindowStart !== context.sectionWindowStart
+                  ? "Section window"
+                  : "responsive matrix mode";
     const selectedCount = Object.keys(selectedCells).length;
     setSelectedCells({});
     setCopySource(null);
@@ -443,39 +526,61 @@ export function AssignmentMatrix({
     effectiveCoverageFilter,
     matrix.gradeLevel,
     selectedCells,
+    effectiveSectionFocus,
+    sectionWindow.start,
     teacherFocus,
     termId,
+    isMobile,
   ]);
 
-  const projectedOfferings = matrix.offerings
-    .map((offering) => ({
-      ...offering,
-      cells: offering.cells
-        .map((cell) => ({ ...cell, ...projectMatrixCell(cell, termId) }))
-        .filter((cell) => cell.termAssignments.length > 0),
-    }))
-    .filter((offering) => offering.cells.length > 0);
-  const projectedCells = projectedOfferings.flatMap(
-    (offering) => offering.cells,
+  const projectedOfferings = useMemo(
+    () =>
+      matrix.offerings
+        .map((offering) => ({
+          ...offering,
+          cells: offering.cells
+            .map((cell) => ({ ...cell, ...projectMatrixCell(cell, termId) }))
+            .filter((cell) => cell.termAssignments.length > 0),
+        }))
+        .filter((offering) => offering.cells.length > 0),
+    [matrix.offerings, termId],
   );
-  const coverage = summarizeProjectedCells(projectedCells);
-  const details = projectedOfferings.flatMap((offering) =>
-    offering.cells
-      .map((cell) => {
-        const section = matrix.sections.find(
-          (item) => item.id === cell.sectionId,
-        );
-        return section ? { cell, offering, section } : null;
-      })
-      .filter(Boolean),
-  ) as Detail[];
-  const visibleDetails = details.filter(
-    (item) =>
-      matchesMatrixTeacherFocus(item.cell, teacherFocus) &&
-      matchesMatrixCoverageFilter(item.cell, effectiveCoverageFilter),
+  const projectedCells = useMemo(
+    () => projectedOfferings.flatMap((offering) => offering.cells),
+    [projectedOfferings],
   );
-  const visibleKeys = new Set(
-    visibleDetails.map((item) => cellKey(item.offering.id, item.section.id)),
+  const coverage = useMemo(
+    () => summarizeProjectedCells(projectedCells),
+    [projectedCells],
+  );
+  const details = useMemo(
+    () =>
+      projectedOfferings.flatMap((offering) =>
+        offering.cells
+          .map((cell) => {
+            const section = sectionById.get(cell.sectionId);
+            return section ? { cell, offering, section } : null;
+          })
+          .filter(Boolean),
+      ) as Detail[],
+    [projectedOfferings, sectionById],
+  );
+  const visibleDetails = useMemo(
+    () =>
+      details.filter(
+        (item) =>
+          visibleSectionIdSet.has(item.section.id) &&
+          matchesMatrixTeacherFocus(item.cell, teacherFocus) &&
+          matchesMatrixCoverageFilter(item.cell, effectiveCoverageFilter),
+      ),
+    [details, effectiveCoverageFilter, teacherFocus, visibleSectionIdSet],
+  );
+  const visibleKeys = useMemo(
+    () =>
+      new Set(
+        visibleDetails.map((item) => cellKey(item.offering.id, item.section.id)),
+      ),
+    [visibleDetails],
   );
   const selected = Object.values(selectedCells).filter((item) =>
     visibleKeys.has(cellKey(item.offering.id, item.section.id)),
@@ -485,24 +590,28 @@ export function AssignmentMatrix({
     .filter(
       (term) => term.initialAssignmentAllowed || term.ownershipEditable,
     ).length;
-  const missingGroups = groupMissingMatrixScopes(
-    details
-      .filter((item) => matchesMatrixTeacherFocus(item.cell, teacherFocus))
-      .flatMap((item) =>
-        item.cell.termAssignments
-          .filter((term) => !term.assignmentId)
-          .map((term) => ({
-            offeringId: item.offering.id,
-            offeringCode: item.offering.subjectCode,
-            offeringDescription: item.offering.subjectDescription,
-            sectionId: item.section.id,
-            sectionName: item.section.sectionName,
-            academicTermId: term.academicTermId,
-            academicTermName: term.academicTermName,
-            termHasStarted: term.termHasStarted,
-            initialAssignmentAllowed: term.initialAssignmentAllowed,
-          })),
+  const missingGroups = useMemo(
+    () =>
+      groupMissingMatrixScopes(
+        details
+          .filter((item) => matchesMatrixTeacherFocus(item.cell, teacherFocus))
+          .flatMap((item) =>
+            item.cell.termAssignments
+              .filter((term) => !term.assignmentId)
+              .map((term) => ({
+                offeringId: item.offering.id,
+                offeringCode: item.offering.subjectCode,
+                offeringDescription: item.offering.subjectDescription,
+                sectionId: item.section.id,
+                sectionName: item.section.sectionName,
+                academicTermId: term.academicTermId,
+                academicTermName: term.academicTermName,
+                termHasStarted: term.termHasStarted,
+                initialAssignmentAllowed: term.initialAssignmentAllowed,
+              })),
+          ),
       ),
+    [details, teacherFocus],
   );
   const selectedTerm = matrix.terms.find((term) => term.id === termId);
   const loadRows =
@@ -778,6 +887,23 @@ export function AssignmentMatrix({
             className="w-full min-w-64 sm:w-80"
           />
         </div>
+        <div className="w-full space-y-1 sm:w-auto">
+          <label className="text-sm font-medium" htmlFor="matrix-section-focus">
+            Section
+          </label>
+          <SearchableSelect
+            id="matrix-section-focus"
+            ariaLabel="Section focus"
+            value={effectiveSectionFocus}
+            onValueChange={(value) => {
+              setSectionFocus(value || "ALL");
+              setSectionWindowStart(0);
+            }}
+            options={sectionOptions}
+            placeholder="All Sections"
+            className="w-full min-w-64 sm:w-80"
+          />
+        </div>
         <Button
           type="button"
           variant={selectionMode ? "secondary" : "outline"}
@@ -860,9 +986,11 @@ export function AssignmentMatrix({
               Copy to selected Sections
             </Button>
             {copySource && (
-              <span className="text-sm text-muted-foreground">
-                Copy source: {copySource.offering.subjectCode} /{" "}
-                {copySource.section.sectionName}
+              <span
+                className="max-w-full text-sm text-muted-foreground"
+                title={copySourceLabel(copySource)}
+              >
+                Copy source: {copySourceLabel(copySource)}
               </span>
             )}
           </>
@@ -875,15 +1003,67 @@ export function AssignmentMatrix({
           Grade {matrix.gradeLevel}.
         </div>
       ) : (
-        <div className="mt-4 overflow-x-auto rounded-md border">
+        <>
+          {effectiveSectionFocus === "ALL" &&
+            !isMobile &&
+            sectionWindow.hasWindowing && (
+            <div
+              className="mt-4 flex flex-wrap items-center justify-between gap-3"
+              aria-label="Section window"
+            >
+              <span aria-live="polite" className="text-sm text-muted-foreground">
+                Sections {sectionWindow.start + 1}-{sectionWindow.end} of{" "}
+                {matrix.sections.length}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  aria-label="Previous Section window"
+                  disabled={sectionWindow.start === 0}
+                  onClick={() =>
+                    setSectionWindowStart((current) =>
+                      Math.max(current - MATRIX_SECTION_WINDOW_SIZE, 0),
+                    )
+                  }
+                >
+                  Previous Sections
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  aria-label="Next Section window"
+                  disabled={sectionWindow.end === matrix.sections.length}
+                  onClick={() =>
+                    setSectionWindowStart((current) =>
+                      Math.min(
+                        current + MATRIX_SECTION_WINDOW_SIZE,
+                        Math.floor((matrix.sections.length - 1) / MATRIX_SECTION_WINDOW_SIZE) *
+                          MATRIX_SECTION_WINDOW_SIZE,
+                      ),
+                    )
+                  }
+                >
+                  Next Sections
+                </Button>
+              </div>
+            </div>
+          )}
+          <div className="mt-4 rounded-md border">
           <Table className="min-w-max">
             <TableHeader>
               <TableRow>
-                <TableHead className="sticky left-0 z-10 bg-background">
+                <TableHead className="sticky left-0 z-20 w-60 min-w-56 border-r bg-background shadow-[4px_0_6px_-6px_hsl(var(--foreground)/0.45)]">
                   Offering
                 </TableHead>
-                {matrix.sections.map((section) => (
-                  <TableHead key={section.id} className="min-w-44">
+                {visibleSections.map((section) => (
+                  <TableHead
+                    key={section.id}
+                    className="min-w-40 max-w-44 truncate"
+                    title={`Grade ${section.gradeLevel} · ${section.sectionName}`}
+                  >
                     {section.sectionName}
                   </TableHead>
                 ))}
@@ -892,17 +1072,20 @@ export function AssignmentMatrix({
             <TableBody>
               {projectedOfferings.map((offering) => (
                 <TableRow key={offering.id}>
-                  <TableCell className="sticky left-0 z-10 bg-background font-medium">
+                  <TableCell
+                    className="sticky left-0 z-10 w-60 min-w-56 border-r bg-background font-medium shadow-[4px_0_6px_-6px_hsl(var(--foreground)/0.45)]"
+                    title={`${offering.subjectCode} · ${offering.subjectDescription}`}
+                  >
                     <div>{offering.subjectCode}</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="truncate text-xs text-muted-foreground">
                       {offering.subjectDescription}
                     </div>
                   </TableCell>
-                  {offering.cells.map((cell) => {
-                    const section = matrix.sections.find(
-                      (item) => item.id === cell.sectionId,
+                  {visibleSections.map((section) => {
+                    const cell = offering.cells.find(
+                      (item) => item.sectionId === section.id,
                     );
-                    if (!section) return null;
+                    if (!cell) return <TableCell key={section.id} />;
                     const item: Detail = { cell, offering, section };
                     const key = cellKey(offering.id, cell.sectionId);
                     const visible =
@@ -954,6 +1137,7 @@ export function AssignmentMatrix({
                             <Button
                               variant="ghost"
                               className="h-auto w-full justify-start p-2 text-left"
+                              title={termLabel}
                               aria-label={`${offering.subjectCode}, ${section.sectionName}: ${termLabel}. ${matchingLabel ?? ""}`}
                               onClick={() => {
                                 setDetail(item);
@@ -964,10 +1148,10 @@ export function AssignmentMatrix({
                                 <span
                                   className={
                                     cell.state === "UNASSIGNED"
-                                      ? "block text-muted-foreground"
+                                      ? "block truncate text-muted-foreground"
                                       : cell.state === "MIXED_BY_TERM"
-                                        ? "block text-amber-700"
-                                        : "block font-medium"
+                                        ? "block truncate text-amber-700"
+                                      : "block truncate font-medium"
                                   }
                                 >
                                   {cell.state === "UNASSIGNED"
@@ -997,7 +1181,8 @@ export function AssignmentMatrix({
               ))}
             </TableBody>
           </Table>
-        </div>
+          </div>
+        </>
       )}
       <div className="mt-6 rounded-md border">
         <div className="flex items-center justify-between gap-3 p-3">
@@ -1090,7 +1275,7 @@ export function AssignmentMatrix({
             available regardless of the coverage filter.
           </p>
         </div>
-        <div className="overflow-x-auto rounded-md border">
+        <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>

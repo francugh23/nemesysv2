@@ -54,7 +54,9 @@ test("Teaching Assignment matrix keeps actions contextual and secondary informat
     matrix,
     /All displayed assignment scopes are covered|No missing assignment scopes for this displayed context/,
   );
-  assert.match(matrix, /Copy source: \{copySource\.offering\.subjectCode\}/);
+  assert.match(matrix, /Copy source: \{copySourceLabel\(copySource\)\}/);
+  assert.match(matrix, /Section focus/);
+  assert.match(matrix, /min-w-40 max-w-44 truncate/);
   assert.match(matrix, /max-h-\[90dvh\][\s\S]*flex-col overflow-hidden/);
   assert.match(matrix, /ScrollArea className="min-h-0 flex-1/);
 });

@@ -96,7 +96,7 @@ test("Phase 23-C3.1 retains canonical matrix reads and adds client-only term/fil
   assert.match(matrix, /Initial assignment allowed/);
   assert.match(matrix, /Protected/);
   assert.match(matrix, /<Badge/);
-  assert.match(matrix, /overflow-x-auto/);
+  assert.match(matrix, /<Table className="min-w-max"/);
   assert.match(matrix, /max-h-\[90dvh\][\s\S]*flex-col overflow-hidden/);
   assert.match(matrix, /ScrollArea className="min-h-0 flex-1/);
   assert.doesNotMatch(matrix, /<select/);
