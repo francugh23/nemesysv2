@@ -29,8 +29,8 @@ test("Phase 23-C4.1 creates a safe Grade-scoped Teaching Assignments template", 
 
   assert.deepEqual(workbook.SheetNames, ["Teaching Assignments", "Instructions"]);
   assert.deepEqual(rows[0], ["Grade *", "Subject Code *", "Section *", "Term *", "Teacher Employee Number *"]);
-  assert.ok(instructions.some((row) => row.join(" ").includes("never creates Teachers")));
-  assert.ok(instructions.some((row) => row.join(" ").includes("Preview makes no database changes")));
+  assert.ok(instructions.some((row) => row.join(" ").includes("Teachers must already exist")));
+  assert.ok(instructions.some((row) => row.join(" ").includes("Preview changes nothing")));
   assert.doesNotMatch(JSON.stringify(rows), /^(=|\+|-|@)/m);
 });
 

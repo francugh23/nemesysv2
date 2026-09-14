@@ -4,10 +4,10 @@ export const subjectAssignmentExportDefinition = {
   columns: [
     { header: "Grade" },
     { header: "Subject Code" },
-    { header: "Subject" },
     { header: "Section" },
     { header: "Term" },
     { header: "Teacher Employee Number" },
+    { header: "Subject" },
     { header: "Teacher" },
     { header: "Current Assignment Status" },
   ],
@@ -19,14 +19,15 @@ export const subjectAssignmentExportDefinition = {
     termName: string;
     employeeNumber: string | null;
     teacherName: string | null;
+    assignmentStatus: "Assigned" | "Unassigned";
   }) => [
     record.gradeLevel,
     record.subjectCode,
-    record.subjectDescription,
     record.sectionName,
     record.termName,
     record.employeeNumber ?? "",
+    record.subjectDescription,
     record.teacherName ?? "",
-    record.teacherName ? "ASSIGNED" : "UNASSIGNED",
+    record.assignmentStatus,
   ],
 } as const;

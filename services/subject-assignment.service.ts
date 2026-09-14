@@ -541,14 +541,17 @@ export async function exportSubjectAssignments(gradeLevel: string) {
         sectionName: section.sectionName,
         termName: scope.academicTerm.name,
         employeeNumber: assignment?.teacher.employeeNumber ?? null,
-        teacherName: assignment ? `${assignment.teacher.lastName}, ${assignment.teacher.firstName}${assignment.teacher.middleName ? ` ${assignment.teacher.middleName}` : ""}` : null,
+        teacherName: assignment ? `${assignment.teacher.lastName}, ${assignment.teacher.firstName}${assignment.teacher.middleName ? ` ${assignment.teacher.middleName}` : ""}` : "Unassigned",
+        assignmentStatus: assignment ? "Assigned" as const : "Unassigned" as const,
       };
     }));
-    return generateExport(undefined, "xlsx", {
+    const file = await generateExport(undefined, "xlsx", {
       ...subjectAssignmentExportDefinition,
       count: async () => rows.length,
       loadBatch: async (_query, pagination) => rows.slice(pagination.skip, pagination.skip + pagination.take),
     });
+    const academicYearLabel = years[0].label.replace(/^SY\s*/i, "").replace(/[^0-9-]+/g, "-").replace(/^-|-$/g, "");
+    return { ...file, fileName: `Teaching-Assignments_SY-${academicYearLabel}_Grade-${validated.gradeLevel}.xlsx` };
   }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
 }
 
