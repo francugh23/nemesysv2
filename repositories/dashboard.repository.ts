@@ -29,7 +29,7 @@ export function countActiveTeachers(transaction: Prisma.TransactionClient) {
   return transaction.teacher.count({
     where: {
       deletedAt: null,
-      user: { is: { deletedAt: null, status: "ACTIVE" } },
+      status: "ACTIVE",
     },
   });
 }

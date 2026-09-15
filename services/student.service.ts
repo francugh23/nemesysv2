@@ -20,8 +20,6 @@ import {
   type StudentTableQuery,
 } from "@/schemas";
 
-import { createAuditLog } from "@/services/audit.service";
-
 import prisma from "@/lib/prisma";
 import { Permissions, requirePermission } from "@/lib/authorization";
 import {
@@ -247,33 +245,25 @@ export async function createStudentService(
 ) {
   const session = await requirePermission(Permissions.STUDENTS);
 
-  const existingStudent = await findStudentByLRN(values.lrn);
+  return prisma.$transaction(async (transaction) => {
+    const existingStudent = await findStudentByLRN(values.lrn, transaction);
+    if (existingStudent) throw new Error("LRN already exists.");
 
-  if (existingStudent) {
-    throw new Error("LRN already exists.");
-  }
-
-  const student = await createStudent({
-    ...values,
-
-    status: "UNENROLLED",
-
-    createdBy: {
-      connect: {
-        id: session.user.id,
-      },
-    },
+    const student = await createStudent({
+      ...values,
+      status: "UNENROLLED",
+      createdBy: { connect: { id: session.user.id } },
+    }, transaction);
+    await createAuditLogs([{
+      userId: session.user.id,
+      action: "CREATE",
+      module: "Student",
+      recordId: student.id,
+      recordName: `${student.lastName}, ${student.firstName}`,
+      description: "Created student profile",
+    }], transaction);
+    return student;
   });
-
-  await createAuditLog({
-    action: "CREATE",
-    module: "Student",
-    recordId: student.id,
-    recordName: `${student.lastName}, ${student.firstName}`,
-    description: "Created student profile",
-  });
-
-  return student;
 }
 
 export async function importStudentsService(
@@ -330,35 +320,35 @@ export async function updateStudentService(
   id: string,
   values: z.infer<typeof CreateStudentSchema>,
 ) {
-  await requirePermission(Permissions.STUDENTS);
+  const session = await requirePermission(Permissions.STUDENTS);
 
-  const student = await updateStudent(id, {
-    ...values,
+  return prisma.$transaction(async (transaction) => {
+    const student = await updateStudent(id, values, transaction);
+    await createAuditLogs([{
+      userId: session.user.id,
+      action: "UPDATE",
+      module: "Student",
+      recordId: student.id,
+      recordName: `${student.lastName}, ${student.firstName}`,
+      description: "Updated student profile",
+    }], transaction);
+    return student;
   });
-
-  await createAuditLog({
-    action: "UPDATE",
-    module: "Student",
-    recordId: student.id,
-    recordName: `${student.lastName}, ${student.firstName}`,
-    description: "Updated student profile",
-  });
-
-  return student;
 }
 
 export async function deleteStudentService(id: string) {
-  await requirePermission(Permissions.STUDENTS);
+  const session = await requirePermission(Permissions.STUDENTS);
 
-  const student = await softDeleteStudent(id);
-
-  await createAuditLog({
-    action: "DELETE",
-    module: "Student",
-    recordId: student.id,
-    recordName: `${student.lastName}, ${student.firstName}`,
-    description: "Soft deleted student profile",
+  return prisma.$transaction(async (transaction) => {
+    const student = await softDeleteStudent(id, transaction);
+    await createAuditLogs([{
+      userId: session.user.id,
+      action: "DELETE",
+      module: "Student",
+      recordId: student.id,
+      recordName: `${student.lastName}, ${student.firstName}`,
+      description: "Soft deleted student profile",
+    }], transaction);
+    return student;
   });
-
-  return student;
 }

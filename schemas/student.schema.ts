@@ -24,6 +24,8 @@ export const CreateStudentSchema = z.object({
   guardianContact: z.string().optional(),
 });
 
+export const StudentIdSchema = z.string().cuid();
+
 export const StudentStatusSchema = z.enum([
   "UNENROLLED",
   "ENROLLED",

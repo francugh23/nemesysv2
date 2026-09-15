@@ -7,11 +7,7 @@ import {
   BookOpen,
   BookCopy,
   ClipboardCheck,
-  UserPlus,
-  FileText,
-  Shield,
   ScrollText,
-  Settings,
   CalendarRange,
   Layers,
   LucideIcon,
@@ -109,25 +105,9 @@ export const navigation = {
       title: "Operations",
       items: [
         {
-          title: "Registration",
-          href: "/dashboard/registration",
-          icon: UserPlus,
-        },
-        {
           title: "Enrollment",
           href: "/dashboard/enrollment",
           icon: ClipboardCheck,
-        },
-      ],
-    },
-
-    {
-      title: "Reports",
-      items: [
-        {
-          title: "Reports",
-          href: "/dashboard/reports",
-          icon: FileText,
         },
       ],
     },
@@ -139,16 +119,6 @@ export const navigation = {
           title: "Audit Logs",
           href: "/dashboard/audit-logs",
           icon: ScrollText,
-        },
-        {
-          title: "System",
-          href: "/dashboard/system",
-          icon: Shield,
-        },
-        {
-          title: "Settings",
-          href: "/dashboard/settings",
-          icon: Settings,
         },
       ],
     },

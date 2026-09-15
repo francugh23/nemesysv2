@@ -6,6 +6,7 @@ import { Permissions, requirePermission } from "@/lib/authorization";
 import {
   CreateStudentSchema,
   ExportFormatSchema,
+  StudentIdSchema,
   type StudentTableQueryInput,
   validateStudentTableQuery,
 } from "@/schemas";
@@ -120,15 +121,16 @@ export async function updateStudentAction(
   }
 
   const validatedFields = CreateStudentSchema.safeParse(values);
+  const validatedId = StudentIdSchema.safeParse(id);
 
-  if (!validatedFields.success) {
+  if (!validatedFields.success || !validatedId.success) {
     return {
       error: "Invalid fields.",
     };
   }
 
   try {
-    await updateStudentService(id, validatedFields.data);
+    await updateStudentService(validatedId.data, validatedFields.data);
 
     return {
       success: "Student updated successfully.",
@@ -155,8 +157,16 @@ export async function deleteStudentAction(id: string): Promise<ActionResponse> {
     };
   }
 
+  const validatedId = StudentIdSchema.safeParse(id);
+
+  if (!validatedId.success) {
+    return {
+      error: "Invalid student identifier.",
+    };
+  }
+
   try {
-    await deleteStudentService(id);
+    await deleteStudentService(validatedId.data);
 
     return {
       success: "Student deleted successfully.",

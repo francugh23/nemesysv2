@@ -4,7 +4,7 @@ import path from "node:path";
 import test from "node:test";
 
 import { hasPermission, Permissions } from "../../lib/permissions";
-import { getStudentStatusSummary } from "../../repositories/dashboard.repository";
+import { countActiveTeachers, getStudentStatusSummary } from "../../repositories/dashboard.repository";
 
 function source(relativePath: string) {
   return readFileSync(path.join(process.cwd(), relativePath), "utf8");
@@ -34,9 +34,27 @@ test("active-year aggregate filters exclude inactive and archived operational re
   assert.match(repository, /academicYearId,[\s\S]*status: "ACTIVE"[\s\S]*deletedAt: null/);
   assert.match(repository, /student: \{ deletedAt: null, status: "ENROLLED"/);
   assert.match(repository, /section: \{ deletedAt: null \}/);
-  assert.match(repository, /user: \{ is: \{ deletedAt: null, status: "ACTIVE" \} \}/);
+  assert.match(repository, /status: "ACTIVE"/);
+  assert.doesNotMatch(repository.slice(repository.indexOf("export function countActiveTeachers"), repository.indexOf("function countActiveDashboardSections")), /user:/);
   assert.match(repository, /gradeLevel: \{ in: \["11", "12"\] \}/);
   assert.match(repository, /curriculumStatus: "SCHOOL_APPROVED"/);
+});
+
+test("active Teacher count includes independent active personnel only", async () => {
+  let where: unknown;
+  const count = await countActiveTeachers({
+    teacher: {
+      count: async (query: { where: unknown }) => {
+        where = query.where;
+        return 2;
+      },
+    },
+  } as never);
+
+  assert.equal(count, 2);
+  assert.deepEqual(where, { deletedAt: null, status: "ACTIVE" });
+  // This predicate includes active linked and unlinked Teachers, while excluding
+  // inactive and archived personnel without consulting User lifecycle state.
 });
 
 test("read model preserves zero grade buckets and avoids indeterminate policy counts", () => {

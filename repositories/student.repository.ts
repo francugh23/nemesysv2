@@ -359,8 +359,11 @@ export async function lockStudentForEnrollmentSynchronization(
   `);
 }
 
-export async function createStudent(data: Prisma.StudentCreateInput) {
-  return prisma.student.create({
+export async function createStudent(
+  data: Prisma.StudentCreateInput,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).student.create({
     data,
   });
 }
@@ -368,8 +371,9 @@ export async function createStudent(data: Prisma.StudentCreateInput) {
 export async function updateStudent(
   id: string,
   data: Prisma.StudentUpdateInput,
+  transaction?: Prisma.TransactionClient,
 ) {
-  return prisma.student.update({
+  return (transaction ?? prisma).student.update({
     where: {
       id,
     },
@@ -378,8 +382,11 @@ export async function updateStudent(
   });
 }
 
-export async function softDeleteStudent(id: string) {
-  return prisma.student.update({
+export async function softDeleteStudent(
+  id: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).student.update({
     where: {
       id,
     },
@@ -389,8 +396,11 @@ export async function softDeleteStudent(id: string) {
   });
 }
 
-export async function findStudentByLRN(lrn: string) {
-  return prisma.student.findUnique({
+export async function findStudentByLRN(
+  lrn: string,
+  transaction?: Prisma.TransactionClient,
+) {
+  return (transaction ?? prisma).student.findUnique({
     where: {
       lrn,
     },
